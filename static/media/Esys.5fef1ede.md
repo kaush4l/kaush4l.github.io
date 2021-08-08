@@ -1,0 +1,3 @@
+| _*ESystems Inc*_ | Associate Software Developer |
+| ------------- |:-------------:| 
+| `August 2017 - August 2018` | As a software Developer in Esystems I had the opportunity to work in a team which helped a lot in improving my interpersonal and professional skills. After the very fast paced training and learning on the go, the work helped me keep up with peers. When the architecture was updated to use latest technologies, updated parts of the existing notice services to use the new services. A new notice batch was writtern extensively using Java 8 which improved the performace significantly. The work gave my the flexibility to work and keep abreast with new technologies. |

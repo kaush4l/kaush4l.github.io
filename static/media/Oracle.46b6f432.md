@@ -1,0 +1,3 @@
+| _*Oracle Cloud Infrastructure*_ | Software Developer 2 |
+| ------------- |:-------------:| 
+| `March 2020 - Present` | Joined the Oracle Cloud Infrastructure Connectivity team. The core work includes building of new database connectors adding features. The product uses various new technologies ranging from Spring boot microservices, Docker swarning using Kubernates, scripting, Spark processing, spark connectors and testing using JUnit 5, Testng, Cucumber. And flow control using Gradle scripting, tasks and TeamCity and BitBucket hooks. This helped me learn a lot of new technologies and languages.Apart from these, I also learned about Gradle tools, JaCoCo, Docker-compose, SSL, Java 8 and scala. |

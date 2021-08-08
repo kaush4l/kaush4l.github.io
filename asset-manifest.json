@@ -1,0 +1,27 @@
+{
+  "files": {
+    "main.css": "/static/css/main.3f9ef032.chunk.css",
+    "main.js": "/static/js/main.5bddd9dc.chunk.js",
+    "main.js.map": "/static/js/main.5bddd9dc.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.8d6fed17.js",
+    "runtime-main.js.map": "/static/js/runtime-main.8d6fed17.js.map",
+    "static/js/2.7e991877.chunk.js": "/static/js/2.7e991877.chunk.js",
+    "static/js/2.7e991877.chunk.js.map": "/static/js/2.7e991877.chunk.js.map",
+    "index.html": "/index.html",
+    "static/css/main.3f9ef032.chunk.css.map": "/static/css/main.3f9ef032.chunk.css.map",
+    "static/js/2.7e991877.chunk.js.LICENSE.txt": "/static/js/2.7e991877.chunk.js.LICENSE.txt",
+    "static/media/Cerner.02926cba.md": "/static/media/Cerner.02926cba.md",
+    "static/media/Esys.5fef1ede.md": "/static/media/Esys.5fef1ede.md",
+    "static/media/Kaushal-Latest.30245711.pdf": "/static/media/Kaushal-Latest.30245711.pdf",
+    "static/media/Oracle.46b6f432.md": "/static/media/Oracle.46b6f432.md",
+    "static/media/Uniq.3e7517d4.md": "/static/media/Uniq.3e7517d4.md",
+    "static/media/logo.99f21c53.jpg": "/static/media/logo.99f21c53.jpg",
+    "static/media/main.fd9bac96.jpg": "/static/media/main.fd9bac96.jpg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.8d6fed17.js",
+    "static/js/2.7e991877.chunk.js",
+    "static/css/main.3f9ef032.chunk.css",
+    "static/js/main.5bddd9dc.chunk.js"
+  ]
+}
