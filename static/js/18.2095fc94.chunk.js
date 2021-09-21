@@ -1,0 +1,2 @@
+(this.webpackJsonpresume=this.webpackJsonpresume||[]).push([[18],{125:function(s,e,t){"use strict";t.r(e),e.default=t.p+"static/media/SRMUniversity.4c1d7862.jpg"}}]);
+//# sourceMappingURL=18.2095fc94.chunk.js.map

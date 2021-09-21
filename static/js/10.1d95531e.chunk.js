@@ -1,0 +1,2 @@
+(this.webpackJsonpresume=this.webpackJsonpresume||[]).push([[10],{117:function(e,s,t){"use strict";t.r(s),s.default=t.p+"static/media/IBM.e3c4c9db.png"}}]);
+//# sourceMappingURL=10.1d95531e.chunk.js.map

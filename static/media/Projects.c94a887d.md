@@ -1,7 +1,7 @@
 
 | _*React 17 and material UI website *_ | Developer |
 | :-------------: |:-------------:| 
-| `September 2018` | This was started as an effort to learn about the functional based React components and MaterialUI. Routes and other React modules are to be added. [_*Link to Project*_](https://github.com/kaush4l/ReactJS). [_*Link to page*_](https://kaush4l.github.io/). |
+| `August 2021` | This was started as an effort to learn about the functional based React components and MaterialUI. Routes and other React modules are to be added. [_*Link to Project*_](https://github.com/kaush4l/ReactJS). [_*Link to page*_](https://kaush4l.github.io/). |
 
 
 | _*ReactJS website*_ | Developer |

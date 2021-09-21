@@ -28,7 +28,6 @@ For any doubts [refer](https://medium.com/the-andela-way/how-to-deploy-your-reac
 * A Home page with a theme or a gif picture like [this](https://christopher.su/)
 * Update the experiences and projects(UI and content)
 
-### Overkill
-* Try moving the content to some cloud services so that I can just update there and page loads the data
+### Later
 * Try adding all the side projects so that they are easily accessible
-* Make a generic theme and also try to host any material so that it can be shared
+* Convert to materialUI and draggable components

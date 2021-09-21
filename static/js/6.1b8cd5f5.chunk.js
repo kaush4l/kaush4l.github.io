@@ -1,0 +1,2 @@
+(this.webpackJsonpresume=this.webpackJsonpresume||[]).push([[6],{127:function(s,e,t){"use strict";t.r(e),e.default=t.p+"static/media/Education.d21744fa.md"}}]);
+//# sourceMappingURL=6.1b8cd5f5.chunk.js.map

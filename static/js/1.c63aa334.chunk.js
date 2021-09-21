@@ -1,0 +1,2 @@
+(this.webpackJsonpresume=this.webpackJsonpresume||[]).push([[1],{80:function(e,t,n){"use strict";n.r(t);n(0);var s=n(65),c=n(4);t.default=function(e){return Object(c.jsx)(s.a,{children:e.content})}}}]);
+//# sourceMappingURL=1.c63aa334.chunk.js.map
