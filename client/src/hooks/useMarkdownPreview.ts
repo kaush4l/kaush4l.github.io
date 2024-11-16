@@ -81,6 +81,7 @@ ${markdownContent}`;
     setMarkdownContent,
     parseError,
     parsedContent,
-    handleSave
+    handleSave,
+    rawMarkdown: reconstructMarkdown()
   };
 }

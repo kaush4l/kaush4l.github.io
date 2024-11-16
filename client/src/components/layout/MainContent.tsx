@@ -1,98 +1,71 @@
 import { useEffect, useState } from 'react';
 import { ResumeCard } from './ResumeCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MarkdownContent, parseMarkdown } from '@/lib/markdown';
-import useSWR, { mutate } from 'swr';
+import type { MarkdownContent } from '@/lib/markdown';
+import { loadContent } from '@/content';
+import { Button } from '@/components/ui/button';
+import { Edit } from 'lucide-react';
 
 interface MainContentProps {
   section: string;
 }
 
-const prefetchContent = async () => {
-  const sections = ['contact', 'work-experience', 'education', 'projects'];
-  await Promise.all(
-    sections.map(async (section) => {
-      const key = `/api/content/${section}`;
-      await mutate(key, fetch(key).then(r => r.json()), false);
-    })
-  );
-};
-
 export function MainContent({ section }: MainContentProps) {
-  const { data: content, error } = useSWR<string[]>(
-    `/api/content/${section}`,
-    async (url: string) => {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch content');
-      return response.json();
-    }
-  );
-
-  const [parsedContent, setParsedContent] = useState<MarkdownContent[]>([]);
-
-  // Prefetch all content on mount
+  const [sectionContent, setSectionContent] = useState<MarkdownContent[]>([]);
+  const [editMode, setEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
   useEffect(() => {
-    prefetchContent();
-  }, []);
-
-  useEffect(() => {
-    let isActive = true;
-    
-    const updateContent = async () => {
-      if (!content || !isActive) return;
-      
-      // Clear content immediately when section changes
-      setParsedContent([]);
-      
+    async function fetchContent() {
+      setIsLoading(true);
       try {
-        const parsed = content.map(md => parseMarkdown(md));
-        if (isActive) {
-          setParsedContent(parsed);
-        }
+        const content = await loadContent(section);
+        setSectionContent(content);
       } catch (error) {
-        console.error('Error parsing content:', error);
-        if (isActive) {
-          setParsedContent([]);
-        }
+        console.error('Error loading content:', error);
+      } finally {
+        setIsLoading(false);
       }
-    };
+    }
     
-    updateContent();
-    
-    return () => {
-      isActive = false;
-      setParsedContent([]); // Ensure cleanup
-    };
-  }, [content, section]);
-
-  if (error) {
-    return (
-      <div className="p-6 text-red-500">
-        Error loading content: {error.message}
-      </div>
-    );
-  }
-
-  if (!content) {
-    return (
-      <div className="p-6">
-        Loading...
-      </div>
-    );
-  }
+    fetchContent();
+  }, [section]);
 
   return (
-    <ScrollArea className="flex-1 p-6">
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6 capitalize">
-          {section.replace('-', ' ')}
-        </h2>
-        <div className="space-y-6">
-          {parsedContent.map((item, index) => (
-            <ResumeCard key={index} content={item} />
-          ))}
+    <div className="flex-1 h-screen overflow-hidden">
+      <ScrollArea className="h-full">
+        <div className="p-6">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold capitalize bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                {section.replace('-', ' ')}
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditMode(!editMode)}
+                className="gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                {editMode ? 'View Mode' : 'Edit Mode'}
+              </Button>
+            </div>
+            <div className="space-y-6">
+              {isLoading ? (
+                <div className="text-center text-muted-foreground">Loading...</div>
+              ) : (
+                sectionContent.map((item, index) => (
+                  <ResumeCard 
+                    key={`${section}-${index}`}
+                    content={item}
+                    initialEditMode={editMode}
+                  />
+                ))
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </ScrollArea>
+      </ScrollArea>
+    </div>
   );
 }

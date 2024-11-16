@@ -7,9 +7,9 @@ export function ResumeView() {
   const section = location.split('/')[1] || 'contact';
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1">
         <MainContent section={section} />
       </main>
     </div>

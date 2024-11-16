@@ -66,4 +66,23 @@ export function registerRoutes(app: Express) {
       });
     }
   });
+
+  // Save content to a specific file
+  app.post('/api/content/:section/:filename', async (req, res) => {
+    try {
+      const { section, filename } = req.params;
+      const { content } = req.body;
+      
+      const filePath = path.resolve(__dirname, '..', 'content', section, filename);
+      await fs.writeFile(filePath, content, 'utf-8');
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error saving content:', error);
+      res.status(500).json({ 
+        error: 'Failed to save content',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      });
+    }
+  });
 }

@@ -1,15 +1,20 @@
 ---
-title: "Contact Information"
-timeline: "Current"
-summary: "Software Developer based in San Francisco"
+title: "Kaushal Kanakamedala"
+timeline: "Engineer"
+summary: "Tech enthusiast and developer"
 takeaways:
-  - "Full-stack web developer"
-  - "Open to new opportunities"
-tags: ["Available", "Remote-friendly"]
+  - "Adaptable"
+
+tags: ["Open for opportunities", "Remote-friendly"]
 ---
 
-**Email:** john.doe@example.com
-**Phone:** (123) 456-7890
-**Location:** San Francisco, CA
-**LinkedIn:** [linkedin.com/in/johndoe](https://linkedin.com/in/johndoe)
-**GitHub:** [github.com/johndoe](https://github.com/johndoe)
+**Email:** kaush4lk@gmail.com
+
+**Phone:** (919) 939-4399
+
+**Location:** Raleigh, NC
+
+**LinkedIn:** [https://www.linkedin.com/in/kaush4l/](https://www.linkedin.com/in/kaush4l/)
+
+**GitHub:** [Personal](https://github.com/kaush4l)
+[AI](https://github.com/AI-Firefighters)

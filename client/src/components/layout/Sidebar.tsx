@@ -3,7 +3,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { ThemeSwitcher } from '../theme/ThemeSwitcher';
 import { useCallback } from 'react';
-import { mutate } from 'swr';
 
 const navItems = [
   { name: 'Contact', path: '/contact' },
@@ -12,26 +11,10 @@ const navItems = [
   { name: 'Projects', path: '/projects' },
 ];
 
-const prefetchContent = async () => {
-  const sections = ['contact', 'work-experience', 'education', 'projects'];
-  await Promise.all(
-    sections.map(async (section) => {
-      const key = `/api/content/${section}`;
-      await mutate(key, fetch(key).then(r => r.json()), false);
-    })
-  );
-};
-
 export function Sidebar() {
   const [location, setLocation] = useLocation();
   
   const handleNavigation = useCallback((path: string) => {
-    const section = path.replace('/', '') || 'contact';
-    const key = `/api/content/${section}`;
-    
-    // Prefetch content if needed
-    prefetchContent().catch(console.error);
-    
     const currentPath = path === '/contact' ? '/' : path;
     setLocation(currentPath);
   }, [setLocation]);

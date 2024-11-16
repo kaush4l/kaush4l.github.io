@@ -23,20 +23,19 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     const root = document.documentElement;
     
-    // Apply theme variant
+    // Apply theme variant first
     root.setAttribute('data-theme-variant', theme.variant);
     
-    // Update appearance
+    // Apply dark/light mode to html element
     if (theme.appearance === 'system') {
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.toggle('dark', isDark);
-      root.classList.toggle('light', !isDark);
+      document.documentElement.classList.toggle('dark', isDark);
     } else {
-      root.classList.remove('light', 'dark');
-      root.classList.add(theme.appearance);
+      document.documentElement.classList.remove('dark', 'light');
+      document.documentElement.classList.add(theme.appearance);
     }
     
-    // Update other theme properties
+    // Update radius
     root.style.setProperty('--radius', `${theme.radius}rem`);
   }, [theme]);
 
