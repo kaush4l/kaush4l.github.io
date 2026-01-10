@@ -2,15 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'export',
-  // Since we removed API routes, 'export' is safe again.
-  // Workers might need 'output: standalone' or default.
-  // Safe bet: Comment it out for dev stability.
 
+  // Base path for GitHub Pages deployment
   basePath: process.env.NODE_ENV === 'production' ? '/NextJS' : '',
   assetPrefix: process.env.NODE_ENV === 'production' ? '/NextJS/' : '',
+
   images: {
     unoptimized: true,
   },
+
   // Required for transformers.js compatibility
   serverExternalPackages: ['sharp', 'onnxruntime-node'],
 
@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   turbopack: {},
 
   // Webpack configuration for workers
-  webpack: (config, { isServer, webpack }) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       "sharp$": false,
@@ -31,8 +31,6 @@ const nextConfig: NextConfig = {
     };
 
     // Enable native worker support in webpack 5
-    // The `new Worker(new URL(...))` syntax is automatically detected by webpack
-    // We need to ensure proper output configuration for workers
     if (!isServer) {
       config.output.globalObject = 'self';
     }

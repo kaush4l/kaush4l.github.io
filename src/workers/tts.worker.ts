@@ -17,18 +17,6 @@ self.addEventListener('message', async (event) => {
             // Determine device (WASM is safer for this model currently)
             let device: 'webgpu' | 'wasm' = 'wasm';
 
-            // WebGPU is disabled by default for this model due to 'GatherND' data type issues
-            /*
-            try {
-                if ('gpu' in navigator) {
-                    const adapter = await (navigator as any).gpu.requestAdapter();
-                    if (adapter) device = 'webgpu';
-                }
-            } catch (e) {
-                console.warn('WebGPU check failed, defaulting to wasm', e);
-            }
-            */
-
             synthesizer = await pipeline('text-to-speech', modelId, {
                 device,
                 progress_callback: (p: any) => {
