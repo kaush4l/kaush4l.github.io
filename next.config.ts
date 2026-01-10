@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   output: 'export',
 
   // Base path for GitHub Pages deployment
-  basePath: process.env.NODE_ENV === 'production' ? '/NextJS' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/NextJS/' : '',
+  // basePath: process.env.NODE_ENV === 'production' ? '/NextJS' : '',
+  // assetPrefix: process.env.NODE_ENV === 'production' ? '/NextJS/' : '',
 
   images: {
     unoptimized: true,
