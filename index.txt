@@ -1,0 +1,193 @@
+1:"$Sreact.fragment"
+2:I[7482,["361","static/chunks/361-2ae64edbd9f18195.js","203","static/chunks/203-73713227665501b7.js","177","static/chunks/app/layout-020f6456d6663b44.js"],"default"]
+3:I[9132,["361","static/chunks/361-2ae64edbd9f18195.js","203","static/chunks/203-73713227665501b7.js","177","static/chunks/app/layout-020f6456d6663b44.js"],"ThemeProvider"]
+4:I[7121,[],""]
+5:I[4581,[],""]
+7:I[484,[],"OutletBoundary"]
+8:"$Sreact.suspense"
+a:I[484,[],"ViewportBoundary"]
+c:I[484,[],"MetadataBoundary"]
+e:I[7123,[],""]
+:HL["/_next/static/css/45f41e677dc0cc0f.css","style"]
+0:{"P":null,"b":"oAe8lx6PEnyaFXDebevMV","c":["",""],"q":"","i":false,"f":[[["",{"children":["__PAGE__",{}]},"$undefined","$undefined",true],[["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/45f41e677dc0cc0f.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"en","suppressHydrationWarning":true,"children":["$","body",null,{"suppressHydrationWarning":true,"children":["$","$L2",null,{"children":["$","$L3",null,{"children":["$","$L4",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L5",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}]}]}]}]]}],{"children":[["$","$1","c",{"children":["$L6",null,["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]]}],{},null,false,false]},null,false,false],["$","$1","h",{"children":[null,["$","$La",null,{"children":"$Lb"}],["$","div",null,{"hidden":true,"children":["$","$Lc",null,{"children":["$","$8",null,{"name":"Next.Metadata","children":"$Ld"}]}]}],null]}],false]],"m":"$undefined","G":["$e",[]],"S":true}
+b:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+f:I[7911,["361","static/chunks/361-2ae64edbd9f18195.js","516","static/chunks/516-010fc7575238363c.js","107","static/chunks/107-6377464fd0457877.js","911","static/chunks/911-27ad18bd4cdccced.js","974","static/chunks/app/page-3d4c4eff2e8a4b8a.js"],"default"]
+10:T1d1c,You are Kaushal's AI assistant on his personal portfolio website. You help visitors learn about Kaushal's background, skills, and experience.
+
+## YOUR IDENTITY
+You speak as a helpful, professional assistant representing Kaushal. Be friendly but concise. Use first person when referring to Kaushal's work ("I worked on..." or "Kaushal worked on...").
+
+## KAUSHAL'S PROFILE
+
+### Experience
+**Full Stack Software Engineer** at Fidelity (DataForce Inc) (April 2025 - Present)
+Developing philanthropic grant management applications using modern web technologies and cloud-first microservices.
+
+Frontend Core: Built reactive, high-performance user interfaces using Angular (v17+), NgRx for state management, and RxJS for asynchronous data streams.
+Backend Architecture: Develope
+
+**Full Stack Software Engineer** at DHHS NC (DataForce Inc) (Jan 2025 - March 2025)
+Contributed to the North Carolina Department of Health and Human Services (DHHS) eligibility systems.
+
+System Development: Leveraged the Curam framework for feature development and system enhancements.
+Documentation: Authored comprehensive technical documentation for system architecture and business
+
+**Full Stack Software Engineer** at DataForce Inc (Aug 2023 - Dec 2024)
+Pioneered AI integration into internal workflow pipelines within the Debugra team.
+
+AI Pipeline Integration: Architected and implemented AI workflows using LangChain and LangGraph to automate complex debugging processes.
+Vector Search: Developed semantic search capabilities leveraging Chroma and FAI
+
+**Full Stack Software Engineer** at Salesforce Inc (May 2022 - Aug 2023)
+Key member of the Data Integration team, focusing on high-scale data processing and observability.
+
+Microservices Engineering: Architected and maintained scalable microservices using Java and Python within the Bazel build ecosystem.
+Frontend &#x26; Monitoring: Developed responsive frontends with Dja
+
+**Software Engineer** at Oracle Corporation (March 2020 - May 2022)
+Worked on the Data Integration team, contributing to core OCI infrastructure and database services.
+
+Infrastructure Management: Managed OCI (Oracle Cloud Infrastructure) resources, including IP assignments, block storage, and traffic rules.
+Database Connectors: Developed and optimized high-performan
+
+**Associate Software Developer** at Cerner Corporation (Aug 2018 - March 2020)
+Key contributor to healthcare data systems and internal tooling.
+
+Security &#x26; Integration: Integrated DocuSign with medical systems and utilized OKTA for SSO/MFA implementation.
+Auditing Tools: Built tracking and auditing tools using Python and ReactJS, utilizing Husky for git hooks and cron job
+
+**Software Developer** at Esystems (Aug 2017 - Aug 2018)
+Worked on DHS eligibility enrollment projects focusing on modernizing user interactions.
+
+Core Development: Developed features using Java 8 (lambdas/streams) within the Curam framework.
+Frontend Modernization: Built mobile-responsive portal views with ReactJS.
+Integration: Standardized client commun
+
+**Java Developer Intern** at Uniq Technologies (Jan 2015 - Dec 2015)
+Gained practical experience in mobile application development and core Java concepts.
+
+Android Development: Assisted in developing an Android application for local business directory.
+Learning: Gained proficiency in Android Studio and Activity Lifecycle management.
+Testing: Performed manual testing 
+
+### Projects
+**LocalAgents**
+A local AI agent that automates daily tasks on MacOS.
+
+Automation: Automates routine tasks using local LLMs and scripting.
+Tech Stack: Built with Python, leveraging Whisper for speech recognition and 
+
+**Dijkstra's Algorithm**
+Implementation of Dijkstra's algorithm for finding the shortest paths between nodes in a graph.
+
+Core Algorithm: Standard implementation of the classic pathfinding algorithm.
+Java: Written in Java wit
+
+**Project Euler**
+Solutions to Project Euler problems, focusing on efficient algorithmic approaches.
+
+Problem Solving: Tackles complex mathematical problems using programming.
+Optimization: optimized solutions for perf
+
+**Cognix**
+A full-stack Next.js application designed for self-hosting and personal workflows.
+
+Self-Hosted: Designed for privacy and control over personal data.
+Modern Stack: Built with the latest Next.js featur
+
+**Codes**
+A comprehensive repository of cheatsheets and learning resources.
+
+Reference: Curated guides for Java, Python, Shell scripting, and Docker.
+Educational: Serves as a quick reference for best practices 
+
+**take2**
+A simplified implementation of LangGraph for building stateful, multi-actor applications with LLMs.
+
+Framework: tailored for creating complex agentic workflows.
+Pythonic: Clean and intuitive Python AP
+
+**Android Applications Collection**
+A collection of various Android applications developed for learning and utility.
+
+Apps: Includes simple games, utility tools, and location-based services.
+Learning: Explored Android Activity Lifecycle
+
+**LZW Compression**
+Implementation of the Lempel-Ziv-Welch (LZW) lossless data compression algorithm.
+
+Efficiency: Achieved significant compression ratios for text files.
+Analysis: Analyzed time and space complexity trad
+
+**PageRank Implementation**
+Implementation of Google's PageRank algorithm from scratch using MapReduce.
+
+Distributed Computing: Handled large graph datasets by partitioning computation.
+Optimization: Optimized job chain to handl
+
+**Movie Recommender System**
+A scalable recommendation engine built using Apache Spark.
+
+Algorithm: Implemented Alternating Least Squares (ALS) for collaborative filtering.
+Scale: Processed the MovieLens dataset on a Hadoop clust
+
+**Complaint Portal**
+A web portal for students to register and track complaints regarding campus facilities.
+
+Database: Designed relational schema to track complaint status and history.
+Admin Panel: Built dashboard for ad
+
+**CagedSpace**
+A 3D survival game developed using Unity engine.
+
+Mechanics: Implemented physics-based movement and inventory system.
+Assets: Integrated 3D models and sound assets.
+
+
+
+**Angular 4 Dashboard**
+A responsive admin dashboard built with Angular 4.
+
+Components: Created reusable UI components for data visualization.
+Routing: Implemented single-page application routing and guards.
+
+
+
+**Indigo Application**
+An Android application designed to assist colorblind users in navigation.
+
+Accessibility: Filters maps and UI elements to be colorblind-friendly.
+Navigation: Integrated Google Maps for routing and loc
+
+**Resume Website**
+A modern, static portfolio website built to demonstrate front-end engineering skills and AI integration.
+
+Stack: Built with Next.js and Shadcn UI.
+AI Integration: Features a client-side AMA bot powere
+
+### Education
+**Master of Computer Science** - UNC Charlotte (2016-2017)
+**Bachelor of Technology** - SRM University (2011-2015)
+
+## REASONING APPROACH (ReAct Style)
+When answering questions, think through step-by-step:
+1. **Understand**: What is the user really asking?
+2. **Search**: What relevant information do I have in Kaushal's profile?
+3. **Reason**: How does this connect to the question?
+4. **Answer**: Provide a clear, helpful response.
+
+## GUIDELINES
+- Be honest. If you don't have information, say so politely.
+- When matching job descriptions, highlight relevant skills and experience.
+- Keep responses concise but informative.
+- If asked about technologies, reference specific projects and roles.
+- Personalize responses based on context provided.
+6:["$","$Lf",null,{"systemPrompt":"$10","children":"$L11"}]
+12:I[4071,["361","static/chunks/361-2ae64edbd9f18195.js","516","static/chunks/516-010fc7575238363c.js","107","static/chunks/107-6377464fd0457877.js","911","static/chunks/911-27ad18bd4cdccced.js","974","static/chunks/app/page-3d4c4eff2e8a4b8a.js"],"default"]
+13:I[8315,["361","static/chunks/361-2ae64edbd9f18195.js","516","static/chunks/516-010fc7575238363c.js","107","static/chunks/107-6377464fd0457877.js","911","static/chunks/911-27ad18bd4cdccced.js","974","static/chunks/app/page-3d4c4eff2e8a4b8a.js"],"default"]
+11:["$","$L12",null,{"sx":{"maxWidth":1000,"mx":"auto"},"children":[["$","$L13","experience",{"id":"experience","title":"Experience","items":[{"slug":"08-fidelity","contentHtml":"<p>Developing philanthropic grant management applications using modern web technologies and cloud-first microservices.</p>\n<ul>\n<li><strong>Frontend Core:</strong> Built reactive, high-performance user interfaces using <strong>Angular (v17+)</strong>, <strong>NgRx</strong> for state management, and <strong>RxJS</strong> for asynchronous data streams.</li>\n<li><strong>Backend Architecture:</strong> Developed resilient RESTful microservices using <strong>Java Spring Boot</strong>, integrating with <strong>Hibernate JPA</strong> for efficient data persistence.</li>\n<li><strong>Accessibility &#x26; Compliance:</strong> Focused on <strong>WCAG 2.1</strong> compliant accessibility standards to ensure inclusivity for all users.</li>\n<li><strong>Cloud &#x26; DevOps:</strong> Containerized applications using <strong>Docker</strong> and automated deployment pipelines with <strong>Jenkins</strong> targeting <strong>AWS</strong> infrastructure.</li>\n</ul>\n","title":"Full Stack Software Engineer","subtitle":"Fidelity (DataForce Inc)","period":"April 2025 - Present","tools":["Java","Spring Boot","Angular","NgRx","RxJS","AWS","Docker"],"quote":"$undefined","link":"$undefined"},{"slug":"07-dhhs-nc","contentHtml":"<p>Contributed to the North Carolina Department of Health and Human Services (DHHS) eligibility systems.</p>\n<ul>\n<li><strong>System Development:</strong> Leveraged the <strong>Curam framework</strong> for feature development and system enhancements.</li>\n<li><strong>Documentation:</strong> Authored comprehensive technical documentation for system architecture and business logic.</li>\n<li><strong>Release Management:</strong> Managed release tasks and project handovers for critical system updates.</li>\n</ul>\n","title":"Full Stack Software Engineer","subtitle":"DHHS NC (DataForce Inc)","period":"Jan 2025 - March 2025","tools":["Curam","Java","Enterprise Systems"],"quote":"$undefined","link":"$undefined"},{"slug":"06-cisco","contentHtml":"<p>Pioneered AI integration into internal workflow pipelines within the <strong>Debugra</strong> team.</p>\n<ul>\n<li><strong>AI Pipeline Integration:</strong> Architected and implemented AI workflows using <strong>LangChain</strong> and <strong>LangGraph</strong> to automate complex debugging processes.</li>\n<li><strong>Vector Search:</strong> Developed semantic search capabilities leveraging <strong>Chroma</strong> and <strong>FAISS</strong> vector databases.</li>\n<li><strong>Full Stack Development:</strong> Built responsive internal frontends using <strong>Flask</strong> and <strong>Django</strong> with <strong>Jinja2</strong> templating.</li>\n<li><strong>Performance Optimization:</strong> Streamlined data processing pipelines for large-scale log analysis.</li>\n</ul>\n","title":"Full Stack Software Engineer","subtitle":"DataForce Inc","period":"Aug 2023 - Dec 2024","tools":["Python","LangChain","Flask","Django","Chroma","FAISS"],"quote":"$undefined","link":"$undefined"},{"slug":"05-salesforce","contentHtml":"<p>Key member of the <strong>Data Integration</strong> team, focusing on high-scale data processing and observability.</p>\n<ul>\n<li><strong>Microservices Engineering:</strong> Architected and maintained scalable microservices using <strong>Java</strong> and <strong>Python</strong> within the <strong>Bazel</strong> build ecosystem.</li>\n<li><strong>Frontend &#x26; Monitoring:</strong> Developed responsive frontends with <strong>Django</strong> and implemented comprehensive monitoring dashboards via <strong>Grafana</strong>.</li>\n<li><strong>Quality Assurance:</strong> Ensured system reliability through rigorous testing with <strong>Jasmine</strong> for JavaScript components and Python unit testing.</li>\n<li><strong>Automation:</strong> Developed Python and Shell scripts to automate complex infrastructure management tasks.</li>\n</ul>\n","title":"Full Stack Software Engineer","subtitle":"Salesforce Inc","period":"May 2022 - Aug 2023","tools":["Java","Python","Bazel","Django","Grafana","Jasmine"],"quote":"$undefined","link":"$undefined"},{"slug":"04-oracle","contentHtml":"<p>Worked on the <strong>Data Integration</strong> team, contributing to core OCI infrastructure and database services.</p>\n<ul>\n<li><strong>Infrastructure Management:</strong> Managed <strong>OCI (Oracle Cloud Infrastructure)</strong> resources, including IP assignments, block storage, and traffic rules.</li>\n<li><strong>Database Connectors:</strong> Developed and optimized high-performance database connectors for <strong>MySQL</strong>, <strong>Hive</strong>, and <strong>Postgres</strong>.</li>\n<li><strong>Modernization:</strong> Utilized <strong>GraalVM</strong> for native image development, significantly reducing startup times and memory footprint.</li>\n<li><strong>CI/CD &#x26; Testing:</strong> Upgraded testing infrastructure to <strong>JUnit 5</strong> and optimized multi-stage <strong>Docker</strong> builds for faster deployments.</li>\n</ul>\n","title":"Software Engineer","subtitle":"Oracle Corporation","period":"March 2020 - May 2022","tools":["OCI","GraalVM","Java","Docker","MySQL","PostgreSQL"],"quote":"$undefined","link":"$undefined"},{"slug":"03-cerner","contentHtml":"<p>Key contributor to healthcare data systems and internal tooling.</p>\n<ul>\n<li><strong>Security &#x26; Integration:</strong> Integrated DocuSign with medical systems and utilized <strong>OKTA</strong> for SSO/MFA implementation.</li>\n<li><strong>Auditing Tools:</strong> Built tracking and auditing tools using <strong>Python</strong> and <strong>ReactJS</strong>, utilizing <strong>Husky</strong> for git hooks and cron jobs.</li>\n<li><strong>Infrastructure:</strong> Developed dynamic mailing features with <strong>Spring Boot/Hibernate</strong> and managed infrastructure with <strong>Terraform</strong> and <strong>Helm</strong>.</li>\n</ul>\n","title":"Associate Software Developer","subtitle":"Cerner Corporation","period":"Aug 2018 - March 2020","tools":["Java","Python","ReactJS","Terraform","Helm","OKTA"],"quote":"$undefined","link":"$undefined"},{"slug":"02-esystems-inc","contentHtml":"<p>Worked on DHS eligibility enrollment projects focusing on modernizing user interactions.</p>\n<ul>\n<li><strong>Core Development:</strong> Developed features using <strong>Java 8</strong> (lambdas/streams) within the <strong>Curam framework</strong>.</li>\n<li><strong>Frontend Modernization:</strong> Built mobile-responsive portal views with <strong>ReactJS</strong>.</li>\n<li><strong>Integration:</strong> Standardized client communication and API testing using <strong>SoapUI</strong>.</li>\n</ul>\n","title":"Software Developer","subtitle":"Esystems","period":"Aug 2017 - Aug 2018","tools":["Java 8","ReactJS","SoapUI","Curam"],"quote":"$undefined","link":"$undefined"},{"slug":"01-uniq-technologies","contentHtml":"<p>Gained practical experience in mobile application development and core Java concepts.</p>\n<ul>\n<li><strong>Android Development:</strong> Assisted in developing an Android application for local business directory.</li>\n<li><strong>Learning:</strong> Gained proficiency in Android Studio and Activity Lifecycle management.</li>\n<li><strong>Testing:</strong> Performed manual testing and bug reporting.</li>\n</ul>\n","title":"Java Developer Intern","subtitle":"Uniq Technologies","period":"Jan 2015 - Dec 2015","tools":["Java","Android"],"quote":"$undefined","link":"$undefined"}],"variant":"timeline"}],"$L14","$L15"]}]
+14:["$","$L13","projects",{"id":"projects","title":"Projects","items":[{"slug":"15-local-agents","contentHtml":"<p>A local AI agent that automates daily tasks on MacOS.</p>\n<ul>\n<li><strong>Automation:</strong> Automates routine tasks using local LLMs and scripting.</li>\n<li><strong>Tech Stack:</strong> Built with Python, leveraging Whisper for speech recognition and Ollama/MLX for local inference.</li>\n</ul>\n","title":"LocalAgents","subtitle":"AI Automation","period":"2024","tools":["Python","OpenAI","Whisper","Ollama","MLX"],"quote":"$undefined","link":"https://github.com/kaush4l/LocalAgents"},{"slug":"15-dijkstra","contentHtml":"<p>Implementation of Dijkstra's algorithm for finding the shortest paths between nodes in a graph.</p>\n<ul>\n<li><strong>Core Algorithm:</strong> Standard implementation of the classic pathfinding algorithm.</li>\n<li><strong>Java:</strong> Written in Java with a focus on clean code structure.</li>\n</ul>\n","title":"Dijkstra's Algorithm","subtitle":"Pathfinding","period":"2016","tools":["Java","Algorithms","Graph Theory"],"quote":"$undefined","link":"https://github.com/kaush4l/Dijkstra-s-algorithm"},{"slug":"14-euler","contentHtml":"<p>Solutions to Project Euler problems, focusing on efficient algorithmic approaches.</p>\n<ul>\n<li><strong>Problem Solving:</strong> Tackles complex mathematical problems using programming.</li>\n<li><strong>Optimization:</strong> optimized solutions for performance and readability.</li>\n</ul>\n","title":"Project Euler","subtitle":"Algorithm Challenges","period":"Ongoing","tools":["Python","Algorithms","Math"],"quote":"$undefined","link":"https://github.com/kaush4l/Euler"},{"slug":"14-cognix","contentHtml":"<p>A full-stack Next.js application designed for self-hosting and personal workflows.</p>\n<ul>\n<li><strong>Self-Hosted:</strong> Designed for privacy and control over personal data.</li>\n<li><strong>Modern Stack:</strong> Built with the latest Next.js features and TypeScript for type safety.</li>\n</ul>\n","title":"Cognix","subtitle":"Productivity Suite","period":"2024","tools":["Next.js","React","TypeScript","Full Stack"],"quote":"$undefined","link":"https://github.com/kaush4l/Cognix"},{"slug":"13-codes","contentHtml":"<p>A comprehensive repository of cheatsheets and learning resources.</p>\n<ul>\n<li><strong>Reference:</strong> Curated guides for Java, Python, Shell scripting, and Docker.</li>\n<li><strong>Educational:</strong> Serves as a quick reference for best practices and syntax.</li>\n</ul>\n","title":"Codes","subtitle":"Knowledge Base","period":"Ongoing","tools":["Java","Python","Shell","Docker"],"quote":"$undefined","link":"https://github.com/kaush4l/Codes"},{"slug":"12-take2","contentHtml":"<p>A simplified implementation of LangGraph for building stateful, multi-actor applications with LLMs.</p>\n<ul>\n<li><strong>Framework:</strong> tailored for creating complex agentic workflows.</li>\n<li><strong>Pythonic:</strong> Clean and intuitive Python API for defining graph structures.</li>\n</ul>\n","title":"take2","subtitle":"LangGraph Implementation","period":"2024","tools":["Python","LangGraph","AI Agents"],"quote":"$undefined","link":"https://github.com/kaush4l/take2"},{"slug":"09-android-applications","contentHtml":"<p>A collection of various Android applications developed for learning and utility.</p>\n<ul>\n<li><strong>Apps:</strong> Includes simple games, utility tools, and location-based services.</li>\n<li><strong>Learning:</strong> Explored Android Activity Lifecycle, Fragments, and Services.</li>\n</ul>\n","title":"Android Applications Collection","subtitle":"Project Portfolio","period":"2015-2017","tools":["Java","Android Studio"],"quote":"$undefined","link":"$undefined"},{"slug":"08-lzw-compression","contentHtml":"<p>Implementation of the Lempel-Ziv-Welch (LZW) lossless data compression algorithm.</p>\n<ul>\n<li><strong>Efficiency:</strong> Achieved significant compression ratios for text files.</li>\n<li><strong>Analysis:</strong> Analyzed time and space complexity trade-offs with varying dictionary sizes.</li>\n</ul>\n","title":"LZW Compression","subtitle":"Algorithms","period":"2016","tools":["Java","Data Structures"],"quote":"$undefined","link":"https://github.com/kaush4l/LZW-Compression"},{"slug":"07-pagerank","contentHtml":"<p>Implementation of Google's PageRank algorithm from scratch using MapReduce.</p>\n<ul>\n<li><strong>Distributed Computing:</strong> Handled large graph datasets by partitioning computation.</li>\n<li><strong>Optimization:</strong> Optimized job chain to handle dangling nodes and convergence.</li>\n</ul>\n","title":"PageRank Implementation","subtitle":"Distributed Systems","period":"2017","tools":["Java","Hadoop","MapReduce"],"quote":"$undefined","link":"https://github.com/kaush4l/PageRank"},{"slug":"06-movie-recommender","contentHtml":"<p>A scalable recommendation engine built using Apache Spark.</p>\n<ul>\n<li><strong>Algorithm:</strong> Implemented Alternating Least Squares (ALS) for collaborative filtering.</li>\n<li><strong>Scale:</strong> Processed the MovieLens dataset on a Hadoop cluster.</li>\n<li><strong>Accuracy:</strong> Tuned hyperparameters to minimize Root Mean Square Error (RMSE).</li>\n</ul>\n","title":"Movie Recommender System","subtitle":"Big Data Project","period":"2017","tools":["Python","Spark","Hadoop","ALS"],"quote":"$undefined","link":"https://github.com/kaush4l/MovieLens-Movie-Recommander-system"},{"slug":"05-complaint-portal","contentHtml":"<p>A web portal for students to register and track complaints regarding campus facilities.</p>\n<ul>\n<li><strong>Database:</strong> Designed relational schema to track complaint status and history.</li>\n<li><strong>Admin Panel:</strong> Built dashboard for administrators to resolve issues.</li>\n</ul>\n","title":"Complaint Portal","subtitle":"Web Application","period":"2016","tools":["PHP","MySQL","HTML/CSS"],"quote":"$undefined","link":"$undefined"},{"slug":"04-cagedspace","contentHtml":"<p>A 3D survival game developed using Unity engine.</p>\n<ul>\n<li><strong>Mechanics:</strong> Implemented physics-based movement and inventory system.</li>\n<li><strong>Assets:</strong> Integrated 3D models and sound assets.</li>\n</ul>\n","title":"CagedSpace","subtitle":"Game Development","period":"2016","tools":["C#","Unity 3D"],"quote":"$undefined","link":"$undefined"},{"slug":"03-angular-4","contentHtml":"<p>A responsive admin dashboard built with Angular 4.</p>\n<ul>\n<li><strong>Components:</strong> Created reusable UI components for data visualization.</li>\n<li><strong>Routing:</strong> Implemented single-page application routing and guards.</li>\n</ul>\n","title":"Angular 4 Dashboard","subtitle":"Frontend Project","period":"2017","tools":["Angular","TypeScript","Bootstrap"],"quote":"$undefined","link":"$undefined"},{"slug":"02-indigo-application","contentHtml":"<p>An Android application designed to assist colorblind users in navigation.</p>\n<ul>\n<li><strong>Accessibility:</strong> Filters maps and UI elements to be colorblind-friendly.</li>\n<li><strong>Navigation:</strong> Integrated Google Maps for routing and location services.</li>\n<li><strong>UX Design:</strong> Designed high-contrast interfaces for better visibility.</li>\n</ul>\n","title":"Indigo Application","subtitle":"Course Project","period":"2017","tools":["Java","Android SDK","Google Maps API"],"quote":"$undefined","link":"https://github.com/kaush4l/Indigo"},{"slug":"01-resume-website","contentHtml":"<p>A modern, static portfolio website built to demonstrate front-end engineering skills and AI integration.</p>\n<ul>\n<li><strong>Stack:</strong> Built with Next.js and Shadcn UI.</li>\n<li><strong>AI Integration:</strong> Features a client-side AMA bot powered by WebGPU.</li>\n<li><strong>Performance:</strong> Optimized for static export and fast loading.</li>\n</ul>\n","title":"Resume Website","subtitle":"Personal Project","period":"Sep 2018","tools":["React","Next.js","Tailwind CSS","WebGPU"],"quote":"$undefined","link":"$undefined"}],"variant":"grid"}]
+15:["$","$L13","education",{"id":"education","title":"Education","items":[{"slug":"02-unc-charlotte","contentHtml":"<p>Completed rigorous coursework focused on advanced algorithms and distributed systems.</p>\n<ul>\n<li><strong>Projects:</strong> Implemented various heavy-hitter algorithms and mobile applications.</li>\n<li><strong>Coursework:</strong> Algorithms and Data Structures, Mobile Application Development, Cloud Computing, Network-based Applications.</li>\n<li><strong>Achievement:</strong> \"Good, better, best. Never let it rest. 'Till your good is better and your better is the best.\"</li>\n</ul>\n","title":"Master of Computer Science","subtitle":"UNC Charlotte","period":"2016-2017","tools":["Algorithms","Cloud Computing","Mobile Apps"],"quote":"$undefined","link":"$undefined"},{"slug":"01-srm-university","contentHtml":"<p>Foundation in Computer Science and Engineering principles.</p>\n<ul>\n<li><strong>Focus:</strong> User Interface Design, Database Management, Object-Oriented Programming.</li>\n<li><strong>Activities:</strong> Active member of the Computer Science club.</li>\n</ul>\n","title":"Bachelor of Technology","subtitle":"SRM University","period":"2011-2015","tools":["Computer Science","Engineering"],"quote":"$undefined","link":"$undefined"}],"variant":"timeline"}]
+16:I[6869,[],"IconMark"]
+9:null
+d:[["$","title","0",{"children":"Kaushal | Senior Software Engineer"}],["$","meta","1",{"name":"description","content":"Portfolio website showcasing AI architectures, WebGPU development, and high-performance web applications"}],["$","meta","2",{"name":"keywords","content":"Software Engineer,AI,WebGPU,React,Next.js,Portfolio"}],["$","link","3",{"rel":"icon","href":"/favicon.ico?603d046c9a6fdfbb","type":"image/x-icon","sizes":"16x16"}],["$","$L16","4",{}]]
