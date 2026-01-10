@@ -27,7 +27,9 @@ jobs:
         run: bun run build
 
       - name: Create .nojekyll
-        run: touch out/.nojekyll
+        run: |
+          mkdir -p out
+          touch out/.nojekyll
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
