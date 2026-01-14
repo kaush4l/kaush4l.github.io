@@ -1,6 +1,6 @@
 1:"$Sreact.fragment"
-2:I[7911,["361","static/chunks/361-2ae64edbd9f18195.js","516","static/chunks/516-010fc7575238363c.js","93","static/chunks/93-907ac2d308006265.js","911","static/chunks/911-27ad18bd4cdccced.js","612","static/chunks/app/ama/page-09e9a1abc796ce37.js"],"default"]
-6:I[8057,["361","static/chunks/361-2ae64edbd9f18195.js","516","static/chunks/516-010fc7575238363c.js","93","static/chunks/93-907ac2d308006265.js","911","static/chunks/911-27ad18bd4cdccced.js","612","static/chunks/app/ama/page-09e9a1abc796ce37.js"],"default"]
+2:I[7911,["361","static/chunks/361-2ae64edbd9f18195.js","516","static/chunks/516-010fc7575238363c.js","93","static/chunks/93-907ac2d308006265.js","911","static/chunks/911-758a8a4186ab9ed4.js","612","static/chunks/app/ama/page-09e9a1abc796ce37.js"],"default"]
+6:I[8057,["361","static/chunks/361-2ae64edbd9f18195.js","516","static/chunks/516-010fc7575238363c.js","93","static/chunks/93-907ac2d308006265.js","911","static/chunks/911-758a8a4186ab9ed4.js","612","static/chunks/app/ama/page-09e9a1abc796ce37.js"],"default"]
 8:I[484,[],"OutletBoundary"]
 9:"$Sreact.suspense"
 3:T1d1c,You are Kaushal's AI assistant on his personal portfolio website. You help visitors learn about Kaushal's background, skills, and experience.
@@ -173,7 +173,7 @@ When answering questions, think through step-by-step:
 - Keep responses concise but informative.
 - If asked about technologies, reference specific projects and roles.
 - Personalize responses based on context provided.
-0:{"buildId":"oAe8lx6PEnyaFXDebevMV","rsc":["$","$1","c",{"children":[["$","$L2",null,{"systemPrompt":"$3","children":"$L4"}],null,"$L5"]}],"loading":null,"isPartial":false}
+0:{"buildId":"Fk-kONh5yiq4oA7vmf1YP","rsc":["$","$1","c",{"children":[["$","$L2",null,{"systemPrompt":"$3","children":"$L4"}],null,"$L5"]}],"loading":null,"isPartial":false}
 7:T13d0,You are an intelligent, honest, and sincere AI assistant for Kaushal Kanakamedala's personal website.
     
     Here is Kaushal's Resume Context:
