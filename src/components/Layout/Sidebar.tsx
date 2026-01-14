@@ -49,19 +49,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     const drawerContent = (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ p: 2, mt: 8 }}>
-                {open && (
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: 'text.secondary',
-                            fontWeight: 600,
-                            letterSpacing: '0.05em',
-                            textTransform: 'uppercase',
-                        }}
-                    >
-                        Navigation
-                    </Typography>
-                )}
+                {/* Intentionally blank: no sidebar title */}
             </Box>
 
             <List sx={{ flexGrow: 1, px: 1 }}>
