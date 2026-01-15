@@ -1,0 +1,16 @@
+{
+  "models": [
+    {
+      "id": "Xenova/whisper-tiny.en",
+      "localDir": "public/models/Xenova/whisper-tiny.en"
+    },
+    {
+      "id": "Xenova/mms-tts-eng",
+      "localDir": "public/models/Xenova/mms-tts-eng"
+    },
+    {
+      "id": "mistralai/Ministral-3-3B-Instruct-2512-ONNX",
+      "localDir": "public/models/mistralai/Ministral-3-3B-Instruct-2512-ONNX"
+    }
+  ]
+}

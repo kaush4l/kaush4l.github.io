@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useRef } from 'react';
 import { Box, Toolbar, useTheme } from '@mui/material';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -11,6 +11,7 @@ import { ModelProvider } from '@/context/ModelContext';
 export default function LayoutClient({ children, systemPrompt }: { children: ReactNode, systemPrompt: string }) {
     const theme = useTheme();
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
     useEffect(() => {
         // On mobile, start with sidebar closed
@@ -23,11 +24,22 @@ export default function LayoutClient({ children, systemPrompt }: { children: Rea
         setSidebarOpen((prev) => !prev);
     };
 
+    const closeSidebar = () => {
+        setSidebarOpen(false);
+
+        // Give the Drawer a tick to start closing, then move focus somewhere stable.
+        if (typeof window !== 'undefined') {
+            window.setTimeout(() => {
+                menuButtonRef.current?.focus();
+            }, 0);
+        }
+    };
+
     return (
         <ModelProvider initialSystemPrompt={systemPrompt}>
             <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-                <Header onMenuToggle={toggleSidebar} />
-                <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+                <Header onMenuToggle={toggleSidebar} menuButtonRef={menuButtonRef} />
+                <Sidebar open={sidebarOpen} onClose={closeSidebar} />
 
                 <Box
                     component="main"

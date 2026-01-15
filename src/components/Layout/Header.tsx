@@ -1,30 +1,24 @@
 'use client';
-import { useState } from 'react';
+import type { Ref } from 'react';
 import {
     AppBar,
     Toolbar,
     Typography,
     IconButton,
     Box,
-    LinearProgress,
     Tooltip,
     useTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
-import ChatIcon from '@mui/icons-material/Chat';
-import { alpha } from '@mui/material'; // Ensure alpha is imported or use theme
 import Link from 'next/link';
-
-// NOTE: require imports inside component are sloppy, better to import at top. 
-// But circular dependency check might fail if I import ModelContext here? 
-// No, context is fine.
-// Re-doing the import properly.
-// import { useModelContext } from '@/context/ModelContext'; // Adding this would require updating the file imports block properly.
+import { useModelContext } from '@/context/ModelContext';
+import { usePathname } from 'next/navigation';
 
 
 interface HeaderProps {
     onMenuToggle: () => void;
+    menuButtonRef?: Ref<HTMLButtonElement>;
     loadingStatus?: {
         isLoading: boolean;
         message: string;
@@ -32,8 +26,10 @@ interface HeaderProps {
     };
 }
 
-export default function Header({ onMenuToggle, loadingStatus }: HeaderProps) {
+export default function Header({ onMenuToggle, menuButtonRef, loadingStatus }: HeaderProps) {
     const theme = useTheme();
+    const pathname = usePathname();
+    const showAmaStatus = pathname === '/ama';
 
     return (
         <AppBar
@@ -49,6 +45,7 @@ export default function Header({ onMenuToggle, loadingStatus }: HeaderProps) {
         >
             <Toolbar>
                 <IconButton
+                    ref={menuButtonRef}
                     edge="start"
                     color="primary"
                     aria-label="toggle menu"
@@ -79,7 +76,7 @@ export default function Header({ onMenuToggle, loadingStatus }: HeaderProps) {
 
                 {/* Status Indicator */}
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <StatusBadge />
+                    {showAmaStatus && <StatusBadge />}
 
                     <Tooltip title="Home">
                         <IconButton
@@ -96,13 +93,14 @@ export default function Header({ onMenuToggle, loadingStatus }: HeaderProps) {
     );
 }
 
-function StatusBadge() {
-    // Import inside component or use hook if this was inside ModelContext provider scope.
-    // Since Header is inside ModelProvider in Layout now, this works.
-    const { useModelContext } = require('@/context/ModelContext');
-    const { llm, stt, tts, modelName } = useModelContext();
-
-    const ModelStatus = ({ name, state }: { name: string; state: { ready: boolean; loading: boolean; progress: number } }) => (
+function ModelStatus({
+    name,
+    state,
+}: {
+    name: string;
+    state: { ready: boolean; loading: boolean; progress: number };
+}) {
+    return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {state.ready ? (
                 <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -123,6 +121,10 @@ function StatusBadge() {
             </Typography>
         </Box>
     );
+}
+
+function StatusBadge() {
+    const { llm, stt, tts } = useModelContext();
 
     return (
         <Box sx={{

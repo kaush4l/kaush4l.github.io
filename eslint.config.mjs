@@ -1,6 +1,13 @@
 import nextConfig from 'eslint-config-next';
 
-export default [
+const config = [
+	{
+		ignores: [
+			// Generated/cached runtime assets copied from node_modules for static hosting.
+			'public/onnxruntime/**',
+			'public/transformers/**',
+		],
+	},
 	...nextConfig,
 	{
 		rules: {
@@ -9,3 +16,5 @@ export default [
 		},
 	},
 ];
+
+export default config;

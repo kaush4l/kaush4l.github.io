@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { pipeline } from '@huggingface/transformers';
+import { AutoTokenizer, VitsModel } from '@huggingface/transformers';
 import { configureTransformersEnv } from './transformersEnv';
 
 const { localModelPath } = configureTransformersEnv();
 
-let synthesizer = null;
+let tokenizer = null;
+let model = null;
 let currentModelId = null;
 
 const DEFAULT_LANGUAGE = 'en';
@@ -29,13 +30,24 @@ self.addEventListener('message', async (event) => {
 
             await requireWebGPU();
 
-            const modelId = data?.model || 'Supertone/supertonic-2';
+            const modelId = data?.model || 'Xenova/mms-tts-eng';
 
-            synthesizer = await pipeline('text-to-speech', modelId, {
-                device: 'webgpu',
-                progress_callback: (p) => {
-                    self.postMessage({ type: 'progress', data: p });
-                },
+            // Even in WebGPU-capable browsers, some VITS ONNX graphs currently hit
+            // unsupported WebGPU kernel dtypes (e.g. GatherND + int64). The WASM
+            // backend is more broadly compatible.
+            const device = 'wasm';
+
+            // NOTE: We intentionally avoid `pipeline('text-to-speech', ...)` here.
+            // Some TTS models (including certain VITS exports) may not ship a
+            // `preprocessor_config.json`, and the pipeline tries to load a processor.
+            // Loading VITS directly only requires tokenizer + model assets.
+            tokenizer = await AutoTokenizer.from_pretrained(modelId, {
+                progress_callback: (p) => self.postMessage({ type: 'progress', data: p }),
+            });
+
+            model = await VitsModel.from_pretrained(modelId, {
+                device,
+                progress_callback: (p) => self.postMessage({ type: 'progress', data: p }),
             });
 
             currentModelId = modelId;
@@ -50,29 +62,19 @@ self.addEventListener('message', async (event) => {
         }
     } else if (type === 'synthesize') {
         try {
-            if (!synthesizer) {
-                throw new Error('Pipeline not loaded');
+            if (!tokenizer || !model) {
+                throw new Error('TTS model not loaded');
             }
 
             const requestId = data?.requestId;
 
-            // Supertone supports language + speaker selection. If the pipeline ignores these
-            // fields, it will still synthesize with its defaults.
             const language = data?.language || DEFAULT_LANGUAGE;
             const speaker = data?.speaker || DEFAULT_SPEAKER;
-            const generation_config = data?.generation_config || undefined;
 
-            const output = await synthesizer(data.text, {
-                language,
-                speaker,
-                ...(generation_config ? { generation_config } : {}),
-            });
-
-            // Convert to audio buffer
-            // Common output shape: { audio: Float32Array, sampling_rate: number }
-            // Some pipelines may return Float32Array directly.
-            const audioData = output?.audio ?? output;
-            const samplingRate = output?.sampling_rate;
+            const inputs = tokenizer(data.text);
+            const output = await model(inputs);
+            const audioData = output?.waveform?.data ?? output?.waveform ?? output;
+            const samplingRate = model?.config?.sampling_rate ?? 16000;
 
             self.postMessage({
                 type: 'complete',

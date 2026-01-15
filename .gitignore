@@ -17,6 +17,16 @@
 /.next/
 /out/
 
+# Generated runtime assets for static hosting
+/public/onnxruntime/
+/public/transformers/
+
+# Local Hugging Face model assets (often very large)
+/public/models/
+
+# Local tooling
+/.venv-models/
+
 # production
 /build
 

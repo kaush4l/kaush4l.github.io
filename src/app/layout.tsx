@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 
@@ -10,6 +11,13 @@ export const metadata: Metadata = {
   keywords: ["Software Engineer", "AI", "WebGPU", "React", "Next.js", "Portfolio"],
 };
 
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -17,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+      <body className={inter.variable} suppressHydrationWarning>
         <AppRouterCacheProvider>
           <ThemeProvider>
             {children}

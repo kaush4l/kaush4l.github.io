@@ -6,6 +6,15 @@ export class TextStreamAccumulator {
         this.onSentence = onSentence;
     }
 
+    // Backwards/alternate naming used by some callers.
+    push(chunk: string) {
+        this.add(chunk);
+    }
+
+    reset() {
+        this.buffer = '';
+    }
+
     add(chunk: string) {
         this.buffer += chunk;
         this.process();

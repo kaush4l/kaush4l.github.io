@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "models:download": "node scripts/download-models.mjs",
+    "postinstall": "node scripts/copy-onnxruntime-assets.mjs",
+    "prebuild": "node scripts/copy-onnxruntime-assets.mjs",
+    "dev": "next dev --webpack",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
@@ -12,7 +16,6 @@
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@huggingface/transformers": "^3.8.1",
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
     "@mui/material-nextjs": "^7.3.7",

@@ -8,6 +8,10 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? inferredBasePath;
 const nextConfig: NextConfig = {
   output: 'export',
 
+  // Ensure exported routes work on static hosts without rewrite rules (e.g. GitHub Pages)
+  // by generating /route/index.html instead of /route.html.
+  trailingSlash: true,
+
   // GitHub Pages: project pages are served from /<repo>/, user pages from /
   basePath,
   ...(basePath ? { assetPrefix: `${basePath}/` } : {}),

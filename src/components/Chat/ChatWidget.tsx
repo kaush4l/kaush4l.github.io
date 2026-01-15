@@ -37,16 +37,26 @@ interface Message {
     content: string;
 }
 
+function makeRequestId(prefix: string) {
+    return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export default function ChatWidget() {
     const theme = useTheme();
     const [isOpen, setIsOpen] = useState(false);
-    const { llm, stt, tts, llmWorker, sttWorker, ttsWorker, modelName, systemPrompt } = useModelContext();
+    const { llm, stt, tts, llmWorker, sttWorker, ttsWorker, modelName, systemPrompt, autoLoadAll } = useModelContext();
 
     // Messages & State
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [processing, setProcessing] = useState(false);
     const [streamingContent, setStreamingContent] = useState('');
+
+    // Reduce main-thread churn during streaming.
+    const streamingBufferRef = useRef('');
+    const streamingFlushTimerRef = useRef<number | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    const shouldAutoScrollRef = useRef(true);
 
     // Media & Hardware
     const [isRecording, setIsRecording] = useState(false);
@@ -62,18 +72,63 @@ export default function ChatWidget() {
     const streamRef = useRef<MediaStream | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
 
+    // Request correlation (workers are shared via ModelContext)
+    const activeLlmRequestIdRef = useRef<string | null>(null);
+    const activeTtsRequestIdRef = useRef<string | null>(null);
+    const sttInFlightRef = useRef(false);
+    const sttLastRequestIdRef = useRef<string | null>(null);
+    const lastTranscriptAtRef = useRef<number>(0);
+
+    const resampleTo16k = useCallback((input: Float32Array, fromSampleRate: number) => {
+        const targetSampleRate = 16000;
+        if (!fromSampleRate || fromSampleRate === targetSampleRate) return input;
+
+        const ratio = fromSampleRate / targetSampleRate;
+        const newLength = Math.round(input.length / ratio);
+        const output = new Float32Array(newLength);
+        for (let i = 0; i < newLength; i++) {
+            const srcIndex = Math.round(i * ratio);
+            output[i] = input[Math.min(srcIndex, input.length - 1)];
+        }
+        return output;
+    }, []);
+
     // TTS Settings
     const [ttsEnabled, setTtsEnabled] = useState(true);
+    const [autoSendOnStop] = useState(true);
 
     // --- Initialization ---
+
+    // Ensure models are loaded when the dialog is opened (AMA-style behavior)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const anyReady = llm.ready && stt.ready && tts.ready;
+        const anyLoading = llm.loading || stt.loading || tts.loading;
+        const anyError = !!llm.error || !!stt.error || !!tts.error;
+
+        if (!anyReady && !anyLoading && !anyError) {
+            void autoLoadAll().catch(() => {
+                // Errors are reflected in context state.
+            });
+        }
+    }, [isOpen, llm.ready, stt.ready, tts.ready, llm.loading, stt.loading, tts.loading, llm.error, stt.error, tts.error, autoLoadAll]);
 
     // Initialize Stream Accumulator
     useEffect(() => {
         streamAccumulatorRef.current = new TextStreamAccumulator((sentence) => {
             if (ttsEnabled && tts.ready && ttsWorker) {
+                const requestId = activeTtsRequestIdRef.current;
+                if (!requestId) return;
                 ttsWorker.postMessage({
                     type: 'synthesize',
-                    data: { text: sentence, generation_config: { speed: 1.0 } }
+                    data: {
+                        text: sentence,
+                        language: 'en',
+                        speaker: 'Lily',
+                        generation_config: { speed: 1.0 },
+                        requestId,
+                    }
                 });
             }
         });
@@ -83,26 +138,67 @@ export default function ChatWidget() {
     useEffect(() => {
         if (!llmWorker) return;
 
+        const scheduleStreamingFlush = () => {
+            if (!isOpen) return; // Don't re-render the whole page when the widget is closed.
+            if (streamingFlushTimerRef.current) return;
+
+            streamingFlushTimerRef.current = window.setTimeout(() => {
+                streamingFlushTimerRef.current = null;
+                setStreamingContent(streamingBufferRef.current);
+
+                if (shouldAutoScrollRef.current) {
+                    const el = scrollContainerRef.current;
+                    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+                }
+            }, 75);
+        };
+
         const llmHandler = (e: MessageEvent) => {
             const { type, data } = e.data;
-            if (type === 'progress' && data.status === 'stream') {
+            if (type === 'progress' && data?.status === 'stream') {
+                const requestId = data?.requestId;
+                if (!requestId || requestId !== activeLlmRequestIdRef.current) return;
                 const token = data.output;
-                setStreamingContent(prev => prev + token);
+                streamingBufferRef.current += token;
+                scheduleStreamingFlush();
                 if (ttsEnabled) streamAccumulatorRef.current?.add(token);
             } else if (type === 'complete') {
-                setMessages(prev => [...prev, { role: 'assistant', content: data }]);
+                const requestId = typeof data === 'object' ? data?.requestId : undefined;
+                const output = typeof data === 'object' ? data?.output : data;
+                if (!requestId || requestId !== activeLlmRequestIdRef.current) return;
+
+                // Flush any remaining buffered tokens.
+                if (streamingFlushTimerRef.current) {
+                    window.clearTimeout(streamingFlushTimerRef.current);
+                    streamingFlushTimerRef.current = null;
+                }
+                const finalText = (typeof output === 'string' ? output : '') || streamingBufferRef.current;
+                streamingBufferRef.current = '';
+
+                setMessages(prev => [...prev, { role: 'assistant', content: finalText }]);
                 if (ttsEnabled) streamAccumulatorRef.current?.flush();
                 setStreamingContent('');
                 setProcessing(false);
+                activeLlmRequestIdRef.current = null;
             } else if (type === 'error') {
+                const requestId = typeof data === 'object' ? data?.requestId : undefined;
+                const message = typeof data === 'object' ? data?.message : data;
+                if (!requestId || requestId !== activeLlmRequestIdRef.current) return;
                 setProcessing(false);
-                setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data}` }]);
+                setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${message}` }]);
+                activeLlmRequestIdRef.current = null;
             }
         };
 
         llmWorker.addEventListener('message', llmHandler);
-        return () => llmWorker.removeEventListener('message', llmHandler);
-    }, [llmWorker, ttsEnabled]);
+        return () => {
+            llmWorker.removeEventListener('message', llmHandler);
+            if (streamingFlushTimerRef.current) {
+                window.clearTimeout(streamingFlushTimerRef.current);
+                streamingFlushTimerRef.current = null;
+            }
+        };
+    }, [isOpen, llmWorker, ttsEnabled]);
 
     useEffect(() => {
         if (!sttWorker) return;
@@ -110,10 +206,15 @@ export default function ChatWidget() {
         const sttHandler = (e: MessageEvent) => {
             const { type, data } = e.data;
             if (type === 'transcription') {
-                const text = data.trim();
+                const requestId = typeof data === 'object' ? data?.requestId : undefined;
+                const text = (typeof data === 'object' ? data?.text : data)?.trim?.() ?? '';
+                if (requestId && sttLastRequestIdRef.current && requestId !== sttLastRequestIdRef.current) return;
                 setLiveTranscript(text);
-                // Auto-stop recording logic could go here, or we wait for stop
-                // Actually for real-time we might want continuous, but let's stick to "record -> stop -> send" for stability
+                lastTranscriptAtRef.current = Date.now();
+                sttInFlightRef.current = false;
+            }
+            if (type === 'error') {
+                sttInFlightRef.current = false;
             }
         };
 
@@ -122,34 +223,35 @@ export default function ChatWidget() {
     }, [sttWorker]);
 
     // Audio Playback Queue
-    const audioQueue = useRef<Float32Array[]>([]);
+    type TtsAudioChunk = { audio: Float32Array; sampleRate: number };
+    const audioQueue = useRef<TtsAudioChunk[]>([]);
     const isPlaying = useRef(false);
 
-    const playNext = async () => {
+    const playNext = useCallback(async () => {
         if (isPlaying.current || audioQueue.current.length === 0) return;
         isPlaying.current = true;
 
-        const audioData = audioQueue.current.shift();
-        if (audioData) {
+        const chunk = audioQueue.current.shift();
+        if (chunk?.audio) {
             if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
             const ctx = audioContextRef.current;
             if (ctx.state === 'suspended') await ctx.resume();
 
-            const buffer = ctx.createBuffer(1, audioData.length, 16000);
-            buffer.getChannelData(0).set(audioData);
+            const buffer = ctx.createBuffer(1, chunk.audio.length, chunk.sampleRate || 16000);
+            buffer.getChannelData(0).set(chunk.audio);
 
             const source = ctx.createBufferSource();
             source.buffer = buffer;
             source.connect(ctx.destination);
             source.onended = () => {
                 isPlaying.current = false;
-                playNext();
+                void playNext();
             };
             source.start();
         } else {
             isPlaying.current = false;
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (!ttsWorker) return;
@@ -157,23 +259,34 @@ export default function ChatWidget() {
         const ttsHandler = (e: MessageEvent) => {
             const { type, data } = e.data;
             if (type === 'complete') {
-                audioQueue.current.push(data);
-                playNext();
+                const requestId = data?.requestId;
+                if (requestId && activeTtsRequestIdRef.current && requestId !== activeTtsRequestIdRef.current) return;
+                if (!requestId && activeTtsRequestIdRef.current) return;
+                const audio = data?.audio ?? data;
+                const sampleRate = data?.sampling_rate ?? 16000;
+                if (audio) {
+                    audioQueue.current.push({ audio, sampleRate });
+                }
+                void playNext();
             }
         };
 
         ttsWorker.addEventListener('message', ttsHandler);
         return () => ttsWorker.removeEventListener('message', ttsHandler);
-    }, [ttsWorker]);
+    }, [ttsWorker, playNext]);
 
     // --- Actions ---
 
-    const sendMessage = () => {
+    const sendMessage = (overrideContent?: string) => {
         const text = input.trim();
         const transcript = liveTranscript.trim();
-        const content = [text, transcript].filter(Boolean).join(' '); // Combine inputs
+        const content = overrideContent ?? [text, transcript].filter(Boolean).join(' '); // Combine inputs
 
         if ((!content && !selectedImage) || processing || !llm.ready) return;
+
+        const requestId = makeRequestId('llm');
+        activeLlmRequestIdRef.current = requestId;
+        activeTtsRequestIdRef.current = requestId;
 
         const userMsg: Message = {
             role: 'user',
@@ -185,6 +298,7 @@ export default function ChatWidget() {
         setLiveTranscript('');
         setProcessing(true);
         setStreamingContent('');
+        streamingBufferRef.current = '';
 
         // Construct history - Ensure System Prompt is first
         const history = [{ role: 'system', content: systemPrompt }, ...messages, userMsg];
@@ -193,7 +307,8 @@ export default function ChatWidget() {
             type: 'generate',
             data: {
                 messages: history,
-                images: selectedImage ? [selectedImage] : []
+                images: selectedImage ? [selectedImage] : [],
+                requestId,
             }
         });
 
@@ -207,30 +322,70 @@ export default function ChatWidget() {
         } else {
             if (!stt.ready) return; // Alert?
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } });
                 streamRef.current = stream;
-                const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+                const preferredMimeTypes = [
+                    'audio/webm;codecs=opus',
+                    'audio/webm',
+                    'audio/mp4',
+                ];
+                const mimeType = preferredMimeTypes.find((t) => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(t));
+                const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
                 audioChunksRef.current = [];
 
-                mediaRecorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+                mediaRecorder.ondataavailable = async (e) => {
+                    if (!e.data?.size) return;
+                    audioChunksRef.current.push(e.data);
+
+                    // Live STT: transcribe the growing audio buffer once per chunk.
+                    if (sttInFlightRef.current) return;
+                    sttInFlightRef.current = true;
+
+                    try {
+                        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                        if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+                        const arrayBuffer = await blob.arrayBuffer();
+                        const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+                        const channelData = audioBuffer.getChannelData(0);
+                        const audio16k = resampleTo16k(channelData, audioBuffer.sampleRate);
+
+                        const requestId = makeRequestId('stt');
+                        sttLastRequestIdRef.current = requestId;
+                        sttWorker?.postMessage({ type: 'transcribe', data: { audio: audio16k, requestId } });
+                    } catch (err) {
+                        console.error(err);
+                        sttInFlightRef.current = false;
+                    }
+                };
 
                 mediaRecorder.onstop = async () => {
-                    const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                    // Convert to float32
-                    if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-                    const arrayBuffer = await blob.arrayBuffer();
-                    const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
-                    const channelData = audioBuffer.getChannelData(0);
-
-                    // Resample if needed
-                    // Send to worker
-                    sttWorker?.postMessage({ type: 'transcribe', data: { audio: channelData } });
-
                     stream.getTracks().forEach(t => t.stop());
+
+                    const transcript = liveTranscript.trim();
+                    if (!transcript) {
+                        setLiveTranscript('');
+                        sttInFlightRef.current = false;
+                        return;
+                    }
+
+                    if (autoSendOnStop && !input.trim()) {
+                        setLiveTranscript('');
+                        sendMessage(transcript);
+                    } else {
+                        // Commit the transcript into the input for editing/sending.
+                        setInput(prev => {
+                            const trimmed = prev.trim();
+                            return trimmed ? `${trimmed} ${transcript}` : transcript;
+                        });
+                        setLiveTranscript('');
+                    }
+                    sttInFlightRef.current = false;
                 };
 
                 mediaRecorderRef.current = mediaRecorder;
-                mediaRecorder.start();
+                lastTranscriptAtRef.current = Date.now();
+                mediaRecorder.start(1000);
                 setIsRecording(true);
                 setLiveTranscript('');
             } catch (e) {
@@ -239,10 +394,26 @@ export default function ChatWidget() {
         }
     };
 
+    // Auto-stop on silence (no transcript updates)
+    useEffect(() => {
+        if (!isRecording) return;
+        const interval = setInterval(() => {
+            if (Date.now() - lastTranscriptAtRef.current > 2500) {
+                mediaRecorderRef.current?.stop();
+                setIsRecording(false);
+            }
+        }, 500);
+        return () => clearInterval(interval);
+    }, [isRecording]);
+
     // Auto-scroll
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, streamingContent, liveTranscript]);
+        if (!isOpen) return;
+        if (!shouldAutoScrollRef.current) return;
+        const el = scrollContainerRef.current;
+        if (!el) return;
+        el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+    }, [isOpen, messages.length]);
 
     return (
         <>
@@ -258,6 +429,8 @@ export default function ChatWidget() {
                         <Tooltip title="Ask Me Anything" placement="left">
                             <Box sx={{ position: 'relative' }}>
                                 <IconButton
+                                    data-testid="chat-open"
+                                    aria-label="open chat"
                                     onClick={() => setIsOpen(true)}
                                     sx={{
                                         width: 64,
@@ -271,15 +444,16 @@ export default function ChatWidget() {
                                     <ChatIcon fontSize="large" />
                                 </IconButton>
                                 {/* Loading Badge */}
-                                {(!llm.ready || processing) && (
+                                {((llm.loading || stt.loading || tts.loading || processing) || llm.error || stt.error || tts.error) && (
                                     <CircularProgress
                                         size={72}
                                         sx={{
                                             position: 'absolute',
                                             top: -4,
                                             left: -4,
-                                            color: processing ? 'secondary.main' : 'success.main',
-                                            opacity: 0.6
+                                            color: (llm.error || stt.error || tts.error) ? 'error.main' : (processing ? 'secondary.main' : 'success.main'),
+                                            opacity: 0.6,
+                                            pointerEvents: 'none',
                                         }}
                                     />
                                 )}
@@ -328,22 +502,75 @@ export default function ChatWidget() {
                                     <Box>
                                         <Typography variant="subtitle2" fontWeight={700}>Chat with Kaushal</Typography>
                                         <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                                            {modelName} • {llm.ready ? 'Online' : 'Loading...'}
+                                            {modelName} • {(llm.error || stt.error || tts.error) ? 'Error' : (llm.ready ? 'Online' : 'Loading...')}
                                         </Typography>
                                     </Box>
                                 </Box>
                                 <Box>
-                                    <IconButton size="small" color="inherit" onClick={() => setTtsEnabled(!ttsEnabled)}>
+                                    <IconButton
+                                        data-testid="chat-tts-toggle"
+                                        aria-label="toggle tts"
+                                        size="small"
+                                        color="inherit"
+                                        onClick={() => setTtsEnabled(!ttsEnabled)}
+                                    >
                                         {ttsEnabled ? <VolumeUpIcon fontSize="small" /> : <VolumeOffIcon fontSize="small" />}
                                     </IconButton>
-                                    <IconButton size="small" color="inherit" onClick={() => setIsOpen(false)}>
+                                    <IconButton
+                                        data-testid="chat-close"
+                                        aria-label="close chat"
+                                        size="small"
+                                        color="inherit"
+                                        onClick={() => setIsOpen(false)}
+                                    >
                                         <CloseIcon fontSize="small" />
                                     </IconButton>
                                 </Box>
                             </Box>
 
                             {/* Messages */}
-                            <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', bgcolor: 'background.default', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box
+                                data-testid="chat-messages"
+                                ref={scrollContainerRef}
+                                onScroll={() => {
+                                    const el = scrollContainerRef.current;
+                                    if (!el) return;
+                                    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+                                    shouldAutoScrollRef.current = distanceFromBottom < 80;
+                                }}
+                                sx={{ flexGrow: 1, p: 2, overflowY: 'auto', bgcolor: 'background.default', display: 'flex', flexDirection: 'column', gap: 2 }}
+                            >
+                                {/* Model load status / errors */}
+                                {(!!llm.error || !!stt.error || !!tts.error) && (
+                                    <Paper elevation={0} sx={{ p: 1.5, borderRadius: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>
+                                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                                            {llm.error || stt.error || tts.error}
+                                        </Typography>
+                                        <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                                            <Button
+                                                data-testid="chat-retry-models"
+                                                size="small"
+                                                variant="contained"
+                                                color="inherit"
+                                                onClick={() => void autoLoadAll().catch(() => {})}
+                                            >
+                                                Retry loading models
+                                            </Button>
+                                        </Box>
+                                    </Paper>
+                                )}
+
+                                {(!llm.ready || !stt.ready || !tts.ready) && !llm.error && !stt.error && !tts.error && (
+                                    <Paper elevation={0} sx={{ p: 1.5, borderRadius: 3, bgcolor: 'action.hover' }}>
+                                        <Typography variant="body2">
+                                            Loading on-device models (WebGPU required)…
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            STT {stt.loading ? `${stt.progress}%` : stt.ready ? '✓' : '…'} • LLM {llm.loading ? `${llm.progress}%` : llm.ready ? '✓' : '…'} • TTS {tts.loading ? `${tts.progress}%` : tts.ready ? '✓' : '…'}
+                                        </Typography>
+                                    </Paper>
+                                )}
+
                                 {messages.length === 0 && (
                                     <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary', mt: 4 }}>
                                         <ChatIcon sx={{ fontSize: 48, opacity: 0.2, mb: 1 }} />
@@ -457,7 +684,7 @@ export default function ChatWidget() {
                                     ) : (
                                         <IconButton
                                             color="primary"
-                                            onClick={sendMessage}
+                                            onClick={() => sendMessage()}
                                             disabled={processing}
                                         >
                                             <SendIcon />

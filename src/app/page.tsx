@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import { Layout } from '@/components/Layout';
+import ModelStatusBanner from '@/components/ModelStatusBanner';
 import { Section } from '@/components/Resume';
 import { getContent } from '@/lib/content';
 
@@ -17,6 +18,7 @@ export default async function Home() {
   return (
     <Layout>
       <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
+        <ModelStatusBanner />
         {sections.map((section) => (
           <Section
             key={section.id}

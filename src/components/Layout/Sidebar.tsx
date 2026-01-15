@@ -66,7 +66,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                             <ListItemButton
                                 component={Link}
                                 href={menuItem.href}
-                                onClick={onClose}
+                                aria-label={menuItem.text}
+                                onClick={(e) => {
+                                    // Prevent focus from remaining inside the temporary Drawer as it closes.
+                                    if (e.currentTarget instanceof HTMLElement) {
+                                        e.currentTarget.blur();
+                                    }
+                                    onClose();
+                                }}
                                 sx={{
                                     borderRadius: 2,
                                     minHeight: 48,

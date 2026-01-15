@@ -53,7 +53,6 @@ self.addEventListener('message', async (event) => {
 
             const requestId = data?.requestId;
 
-            // Transcribe the audio data
             const result = await sttPipeline(data.audio, {
                 chunk_length_s: 30,
                 stride_length_s: 5,

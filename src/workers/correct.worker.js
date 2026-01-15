@@ -13,18 +13,16 @@ self.addEventListener('message', async (event) => {
         try {
             self.postMessage({ type: 'progress', data: { status: 'loading', progress: 0 } });
 
-            // Determine device
             let device = 'wasm';
             if ('gpu' in navigator) {
                 try {
                     const adapter = await navigator.gpu?.requestAdapter();
                     if (adapter) device = 'webgpu';
-                } catch (e) {
-                    console.warn('WebGPU not available');
+                } catch {
+                    // ignore
                 }
             }
 
-            // Use a small model for text correction
             correctionPipeline = await pipeline('text2text-generation', data.model || 'onnx-community/flan-t5-small', {
                 device,
                 dtype: 'q8',

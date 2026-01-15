@@ -1,32 +1,33 @@
-import { AutoProcessor, AutoTokenizer, env, TextStreamer, load_image, AutoModelForCausalLM, AutoModelForImageTextToText } from '@huggingface/transformers';
+// @ts-nocheck
+import { AutoProcessor, AutoTokenizer, TextStreamer, load_image, AutoModelForCausalLM, AutoModelForImageTextToText } from '@huggingface/transformers';
+import { configureTransformersEnv, TRANSPARENT_1PX_PNG_DATA_URL } from './transformersEnv';
 
-env.allowLocalModels = false;
-env.useBrowserCache = true;
+const { localModelPath } = configureTransformersEnv();
 
-// Define model types to handle different loading/generation logic
-type ModelType = 'text-only' | 'vision-language';
+let processor = null;
+let tokenizer = null;
+let model = null;
+let currentModelId = null;
+let currentModelType = 'vision-language';
 
-let processor: any = null;
-let tokenizer: any = null;
-let model: any = null;
-let currentModelId: string | null = null;
-let currentModelType: ModelType = 'vision-language';
-
-async function loadModel(modelId: string, progressCallback: (progress: any) => void) {
-    let device: 'webgpu' | 'wasm' = 'wasm';
-    if ('gpu' in navigator) {
-        try {
-            const adapter = await (navigator as any).gpu.requestAdapter();
-            if (adapter) device = 'webgpu';
-        } catch (e) {
-            console.warn('WebGPU not available, falling back to wasm');
-        }
+async function requireWebGPU() {
+    if (!navigator.gpu) {
+        throw new Error('WebGPU is required (navigator.gpu not available).');
     }
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+        throw new Error('WebGPU is required (no adapter available).');
+    }
+}
+
+async function loadModel(modelId, progressCallback) {
+    await requireWebGPU();
+    const device = 'webgpu';
 
     console.log(`[LLM Worker] Loading ${modelId} on ${device}`);
 
     const progressMap = new Map();
-    const wrappedProgressCallback = (progress: any) => {
+    const wrappedProgressCallback = (progress) => {
         if (progress.file) {
             progressMap.set(progress.file, progress);
             if (progress.status === 'progress') {
@@ -100,18 +101,22 @@ self.addEventListener('message', async (event) => {
     if (type === 'load') {
         try {
             const modelId = data.model;
-            await loadModel(modelId, (x: any) => {
+            await loadModel(modelId, (x) => {
                 self.postMessage({ type: 'progress', data: x });
             });
             self.postMessage({ type: 'ready' });
-        } catch (err: any) {
-            self.postMessage({ type: 'error', data: err.message });
+        } catch (err) {
+            const message = err?.message || String(err);
+            self.postMessage({
+                type: 'error',
+                data: `Failed to load LLM model from ${localModelPath}. Ensure model files exist under public/models. Details: ${message}`,
+            });
         }
     } else if (type === 'generate') {
         try {
             if (!processor || !model) throw new Error('Model not loaded');
 
-            const { messages, images = [] } = data;
+            const { messages, images = [], requestId } = data || {};
             let inputs;
 
             // Handle input processing based on model type
@@ -131,7 +136,7 @@ self.addEventListener('message', async (event) => {
             } else {
                 // --- Vision Language (FastVLM) ---
                 const hasImages = images.length > 0;
-                const formattedMessages = messages.map((msg: any) => {
+                const formattedMessages = messages.map((msg) => {
                     if (msg.role === 'user' && !msg.content.includes('<image>')) {
                         return { ...msg, content: `<image>${msg.content}` };
                     }
@@ -151,9 +156,8 @@ self.addEventListener('message', async (event) => {
                     inputs = await processor(image, prompt, { add_special_tokens: false });
                 } else {
                     console.log('[LLM Worker] No image provided, using placeholder...');
-                    // Only use placeholder for vision-language models
-                    const placeholderUrl = 'https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/bee.jpg';
-                    const image = await load_image(placeholderUrl);
+                    // Only use placeholder for vision-language models; keep it fully offline.
+                    const image = await load_image(TRANSPARENT_1PX_PNG_DATA_URL);
                     inputs = await processor(image, prompt, { add_special_tokens: false });
                 }
             }
@@ -165,8 +169,11 @@ self.addEventListener('message', async (event) => {
             const streamer = new TextStreamer(pt, {
                 skip_prompt: true,
                 skip_special_tokens: true,
-                callback_function: (text: string) => {
-                    self.postMessage({ type: 'progress', data: { status: 'stream', output: text } });
+                callback_function: (text) => {
+                    self.postMessage({
+                        type: 'progress',
+                        data: requestId ? { status: 'stream', output: text, requestId } : { status: 'stream', output: text },
+                    });
                 },
             });
 
@@ -183,10 +190,19 @@ self.addEventListener('message', async (event) => {
                 { skip_special_tokens: true }
             );
 
-            self.postMessage({ type: 'complete', data: decoded[0]?.trim() || '' });
-        } catch (err: any) {
+            const outputText = decoded[0]?.trim() || '';
+            self.postMessage({
+                type: 'complete',
+                data: requestId ? { output: outputText, requestId } : outputText,
+            });
+        } catch (err) {
             console.error('[LLM Worker] Generation error:', err);
-            self.postMessage({ type: 'error', data: err.message });
+            const message = err?.message || String(err);
+            const requestId = data?.requestId;
+            self.postMessage({
+                type: 'error',
+                data: requestId ? { message, requestId } : message,
+            });
         }
     }
 });

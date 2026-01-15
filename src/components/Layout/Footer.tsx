@@ -29,7 +29,7 @@ export default function Footer() {
 
                 <Stack direction="row" spacing={2}>
                     <MuiLink
-                        href="https://github.com"
+                        href="https://github.com/kaush4l"
                         target="_blank"
                         rel="noopener noreferrer"
                         color="text.secondary"
@@ -38,7 +38,7 @@ export default function Footer() {
                         <GitHubIcon fontSize="small" />
                     </MuiLink>
                     <MuiLink
-                        href="https://linkedin.com"
+                        href="https://www.linkedin.com/in/kaush4l/"
                         target="_blank"
                         rel="noopener noreferrer"
                         color="text.secondary"
@@ -47,7 +47,7 @@ export default function Footer() {
                         <LinkedInIcon fontSize="small" />
                     </MuiLink>
                     <MuiLink
-                        href="mailto:contact@example.com"
+                        href="mailto:kaush4lk@gmail.com"
                         color="text.secondary"
                         sx={{ '&:hover': { color: 'primary.main' } }}
                     >
