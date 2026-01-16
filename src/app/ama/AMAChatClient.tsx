@@ -25,6 +25,10 @@ import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import { useModelContext } from '@/context/ModelContext';
 import { MODELS } from '@/lib/capability';
 import { TextStreamAccumulator } from '@/lib/queue-manager';
+import { stripMarkdownForSpeech } from '@/lib/voiceText';
+
+const DEFAULT_TTS_SPEAKER = 'Lily';
+const DEFAULT_TTS_PLAYBACK_RATE = 1.2;
 
 type Role = 'user' | 'assistant' | 'system';
 
@@ -111,7 +115,7 @@ export default function AMAChatClient() {
         if (streamingFlushTimerRef.current) return;
         streamingFlushTimerRef.current = window.setTimeout(() => {
             streamingFlushTimerRef.current = null;
-            setStreaming(streamingBufferRef.current);
+            setStreaming(stripMarkdownForSpeech(streamingBufferRef.current));
             if (shouldAutoScrollRef.current) scrollToBottom('auto');
         }, 75);
     }, [scrollToBottom]);
@@ -144,6 +148,7 @@ export default function AMAChatClient() {
 
             const source = ctx.createBufferSource();
             source.buffer = buffer;
+            source.playbackRate.value = DEFAULT_TTS_PLAYBACK_RATE;
             source.connect(ctx.destination);
             source.onended = () => {
                 audioPlayingRef.current = false;
@@ -162,10 +167,15 @@ export default function AMAChatClient() {
             const requestId = activeTtsRequestIdRef.current;
             if (!requestId) return;
 
+            const clean = stripMarkdownForSpeech(sentence);
+            if (!clean) return;
+
             ttsWorker.postMessage({
                 type: 'synthesize',
                 data: {
-                    text: sentence,
+                    text: clean,
+                    language: 'en',
+                    speaker: DEFAULT_TTS_SPEAKER,
                     requestId,
                 },
             });
@@ -263,11 +273,11 @@ export default function AMAChatClient() {
                     streamingFlushTimerRef.current = null;
                 }
 
-                const finalText = (payload?.output || '').trim();
+                const finalText = stripMarkdownForSpeech((payload?.output || '').trim());
                 if (finalText) {
                     setMessages((prev) => [...prev, { role: 'assistant', content: finalText }]);
                 } else if (streamingBufferRef.current.trim()) {
-                    setMessages((prev) => [...prev, { role: 'assistant', content: streamingBufferRef.current.trim() }]);
+                    setMessages((prev) => [...prev, { role: 'assistant', content: stripMarkdownForSpeech(streamingBufferRef.current.trim()) }]);
                 }
 
                 setStreaming('');

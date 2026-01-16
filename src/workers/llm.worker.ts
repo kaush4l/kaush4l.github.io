@@ -179,7 +179,7 @@ self.addEventListener('message', async (event) => {
 
             const outputs = await model.generate({
                 ...inputs,
-                max_new_tokens: 2048,
+                max_new_tokens: 384,
                 do_sample: false,
                 repetition_penalty: 1.2,
                 streamer,

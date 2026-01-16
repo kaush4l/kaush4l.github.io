@@ -29,7 +29,11 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import ImageIcon from '@mui/icons-material/Image';
 import { useModelContext } from '@/context/ModelContext';
 import { TextStreamAccumulator, AsyncQueue } from '@/lib/queue-manager';
+import { stripMarkdownForSpeech } from '@/lib/voiceText';
 import { AnimatePresence, motion } from 'framer-motion';
+
+const DEFAULT_TTS_SPEAKER = 'Lily'; // female voice for Supertone
+const DEFAULT_TTS_PLAYBACK_RATE = 1.2;
 
 // --- Shared Types ---
 interface Message {
@@ -120,13 +124,14 @@ export default function ChatWidget() {
             if (ttsEnabled && tts.ready && ttsWorker) {
                 const requestId = activeTtsRequestIdRef.current;
                 if (!requestId) return;
+                const clean = stripMarkdownForSpeech(sentence);
+                if (!clean) return;
                 ttsWorker.postMessage({
                     type: 'synthesize',
                     data: {
-                        text: sentence,
+                        text: clean,
                         language: 'en',
-                        speaker: 'Lily',
-                        generation_config: { speed: 1.0 },
+                        speaker: DEFAULT_TTS_SPEAKER,
                         requestId,
                     }
                 });
@@ -144,7 +149,7 @@ export default function ChatWidget() {
 
             streamingFlushTimerRef.current = window.setTimeout(() => {
                 streamingFlushTimerRef.current = null;
-                setStreamingContent(streamingBufferRef.current);
+                setStreamingContent(stripMarkdownForSpeech(streamingBufferRef.current));
 
                 if (shouldAutoScrollRef.current) {
                     const el = scrollContainerRef.current;
@@ -172,9 +177,10 @@ export default function ChatWidget() {
                     window.clearTimeout(streamingFlushTimerRef.current);
                     streamingFlushTimerRef.current = null;
                 }
-                const finalText = (typeof output === 'string' ? output : '') || streamingBufferRef.current;
+                const finalTextRaw = (typeof output === 'string' ? output : '') || streamingBufferRef.current;
                 streamingBufferRef.current = '';
 
+                const finalText = stripMarkdownForSpeech(finalTextRaw);
                 setMessages(prev => [...prev, { role: 'assistant', content: finalText }]);
                 if (ttsEnabled) streamAccumulatorRef.current?.flush();
                 setStreamingContent('');
@@ -242,6 +248,7 @@ export default function ChatWidget() {
 
             const source = ctx.createBufferSource();
             source.buffer = buffer;
+            source.playbackRate.value = DEFAULT_TTS_PLAYBACK_RATE;
             source.connect(ctx.destination);
             source.onended = () => {
                 isPlaying.current = false;
