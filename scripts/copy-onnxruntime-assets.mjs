@@ -20,6 +20,28 @@ function shouldCopy(fileName) {
 
 async function main() {
   try {
+    // In some environments (e.g. CI, or when ORT assets are vendored in git),
+    // `onnxruntime-web` may not be installed. If we already have the runtime
+    // files under `public/onnxruntime`, don't fail the install.
+    try {
+      await fs.access(srcDir);
+    } catch {
+      try {
+        const existing = await fs.readdir(destDir);
+        const hasRuntime = existing.some(shouldCopy);
+        if (hasRuntime) {
+          console.log('[copy-onnxruntime-assets] onnxruntime-web not found; using existing public/onnxruntime assets');
+          return;
+        }
+      } catch {
+        // ignore
+      }
+
+      throw new Error(
+        `onnxruntime-web not installed and no existing runtime assets found. Expected either ${srcDir} or pre-copied files in ${destDir}`
+      );
+    }
+
     const entries = await fs.readdir(srcDir);
     const toCopy = entries.filter(shouldCopy);
 
