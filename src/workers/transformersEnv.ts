@@ -21,8 +21,9 @@ export function configureTransformersEnv() {
     const localModelPath = `${basePath}/models`;
     const onnxruntimeAssetPath = `${basePath}/onnxruntime/`;
 
-    // Static/offline requirement: models must be served from /public/models.
-    env.allowRemoteModels = false;
+    // Allow remote models from HuggingFace Hub as fallback (used on hosted deployments
+    // where /public/models is not present). Local models take precedence when available.
+    env.allowRemoteModels = true;
     env.allowLocalModels = true;
     env.localModelPath = localModelPath;
 
