@@ -15,7 +15,6 @@ import {
 import SchoolIcon from '@mui/icons-material/School';
 import WorkIcon from '@mui/icons-material/Work';
 import CodeIcon from '@mui/icons-material/Code';
-import ChatIcon from '@mui/icons-material/Chat';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
 import BuildIcon from '@mui/icons-material/Build';
@@ -40,8 +39,6 @@ const menuItems = [
     { text: 'Education', icon: <SchoolIcon />, href: '/#education', section: 'education' },
     { text: 'Skills', icon: <BuildIcon />, href: '/#skills', section: 'skills' },
     { text: 'Contact', icon: <ContactMailIcon />, href: '/#contact', section: 'contact' },
-    { divider: true },
-    { text: 'Ask Me Anything', icon: <ChatIcon />, href: '/ama', section: null },
 ];
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
