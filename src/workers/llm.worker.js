@@ -47,9 +47,10 @@ async function loadModel(modelId, progressCallback) {
         progress_callback: wrappedProgressCallback,
     });
 
-    // Qwen3-0.6B is text-only — load directly as CausalLM, no vision fallback
+    // Qwen3-0.6B is text-only — load directly as CausalLM, no vision fallback.
+    // Use q4 (single merged ONNX, ~200 MB) to keep browser memory usage minimal.
     model = await AutoModelForCausalLM.from_pretrained(modelId, {
-        dtype: { embed_tokens: 'fp16', decoder_model_merged: 'q4f16' },
+        dtype: 'q4',
         device: 'webgpu',
         progress_callback: wrappedProgressCallback,
     });
