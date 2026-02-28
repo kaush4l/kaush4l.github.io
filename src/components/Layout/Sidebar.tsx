@@ -17,6 +17,9 @@ import WorkIcon from '@mui/icons-material/Work';
 import CodeIcon from '@mui/icons-material/Code';
 import ChatIcon from '@mui/icons-material/Chat';
 import HomeIcon from '@mui/icons-material/Home';
+import PersonIcon from '@mui/icons-material/Person';
+import BuildIcon from '@mui/icons-material/Build';
+import ContactMailIcon from '@mui/icons-material/ContactMail';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -31,9 +34,14 @@ interface SidebarProps {
 const menuItems = [
     { text: 'Home', icon: <HomeIcon />, href: '/', section: null },
     { divider: true },
+    { text: 'About', icon: <PersonIcon />, href: '/#about', section: 'about' },
     { text: 'Experience', icon: <WorkIcon />, href: '/#experience', section: 'experience' },
     { text: 'Projects', icon: <CodeIcon />, href: '/#projects', section: 'projects' },
     { text: 'Education', icon: <SchoolIcon />, href: '/#education', section: 'education' },
+    { text: 'Skills', icon: <BuildIcon />, href: '/#skills', section: 'skills' },
+    { text: 'Contact', icon: <ContactMailIcon />, href: '/#contact', section: 'contact' },
+    { divider: true },
+    { text: 'Ask Me Anything', icon: <ChatIcon />, href: '/ama', section: null },
 ];
 
 export default function Sidebar({ open, onClose }: SidebarProps) {

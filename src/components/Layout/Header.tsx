@@ -11,9 +11,12 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import Link from 'next/link';
 import { useModelContext } from '@/context/ModelContext';
 import { usePathname } from 'next/navigation';
+import { useColorMode } from '@/theme/ThemeProvider';
 
 
 interface HeaderProps {
@@ -30,6 +33,7 @@ export default function Header({ onMenuToggle, menuButtonRef, loadingStatus }: H
     const theme = useTheme();
     const pathname = usePathname();
     const showAmaStatus = pathname === '/ama';
+    const { mode, toggleColorMode } = useColorMode();
 
     return (
         <AppBar
@@ -37,10 +41,13 @@ export default function Header({ onMenuToggle, menuButtonRef, loadingStatus }: H
             elevation={0}
             sx={{
                 zIndex: (theme) => theme.zIndex.drawer + 1,
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: theme.palette.mode === 'dark'
+                    ? 'rgba(15,15,20,0.85)'
+                    : 'rgba(255,255,255,0.85)',
                 backdropFilter: 'blur(12px)',
                 borderBottom: '1px solid',
                 borderColor: 'divider',
+                color: 'text.primary',
             }}
         >
             <Toolbar>
@@ -77,6 +84,12 @@ export default function Header({ onMenuToggle, menuButtonRef, loadingStatus }: H
                 {/* Status Indicator */}
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     {showAmaStatus && <StatusBadge />}
+
+                    <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+                        <IconButton onClick={toggleColorMode} color="primary" aria-label="toggle color mode">
+                            {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+                        </IconButton>
+                    </Tooltip>
 
                     <Tooltip title="Home">
                         <IconButton

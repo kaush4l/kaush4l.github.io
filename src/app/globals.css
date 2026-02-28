@@ -1,10 +1,31 @@
+/* ─── Light mode tokens ───────────────────────────────────────────────────── */
 :root {
-  --primary: #7C3AED;
-  --primary-light: #A78BFA;
-  --primary-dark: #5B21B6;
+  --primary:         #7C3AED;
+  --primary-light:   #A78BFA;
+  --primary-dark:    #5B21B6;
+  --secondary:       #06B6D4;
+  --secondary-light: #67E8F9;
+  --secondary-dark:  #0E7490;
+  --bg:              #FAFAFA;
+  --surface:         #FFFFFF;
+  --text:            #1F2937;
+  --text-muted:      #6B7280;
+  --scrollbar-thumb: #C4B5FD;
+  --scrollbar-hover: #7C3AED;
 }
 
-* {
+/* ─── Dark mode tokens ────────────────────────────────────────────────────── */
+[data-theme="dark"], .dark {
+  --bg:              #0F0F14;
+  --surface:         #16161E;
+  --text:            #F1F0F9;
+  --text-muted:      #9CA3AF;
+  --scrollbar-thumb: #5B21B6;
+  --scrollbar-hover: #A78BFA;
+}
+
+/* ─── Base reset ──────────────────────────────────────────────────────────── */
+*, *::before, *::after {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
@@ -12,42 +33,67 @@
 
 html {
   scroll-behavior: smooth;
+  /* Smooth theme transitions */
+  color-scheme: light dark;
 }
 
 body {
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Smooth scrolling with offset for fixed header */
+/* ─── Scroll offset for fixed AppBar ─────────────────────────────────────── */
 section[id] {
   scroll-margin-top: 100px;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
+/* ─── Custom scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #c4b5fd;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
+  transition: background 0.2s;
 }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #7c3aed;
-}
-
-/* Prose content styles */
+/* ─── Prose content rendered from remark-html ───────────────────────────── */
 .prose-content {
   line-height: 1.7;
 }
+.prose-content p        { margin: 0.5em 0; }
+.prose-content ul       { padding-left: 1.5em; margin: 0.5em 0; }
+.prose-content li       { margin: 0.3em 0; }
+.prose-content strong   { font-weight: 600; }
+.prose-content a        { color: var(--primary); text-decoration: underline; }
+.prose-content code     { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.875em; }
+
+/* ─── Gradient text utility ──────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+
 
 .prose-content p {
   margin-bottom: 1rem;

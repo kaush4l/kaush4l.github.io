@@ -8,9 +8,57 @@ import { ContentItem, Section, AMAContent } from './contentTypes';
 const contentDirectory = path.join(process.cwd(), 'content');
 
 /**
- * Get all content items from a section folder
+ * Strip HTML tags safely (handles edge cases better than a simple regex).
+ * Used to extract plain-text snippets for the LLM system prompt.
  */
-export async function getContent(section: string): Promise<ContentItem[]> {
+export function stripHtml(htmlStr: string): string {
+    // Replace common block tags with a space to preserve word boundaries
+    return htmlStr
+        .replace(/<\/(p|li|h[1-6]|blockquote|div)>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
+/**
+ * Parse a single markdown file and return a ContentItem.
+ */
+async function parseMarkdownFile(fullPath: string): Promise<ContentItem> {
+    const fileContents = fs.readFileSync(fullPath, 'utf8');
+    const matterResult = matter(fileContents);
+    const slug = path.basename(fullPath).replace(/\.md$/, '');
+
+    const processedContent = await remark()
+        .use(html)
+        .process(matterResult.content);
+    const contentHtml = processedContent.toString();
+
+    return {
+        slug,
+        contentHtml,
+        title: matterResult.data.title || slug,
+        subtitle: matterResult.data.subtitle,
+        period: matterResult.data.period,
+        description: matterResult.data.description,
+        // Support both 'tags' and 'tools' frontmatter keys
+        tags: matterResult.data.tags,
+        tools: matterResult.data.tools,
+        quote: matterResult.data.quote,
+        link: matterResult.data.link,
+        // Extended fields
+        category: matterResult.data.category,
+        icon: matterResult.data.icon,
+        url: matterResult.data.url,
+        location: matterResult.data.location,
+        featured: matterResult.data.featured ?? false,
+    } as ContentItem;
+}
+
+/**
+ * Get all content items from a section folder.
+ * Sorted descending by slug by default (newest / highest index first).
+ */
+export async function getContent(section: string, ascending = false): Promise<ContentItem[]> {
     const sectionPath = path.join(contentDirectory, section);
 
     if (!fs.existsSync(sectionPath)) {
@@ -20,33 +68,25 @@ export async function getContent(section: string): Promise<ContentItem[]> {
     const fileNames = fs.readdirSync(sectionPath).filter(f => f.endsWith('.md'));
 
     const allContentData = await Promise.all(
-        fileNames.map(async (fileName) => {
-            const slug = fileName.replace(/\.md$/, '');
-            const fullPath = path.join(sectionPath, fileName);
-            const fileContents = fs.readFileSync(fullPath, 'utf8');
-            const matterResult = matter(fileContents);
-
-            const processedContent = await remark()
-                .use(html)
-                .process(matterResult.content);
-            const contentHtml = processedContent.toString();
-
-            return {
-                slug,
-                contentHtml,
-                title: matterResult.data.title || slug,
-                subtitle: matterResult.data.subtitle,
-                period: matterResult.data.period,
-                tools: matterResult.data.tools,
-                quote: matterResult.data.quote,
-                link: matterResult.data.link,
-            } as ContentItem;
-        })
+        fileNames.map((fileName) =>
+            parseMarkdownFile(path.join(sectionPath, fileName))
+        )
     );
 
-    // Sort by slug descending (Newest/Highest number first)
-    return allContentData.sort((a, b) => b.slug.localeCompare(a.slug));
+    return allContentData.sort((a, b) =>
+        ascending ? a.slug.localeCompare(b.slug) : b.slug.localeCompare(a.slug)
+    );
 }
+
+/**
+ * Convenience wrappers for each named section
+ */
+export const getExperience = () => getContent('02-experience');
+export const getProjects   = () => getContent('03-projects');
+export const getEducation  = () => getContent('01-education', true);
+export const getAbout      = () => getContent('04-about', true);
+export const getSkills     = () => getContent('05-skills', true);
+export const getContact    = () => getContent('06-contact', true);
 
 /**
  * Get all sections with their content

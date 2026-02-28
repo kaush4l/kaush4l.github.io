@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { getContent } from '@/lib/content';
+import { getContent, stripHtml } from '@/lib/content';
 import LayoutClient from './LayoutClient';
 
 interface LayoutProps {
@@ -9,10 +9,12 @@ interface LayoutProps {
 export default async function Layout({
     children,
 }: LayoutProps) {
-    // Fetch system prompt data server-side
-    const experience = await getContent('02-experience');
-    const projects = await getContent('03-projects');
-    const education = await getContent('01-education');
+    // Fetch system prompt data server-side — parallelized for faster builds
+    const [experience, projects, education] = await Promise.all([
+        getContent('02-experience'),
+        getContent('03-projects'),
+        getContent('01-education'),
+    ]);
 
     const systemPrompt = `You are Kaushal's AI assistant on his personal portfolio website.
 
@@ -30,16 +32,16 @@ Kaushal's profile context:
 
 Experience:
 ${experience
-        .map((e: any) => `${e.title} at ${e.subtitle} (${e.period})\n${e.contentHtml?.replace(/<[^>]*>/g, '').substring(0, 300) || ''}`)
+        .map((e) => `${e.title} at ${e.subtitle} (${e.period})\n${stripHtml(e.contentHtml).substring(0, 300)}`)
         .join('\n\n')}
 
 Projects:
 ${projects
-        .map((p: any) => `${p.title}\n${p.contentHtml?.replace(/<[^>]*>/g, '').substring(0, 200) || ''}`)
+        .map((p) => `${p.title}\n${stripHtml(p.contentHtml).substring(0, 200)}`)
         .join('\n\n')}
 
 Education:
-${education.map((e: any) => `${e.title} - ${e.subtitle} (${e.period})`).join('\n')}
+${education.map((e) => `${e.title} - ${e.subtitle} (${e.period})`).join('\n')}
 `;
 
 

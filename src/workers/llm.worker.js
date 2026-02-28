@@ -1,9 +1,11 @@
-// @ts-nocheck
+/**
+ * LLM Web Worker — Qwen3-0.6B-ONNX (text-only, plug-in upgradeable)
+ * Model ID is passed in the 'load' message — swap any text-gen model without rebuilding.
+ */
 import {
     AutoTokenizer,
     TextStreamer,
     AutoModelForCausalLM,
-    AutoModelForImageTextToText,
 } from '@huggingface/transformers';
 import { configureTransformersEnv } from './transformersEnv';
 
@@ -12,7 +14,6 @@ const { localModelPath } = configureTransformersEnv();
 let tokenizer = null;
 let model = null;
 let currentModelId = null;
-let currentModelKind = 'text-only';
 
 async function requireWebGPU() {
     if (!navigator.gpu) {
@@ -26,74 +27,35 @@ async function requireWebGPU() {
 
 async function loadModel(modelId, progressCallback) {
     await requireWebGPU();
-    const device = 'webgpu';
-
-    console.log(`[LLM Worker] Loading ${modelId} on ${device}`);
+    console.log(`[LLM Worker] Loading ${modelId} on webgpu`);
 
     const progressMap = new Map();
     const wrappedProgressCallback = (progress) => {
         if (progress.file) {
-            progressMap.set(progress.file, progress);
+            progressMap.set(progress.file, { loaded: progress.loaded ?? 0, total: progress.total ?? 0 });
             if (progress.status === 'progress') {
-                let totalLoaded = 0;
-                let totalSize = 0;
-                for (const p of progressMap.values()) {
-                    if (p.loaded && p.total) {
-                        totalLoaded += p.loaded;
-                        totalSize += p.total;
-                    }
-                }
-                if (totalSize > 0) {
-                    progressCallback({ status: 'progress', progress: (totalLoaded / totalSize) * 100 });
-                }
+                let tL = 0, tS = 0;
+                for (const p of progressMap.values()) { tL += p.loaded; tS += p.total; }
+                if (tS > 0) progressCallback({ status: 'progress', progress: (tL / tS) * 100 });
             }
         } else {
             progressCallback(progress);
         }
     };
 
-    try {
-        // Text-only: AMA is a chat experience and the shipped model is a text LLM.
-        // Loading it as a vision-language model can succeed but then fail at generation time.
-        tokenizer = await AutoTokenizer.from_pretrained(modelId, {
-            progress_callback: wrappedProgressCallback,
-        });
+    tokenizer = await AutoTokenizer.from_pretrained(modelId, {
+        progress_callback: wrappedProgressCallback,
+    });
 
-        try {
-            model = await AutoModelForCausalLM.from_pretrained(modelId, {
-                dtype: {
-                    embed_tokens: 'fp16',
-                    decoder_model_merged: 'q4f16',
-                },
-                device,
-                progress_callback: wrappedProgressCallback,
-            });
-            currentModelKind = 'text-only';
-        } catch (e) {
-            // e.g. mistralai/Ministral-3-3B-Instruct-2512-ONNX reports `model_type: mistral3`
-            // which is implemented as conditional generation in transformers.js.
-            if (e?.message?.includes('Unsupported model type')) {
-                model = await AutoModelForImageTextToText.from_pretrained(modelId, {
-                    dtype: {
-                        embed_tokens: 'fp16',
-                        vision_encoder: 'q4',
-                        decoder_model_merged: 'q4',
-                    },
-                    device,
-                    progress_callback: wrappedProgressCallback,
-                });
-                currentModelKind = 'conditional';
-            } else {
-                throw e;
-            }
-        }
+    // Qwen3-0.6B is text-only — load directly as CausalLM, no vision fallback
+    model = await AutoModelForCausalLM.from_pretrained(modelId, {
+        dtype: { embed_tokens: 'fp16', decoder_model_merged: 'q4f16' },
+        device: 'webgpu',
+        progress_callback: wrappedProgressCallback,
+    });
 
-        currentModelId = modelId;
-        console.log(`[LLM Worker] Successfully loaded ${modelId}`);
-    } catch (err) {
-        console.error(`[LLM Worker] Failed to load model ${modelId}:`, err);
-        throw err;
-    }
+    currentModelId = modelId;
+    console.log(`[LLM Worker] Loaded ${modelId}`);
 }
 
 self.addEventListener('message', async (event) => {
@@ -101,6 +63,7 @@ self.addEventListener('message', async (event) => {
 
     if (type === 'load') {
         try {
+            self.postMessage({ type: 'progress', data: { status: 'loading', progress: 0 } });
             const modelId = data.model;
             await loadModel(modelId, (x) => {
                 self.postMessage({ type: 'progress', data: x });
@@ -119,9 +82,11 @@ self.addEventListener('message', async (event) => {
 
             const { messages, requestId } = data || {};
 
+            // Qwen3 chat template; enable_thinking=false for voice-first latency
             const prompt = tokenizer.apply_chat_template(messages, {
                 add_generation_prompt: true,
                 tokenize: false,
+                enable_thinking: false,
             });
 
             const inputs = await tokenizer(prompt, { add_special_tokens: false });

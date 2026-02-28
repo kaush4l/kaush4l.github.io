@@ -192,29 +192,31 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
         workers.tts,
     ]);
 
+    // Always keep a ref to the latest autoLoadAll so the startup effect (with
+    // empty deps) never calls a stale closure without needing autoLoadAll in
+    // its dependency array (which would cause it to re-fire on every load).
+    const autoLoadAllRef = useRef(autoLoadAll);
+    useEffect(() => { autoLoadAllRef.current = autoLoadAll; });
+
     // Auto-initialize models on startup without blocking first paint.
+    // Empty dep array: intentionally runs once on mount only.
     useEffect(() => {
+        if (typeof window === 'undefined') return;
         let cancelled = false;
 
         const start = () => {
             if (cancelled) return;
-            void autoLoadAll().catch(() => {
+            void autoLoadAllRef.current().catch(() => {
                 // Errors are reflected in context state.
             });
         };
-
-        if (typeof window === 'undefined') return;
 
         const anyGlobal = globalThis as any;
         if (typeof anyGlobal.requestIdleCallback === 'function') {
             const id = anyGlobal.requestIdleCallback(start, { timeout: 2000 });
             return () => {
                 cancelled = true;
-                try {
-                    anyGlobal.cancelIdleCallback?.(id);
-                } catch {
-                    // ignore
-                }
+                try { anyGlobal.cancelIdleCallback?.(id); } catch { /* ignore */ }
             };
         }
 
@@ -223,7 +225,7 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
             cancelled = true;
             clearTimeout(t);
         };
-    }, [autoLoadAll]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <ModelContext.Provider value={{

@@ -1,4 +1,7 @@
-// @ts-nocheck
+/**
+ * STT Web Worker — Whisper tiny EN (plug-in upgradeable)
+ * Model ID is passed in the 'load' message — swap any ASR model without rebuilding.
+ */
 import { pipeline } from '@huggingface/transformers';
 import { configureTransformersEnv } from './transformersEnv';
 
@@ -24,12 +27,10 @@ self.addEventListener('message', async (event) => {
             self.postMessage({ type: 'progress', data: { status: 'loading', progress: 0 } });
 
             await requireWebGPU();
-            const device = 'webgpu';
-
-            const modelId = data?.model || 'Xenova/whisper-tiny.en';
+            const modelId = data?.model ?? 'Xenova/whisper-tiny.en';
 
             sttPipeline = await pipeline('automatic-speech-recognition', modelId, {
-                device,
+                device: 'webgpu',
                 dtype: 'fp32',
                 progress_callback: (progress) => {
                     self.postMessage({ type: 'progress', data: progress });
@@ -38,7 +39,6 @@ self.addEventListener('message', async (event) => {
 
             self.postMessage({ type: 'ready' });
         } catch (err) {
-            console.error('STT load error:', err);
             const message = err?.message || String(err);
             self.postMessage({
                 type: 'error',
@@ -65,7 +65,6 @@ self.addEventListener('message', async (event) => {
                 data: requestId ? { text, requestId } : text,
             });
         } catch (err) {
-            console.error('Transcription error:', err);
             const message = err?.message || String(err);
             const requestId = data?.requestId;
             self.postMessage({

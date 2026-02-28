@@ -8,11 +8,17 @@ export interface ContentItem {
     subtitle?: string;
     period?: string;
     description?: string;
-    tags?: string[];
+    tags?: string[];  // Alias for tools
     tools?: string[]; // Alias for tags
     quote?: string;
     link?: string;
     contentHtml: string;
+    // Extended fields for About / Skills / Contact sections
+    category?: string;    // e.g. skill category like 'Languages', 'Cloud'
+    icon?: string;        // optional icon name hint
+    url?: string;         // contact/project URL
+    location?: string;    // used in experience entries
+    featured?: boolean;   // pin to top of grid
 }
 
 export interface Section {

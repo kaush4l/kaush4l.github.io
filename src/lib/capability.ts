@@ -21,10 +21,12 @@ export const MODELS = {
         default: 'Xenova/whisper-tiny.en',
     },
     tts: {
-        default: 'Xenova/mms-tts-eng',
+        // Supertone/supertonic-2: high-quality multi-speaker TTS, runs on CPU/WASM or WebGPU
+        default: 'Supertone/supertonic-2',
     },
     llm: {
-        default: 'mistralai/Ministral-3-3B-Instruct-2512-ONNX',
+        // Qwen3-0.6B: lightweight, fast, ONNX-optimised text-only model
+        default: 'onnx-community/Qwen3-0.6B-ONNX',
     },
 };
 
