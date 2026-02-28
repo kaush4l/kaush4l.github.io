@@ -15,19 +15,21 @@ let tokenizer = null;
 let model = null;
 let currentModelId = null;
 
-async function requireWebGPU() {
-    if (!navigator.gpu) {
-        throw new Error('WebGPU is required (navigator.gpu not available).');
+async function detectDevice() {
+    if (navigator.gpu) {
+        try {
+            const adapter = await navigator.gpu.requestAdapter();
+            if (adapter) return 'webgpu';
+        } catch {
+            // fall through
+        }
     }
-    const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) {
-        throw new Error('WebGPU is required (no adapter available).');
-    }
+    return 'wasm';
 }
 
 async function loadModel(modelId, progressCallback) {
-    await requireWebGPU();
-    console.log(`[LLM Worker] Loading ${modelId} on webgpu`);
+    const device = await detectDevice();
+    console.log(`[LLM Worker] Loading ${modelId} on ${device}`);
 
     const progressMap = new Map();
     const wrappedProgressCallback = (progress) => {
@@ -47,11 +49,12 @@ async function loadModel(modelId, progressCallback) {
         progress_callback: wrappedProgressCallback,
     });
 
-    // Qwen3-0.6B is text-only — load directly as CausalLM, no vision fallback.
-    // Use q4 (single merged ONNX, ~200 MB) to keep browser memory usage minimal.
+    // q4f16: 4-bit weights with fp16 activations — correct dtype for WebGPU (~200 MB).
+    // q8: 8-bit fallback for WASM when WebGPU is unavailable (~400 MB, no int4 WASM kernels).
+    const dtype = device === 'webgpu' ? 'q4f16' : 'q8';
     model = await AutoModelForCausalLM.from_pretrained(modelId, {
-        dtype: 'q4',
-        device: 'webgpu',
+        dtype,
+        device,
         progress_callback: wrappedProgressCallback,
     });
 
