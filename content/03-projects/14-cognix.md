@@ -1,12 +1,14 @@
 ---
 title: "Cognix"
-subtitle: "Productivity Suite"
+subtitle: "Self-Hosted Productivity Suite"
 period: "2024"
-tools: ["Next.js", "React", "TypeScript", "Full Stack"]
+tools: ["Next.js", "React", "TypeScript", "PostgreSQL", "Prisma", "NextAuth", "Docker"]
 link: "https://github.com/kaush4l/Cognix"
 ---
 
-A full-stack Next.js application designed for self-hosting and personal workflows.
+A self-hosted, privacy-first productivity suite built to replace fragmented SaaS tools with a single, owned application — notes, tasks, and knowledge management in one place.
 
-- **Self-Hosted:** Designed for privacy and control over personal data.
-- **Modern Stack:** Built with the latest Next.js features and TypeScript for type safety.
+- **Full-Stack Architecture:** Next.js App Router with server components for data fetching, server actions for mutations, and **Prisma ORM** over **PostgreSQL** for type-safe database access.
+- **Authentication:** Implemented credential and OAuth flows via **NextAuth v5**, with JWT session management and role-based access control protecting user data.
+- **Rich Text & Markdown Editor:** Integrated a Tiptap-based WYSIWYG editor with slash commands, code blocks, and real-time preview, supporting markdown shortcuts for power users.
+- **Docker Deployment:** Single `docker-compose up` deployment bundling Next.js, PostgreSQL, and a reverse proxy — enabling one-click self-hosting on any VPS or home server.

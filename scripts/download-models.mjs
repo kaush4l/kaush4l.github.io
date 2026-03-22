@@ -38,8 +38,8 @@ function selectorFn(selectorCsv) {
     if (selector.has('all')) return true;
     const mid = String(modelId).toLowerCase();
     if (selector.has('stt') && mid.includes('whisper')) return true;
-    if (selector.has('tts') && (mid.includes('tts') || mid.includes('mms') || mid.includes('supertonic') || mid.includes('supertone'))) return true;
-    if (selector.has('llm') && (mid.includes('onnx') || mid.includes('mistral') || mid.includes('ministral'))) return true;
+    if (selector.has('tts') && (mid.includes('tts') || mid.includes('mms') || mid.includes('kitten') || mid.includes('supertonic') || mid.includes('supertone'))) return true;
+    if (selector.has('llm') && (mid.includes('granite') || mid.includes('onnx') || mid.includes('mistral') || mid.includes('ministral'))) return true;
     return Array.from(selector).some(tok => mid.includes(tok));
   };
 }
@@ -121,63 +121,37 @@ async function main() {
       const lower = modelId.toLowerCase();
 
       if (lower.includes('whisper')) {
-        // STT
+        // STT — onnx-community/whisper-tiny uses fp16 ONNX files
         await pipeline('automatic-speech-recognition', modelId, {
           ...common,
           device: 'cpu',
+          dtype: { encoder_model: 'fp16', decoder_model_merged: 'fp16' },
         });
-      } else if (lower.includes('tts') || lower.includes('mms') || lower.includes('supertonic') || lower.includes('supertone')) {
-        // ── Supertone/supertonic-2 — custom 4-ONNX pipeline ─────────────────
-        // This model does NOT follow the standard HF tokenizer layout.
-        // Files live under onnx/ and voice_styles/ subdirectories.
-        if (lower.includes('supertonic') || lower.includes('supertone')) {
-          const baseUrl = `https://huggingface.co/${modelId}/resolve/main`;
-          const destRoot = path.join(cacheDir, modelId);
-
-          const files = [
-            'onnx/tts.json',
-            'onnx/unicode_indexer.json',
-            'onnx/duration_predictor.onnx',
-            'onnx/text_encoder.onnx',
-            'onnx/vector_estimator.onnx',
-            'onnx/vocoder.onnx',
-            'voice_styles/F1.json', 'voice_styles/F2.json', 'voice_styles/F3.json',
-            'voice_styles/F4.json', 'voice_styles/F5.json',
-            'voice_styles/M1.json', 'voice_styles/M2.json', 'voice_styles/M3.json',
-            'voice_styles/M4.json', 'voice_styles/M5.json',
-          ];
-
-          for (let i = 0; i < files.length; i++) {
-            const relPath = files[i];
-            const dest    = path.join(destRoot, relPath);
-            process.stdout.write(`\r[models] ${modelId} ${relPath} (${i + 1}/${files.length})  `);
-
-            if (!force && await exists(dest)) continue;
-
-            await fs.mkdir(path.dirname(dest), { recursive: true });
-            const res = await fetch(`${baseUrl}/${relPath}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status} downloading ${relPath}`);
-            await fs.writeFile(dest, Buffer.from(await res.arrayBuffer()));
+      } else if (lower.includes('kitten')) {
+        // TTS — KittenTTS StyleTTS2: download model files directly (not a transformers pipeline)
+        const hfBase = `https://huggingface.co/${modelId}/resolve/main`;
+        const destDir = path.join(cacheDir, modelId);
+        await fs.mkdir(destDir, { recursive: true });
+        await fs.mkdir(path.join(destDir, 'onnx'), { recursive: true });
+        const files = ['kitten_config.json', 'onnx/model.onnx', 'voices.npz'];
+        for (const file of files) {
+          const destPath = path.join(destDir, file);
+          if (!force && await exists(destPath)) {
+            console.log(`[models]   SKIP ${file} (exists)`);
+            continue;
           }
-          process.stdout.write('\n');
-
-        } else {
-          // Generic MMS/other TTS via transformers.js pipeline
-          await pipeline('text-to-speech', modelId, { ...common, device: 'cpu' });
-
-          // Stub preprocessor_config.json — Transformers.js 3.x requires it locally
-          // even for VITS/MMS models that have no feature extractor in their HF repo.
-          const preprocessorPath = path.join(cacheDir, modelId, 'preprocessor_config.json');
-          if (!await exists(preprocessorPath)) {
-            await fs.writeFile(
-              preprocessorPath,
-              JSON.stringify({ processor_class: 'VitsTokenizer', tokenizer_class: 'VitsTokenizer' }, null, 2) + '\n',
-              'utf-8'
-            );
-          }
+          console.log(`[models]   Downloading ${file}…`);
+          const r = await fetch(`${hfBase}/${file}`);
+          if (!r.ok) throw new Error(`HTTP ${r.status} for ${file}`);
+          const buf = await r.arrayBuffer();
+          await fs.writeFile(destPath, Buffer.from(buf));
+          process.stdout.write(`\r[models] ${modelId} ${file} done   \n`);
         }
+      } else if (lower.includes('mms') || lower.includes('vits') || lower.includes('tts')) {
+        // TTS — VITS/MMS text-to-speech pipeline
+        await pipeline('text-to-speech', modelId, { ...common, device: 'cpu', dtype: 'fp32' });
       } else {
-        // LLM — text-only causal model (e.g. Qwen3-0.6B-ONNX)
+        // LLM — text-only causal model (Granite, Qwen, etc.)
         await AutoTokenizer.from_pretrained(modelId, common);
         await AutoModelForCausalLM.from_pretrained(modelId, {
           ...common,

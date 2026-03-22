@@ -3,11 +3,12 @@ title: "Full Stack Software Engineer"
 subtitle: "DHHS NC (DataForce Inc)"
 period: "Jan 2025 - March 2025"
 location: "Raleigh, NC"
-tools: ["Curam", "Java", "Enterprise Systems"]
+tools: ["Curam", "Java", "IBM WebSphere", "SQL", "XML", "COBOL Integration"]
 ---
 
-Contributed to the North Carolina Department of Health and Human Services (DHHS) eligibility systems.
+Delivered rapid enhancements to the North Carolina DHHS Medicaid eligibility and benefits administration platform serving millions of state residents.
 
-- **System Development:** Leveraged the **Curam framework** for feature development and system enhancements.
-- **Documentation:** Authored comprehensive technical documentation for system architecture and business logic.
-- **Release Management:** Managed release tasks and project handovers for critical system updates.
+- **Curam Social Program Management:** Developed and extended eligibility rules, case management workflows, and benefit calculation modules using **IBM Curam SPM**, with custom **Java** extensions and **SQL** tuning for large-scale citizen datasets.
+- **Legacy Integration:** Bridged modernisation gaps by writing adapter layers between the Curam platform and COBOL batch systems, enabling incremental migration without service disruption.
+- **Technical Documentation:** Authored detailed architecture decision records, API contracts, and runbook procedures to support ongoing platform maintenance and knowledge transfer.
+- **Rapid Delivery:** Shipped production-ready regulatory compliance features on a compressed 3-month contract, coordinating with state agency product owners to prioritise by citizen impact.

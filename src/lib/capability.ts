@@ -18,15 +18,16 @@ export interface CapabilityResult {
 
 export const MODELS = {
     stt: {
-        default: 'Xenova/whisper-tiny.en',
+        // whisper-tiny f16 — fast multilingual ASR, small footprint on WebGPU
+        default: 'onnx-community/whisper-tiny',
     },
     tts: {
-        // Supertone/supertonic-2: high-quality multi-speaker TTS, runs on CPU/WASM or WebGPU
-        default: 'Supertone/supertonic-2',
+        // KittenTTS Nano — StyleTTS2, 15M params, 24 kHz, direct ONNX Runtime (no transformers pipeline)
+        default: 'onnx-community/KittenTTS-Nano-v0.8-ONNX',
     },
     llm: {
-        // Qwen3-0.6B: lightweight, fast, ONNX-optimised text-only model
-        default: 'onnx-community/Qwen3-0.6B-ONNX',
+        // Granite 4.0 350M — IBM's web-optimised ONNX causal LM (q4f16)
+        default: 'onnx-community/granite-4.0-350m-ONNX-web',
     },
 };
 

@@ -1,16 +1,16 @@
 {
   "models": [
     {
-      "id": "Xenova/whisper-tiny.en",
-      "localDir": "public/models/Xenova/whisper-tiny.en"
+      "id": "onnx-community/whisper-tiny",
+      "localDir": "public/models/onnx-community/whisper-tiny"
     },
     {
-      "id": "Supertone/supertonic-2",
-      "localDir": "public/models/Supertone/supertonic-2"
+      "id": "onnx-community/KittenTTS-Nano-v0.8-ONNX",
+      "localDir": "public/models/onnx-community/KittenTTS-Nano-v0.8-ONNX"
     },
     {
-      "id": "onnx-community/Qwen3-0.6B-ONNX",
-      "localDir": "public/models/onnx-community/Qwen3-0.6B-ONNX"
+      "id": "onnx-community/granite-4.0-350m-ONNX-web",
+      "localDir": "public/models/onnx-community/granite-4.0-350m-ONNX-web"
     }
   ]
 }

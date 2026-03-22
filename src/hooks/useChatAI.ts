@@ -84,6 +84,8 @@ export interface UseChatAIReturn {
     clearChat: () => void;
     startRecording: () => Promise<void>;
     stopRecording: () => void;
+    stopTTS: () => void;
+    isSpeaking: boolean;
 
     // Scroll refs
     scrollContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -117,6 +119,8 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
     const audioContextRef = useRef<AudioContext | null>(null);
     const audioQueueRef = useRef<Array<{ audio: Float32Array; sampleRate: number }>>([]);
     const audioPlayingRef = useRef(false);
+    const activeSourceRef = useRef<AudioBufferSourceNode | null>(null);
+    const [isSpeaking, setIsSpeaking] = useState(false);
 
     // Recording
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -139,6 +143,9 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
             // Stop any active recording and release the mic
             try { mediaRecorderRef.current?.stop(); } catch { /* ignore */ }
             mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+            // Stop any active TTS audio
+            try { activeSourceRef.current?.stop(); } catch { /* ignore */ }
+            activeSourceRef.current = null;
             // Close shared playback AudioContext
             audioContextRef.current?.close().catch(() => {});
             // Clear pending UI flush timer
@@ -160,11 +167,15 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
 
     // ── Audio Playback ────────────────────────────────────────────────────────
     const playNextAudio = useCallback(async () => {
-        if (audioPlayingRef.current || audioQueueRef.current.length === 0) return;
+        if (audioPlayingRef.current || audioQueueRef.current.length === 0) {
+            if (!audioPlayingRef.current) setIsSpeaking(false);
+            return;
+        }
         audioPlayingRef.current = true;
+        setIsSpeaking(true);
 
         const chunk = audioQueueRef.current.shift();
-        if (!chunk?.audio) { audioPlayingRef.current = false; return; }
+        if (!chunk?.audio) { audioPlayingRef.current = false; setIsSpeaking(false); return; }
 
         try {
             if (!audioContextRef.current) {
@@ -177,17 +188,28 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
             buffer.getChannelData(0).set(chunk.audio);
 
             const source = ctx.createBufferSource();
+            activeSourceRef.current = source;
             source.buffer = buffer;
             source.playbackRate.value = DEFAULT_TTS_PLAYBACK_RATE;
             source.connect(ctx.destination);
             source.onended = () => {
+                activeSourceRef.current = null;
                 audioPlayingRef.current = false;
                 void playNextAudio();
             };
             source.start();
         } catch {
             audioPlayingRef.current = false;
+            setIsSpeaking(false);
         }
+    }, []);
+
+    const stopTTS = useCallback(() => {
+        try { activeSourceRef.current?.stop(); } catch { /* ignore */ }
+        activeSourceRef.current = null;
+        audioQueueRef.current = [];
+        audioPlayingRef.current = false;
+        setIsSpeaking(false);
     }, []);
 
     // ── TextStreamAccumulator → TTS ───────────────────────────────────────────
@@ -361,6 +383,11 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
 
     // ── Clear ─────────────────────────────────────────────────────────────────
     const clearChat = useCallback(() => {
+        try { activeSourceRef.current?.stop(); } catch { /* ignore */ }
+        activeSourceRef.current = null;
+        audioQueueRef.current = [];
+        audioPlayingRef.current = false;
+        setIsSpeaking(false);
         setMessages([]);
         setStreamingContent('');
         setLiveTranscript('');
@@ -369,7 +396,6 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
         activeLlmRequestIdRef.current = null;
         activeTtsRequestIdRef.current = null;
         streamAccumulatorRef.current?.reset?.();
-        audioQueueRef.current = [];
     }, []);
 
     // ── Recording ─────────────────────────────────────────────────────────────
@@ -451,6 +477,7 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
         isRecording,
         liveTranscript,
         ttsEnabled,
+        isSpeaking,
         input,
         setInput,
         setTtsEnabled,
@@ -459,6 +486,7 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
         clearChat,
         startRecording,
         stopRecording,
+        stopTTS,
         scrollContainerRef,
         messagesEndRef,
         shouldAutoScrollRef,

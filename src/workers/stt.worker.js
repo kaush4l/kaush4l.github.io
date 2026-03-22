@@ -1,5 +1,6 @@
 /**
- * STT Web Worker — Whisper tiny EN (plug-in upgradeable)
+ * STT Web Worker — Whisper tiny (plug-in upgradeable)
+ * Uses WebGPU when available, falls back to WASM for broad compatibility.
  * Model ID is passed in the 'load' message — swap any ASR model without rebuilding.
  */
 import { pipeline } from '@huggingface/transformers';
@@ -9,14 +10,14 @@ const { localModelPath } = configureTransformersEnv();
 
 let sttPipeline = null;
 
-async function requireWebGPU() {
-    if (!navigator.gpu) {
-        throw new Error('WebGPU is required (navigator.gpu not available).');
+async function detectDevice() {
+    if (typeof navigator !== 'undefined' && navigator.gpu) {
+        try {
+            const adapter = await navigator.gpu.requestAdapter();
+            if (adapter) return 'webgpu';
+        } catch { /* fall through */ }
     }
-    const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) {
-        throw new Error('WebGPU is required (no adapter available).');
-    }
+    return 'wasm';
 }
 
 self.addEventListener('message', async (event) => {
@@ -26,17 +27,23 @@ self.addEventListener('message', async (event) => {
         try {
             self.postMessage({ type: 'progress', data: { status: 'loading', progress: 0 } });
 
-            await requireWebGPU();
-            const modelId = data?.model ?? 'Xenova/whisper-tiny.en';
+            const modelId = data?.model ?? 'onnx-community/whisper-tiny';
+            const device = await detectDevice();
+            // fp16 on WebGPU for speed; fp32 on WASM for broad hardware compatibility.
+            const dtype = device === 'webgpu'
+                ? { encoder_model: 'fp16', decoder_model_merged: 'fp16' }
+                : { encoder_model: 'fp32', decoder_model_merged: 'fp32' };
 
+            console.log(`[STT Worker] Loading ${modelId} on ${device}`);
             sttPipeline = await pipeline('automatic-speech-recognition', modelId, {
-                device: 'webgpu',
-                dtype: 'fp32',
+                device,
+                dtype,
                 progress_callback: (progress) => {
                     self.postMessage({ type: 'progress', data: progress });
                 },
             });
 
+            console.log(`[STT Worker] Loaded ${modelId}`);
             self.postMessage({ type: 'ready' });
         } catch (err) {
             const message = err?.message || String(err);

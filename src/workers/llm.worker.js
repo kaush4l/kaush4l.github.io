@@ -1,5 +1,5 @@
 /**
- * LLM Web Worker — Qwen3-0.6B-ONNX (text-only, plug-in upgradeable)
+ * LLM Web Worker — granite-4.0-350m-ONNX-web (text-only, plug-in upgradeable)
  * Model ID is passed in the 'load' message — swap any text-gen model without rebuilding.
  */
 import {
@@ -86,11 +86,10 @@ self.addEventListener('message', async (event) => {
 
             const { messages, requestId } = data || {};
 
-            // Qwen3 chat template; enable_thinking=false for voice-first latency
+            // Apply chat template for conversational generation
             const prompt = tokenizer.apply_chat_template(messages, {
                 add_generation_prompt: true,
                 tokenize: false,
-                enable_thinking: false,
             });
 
             const inputs = await tokenizer(prompt, { add_special_tokens: false });

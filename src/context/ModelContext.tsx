@@ -130,15 +130,6 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
         // Single-flight: if a load is already in progress, reuse it.
         if (autoLoadPromiseRef.current) return autoLoadPromiseRef.current;
 
-        // Target only modern WebGPU browsers.
-        if (typeof navigator !== 'undefined' && !('gpu' in navigator)) {
-            const message = 'WebGPU is required to run the on-device models (supported in latest Chrome/Edge).';
-            setStt((prev) => (prev.error ? prev : { ready: false, loading: false, progress: 0, error: message }));
-            setTts((prev) => (prev.error ? prev : { ready: false, loading: false, progress: 0, error: message }));
-            setLlm((prev) => (prev.error ? prev : { ready: false, loading: false, progress: 0, error: message }));
-            throw new Error(message);
-        }
-
         autoLoadPromiseRef.current = (async () => {
             console.log('Auto-loading all models in parallel...');
 
