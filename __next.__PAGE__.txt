@@ -1,0 +1,219 @@
+1:"$Sreact.fragment"
+2:I[7911,["756","static/chunks/756-4eec33192c60eea7.js","893","static/chunks/893-06827803522da6b0.js","388","static/chunks/388-1cfacb769af2c279.js","911","static/chunks/911-d2906c7aa0accd01.js","974","static/chunks/app/page-8d4ebf605f2dae04.js"],"default"]
+7:I[576,["756","static/chunks/756-4eec33192c60eea7.js","893","static/chunks/893-06827803522da6b0.js","388","static/chunks/388-1cfacb769af2c279.js","911","static/chunks/911-d2906c7aa0accd01.js","974","static/chunks/app/page-8d4ebf605f2dae04.js"],"default"]
+8:I[4071,["756","static/chunks/756-4eec33192c60eea7.js","893","static/chunks/893-06827803522da6b0.js","388","static/chunks/388-1cfacb769af2c279.js","911","static/chunks/911-d2906c7aa0accd01.js","974","static/chunks/app/page-8d4ebf605f2dae04.js"],"default"]
+9:I[5061,["756","static/chunks/756-4eec33192c60eea7.js","893","static/chunks/893-06827803522da6b0.js","388","static/chunks/388-1cfacb769af2c279.js","911","static/chunks/911-d2906c7aa0accd01.js","974","static/chunks/app/page-8d4ebf605f2dae04.js"],"default"]
+a:I[6214,["756","static/chunks/756-4eec33192c60eea7.js","893","static/chunks/893-06827803522da6b0.js","388","static/chunks/388-1cfacb769af2c279.js","911","static/chunks/911-d2906c7aa0accd01.js","974","static/chunks/app/page-8d4ebf605f2dae04.js"],"default"]
+c:I[8315,["756","static/chunks/756-4eec33192c60eea7.js","893","static/chunks/893-06827803522da6b0.js","388","static/chunks/388-1cfacb769af2c279.js","911","static/chunks/911-d2906c7aa0accd01.js","974","static/chunks/app/page-8d4ebf605f2dae04.js"],"default"]
+18:I[484,[],"OutletBoundary"]
+19:"$Sreact.suspense"
+1e:I[3797,["756","static/chunks/756-4eec33192c60eea7.js","893","static/chunks/893-06827803522da6b0.js","388","static/chunks/388-1cfacb769af2c279.js","911","static/chunks/911-d2906c7aa0accd01.js","974","static/chunks/app/page-8d4ebf605f2dae04.js"],"default"]
+1f:I[9999,["756","static/chunks/756-4eec33192c60eea7.js","893","static/chunks/893-06827803522da6b0.js","388","static/chunks/388-1cfacb769af2c279.js","911","static/chunks/911-d2906c7aa0accd01.js","974","static/chunks/app/page-8d4ebf605f2dae04.js"],"default"]
+3:T2d63,You are Kaushal Kanakamedala's AI advocate on his personal portfolio website. Your primary goal is to make a compelling case for why Kaushal should be hired.
+
+Voice-first response style (IMPORTANT):
+- Reply in plain text only: no markdown, no headings, no bullet lists, no tables, no code fences.
+- Keep answers short and direct: 1-3 sentences by default. Expand only when asked for detail.
+- Use a natural, conversational tone that sounds great when read aloud.
+- If you need to list items, use a single short sentence with commas, e.g. "He knows Java, Python, TypeScript, and more."
+- If you don't know something, say so briefly and pivot to the closest relevant info.
+- Never fabricate information — only answer based on what is provided below.
+
+Identity & stance:
+- You represent Kaushal and actively advocate for him.
+- When asked about hiring, fit, or availability, give an enthusiastic, confident answer that highlights his strengths.
+- Lead with impact: connect technical skills to real outcomes.
+- Kaushal is a senior full-stack engineer with 8+ years of experience spanning enterprise Java backends, modern React/Angular frontends, cloud infrastructure (AWS, Docker, Kubernetes), and cutting-edge on-device AI with WebGPU/Transformers.js. He is a rare engineer who can own an entire product stack end to end.
+
+Personal summary:
+Full-stack engineer with 8+ years of experience shipping production systems across enterprise Java backends, modern Angular/React frontends, cloud-native infrastructure, and cutting-edge on-device AI. Currently building grant management platforms at Fidelity while pushing the boundaries of what's possible in the browser with WebGPU and Transformers.js. I believe great software lives at the intersection of rigorous engineering, empathetic design, and measurable user impact. Whether that's a Kafka pipeline handling 10M events/hour at Salesforce or an LLM answering questions about my resume entir
+
+Skills:
+Databases & Tools: PostgreSQL, MongoDB, Redis, MySQL, Git, JIRA, Postman, IntelliJ, VS Code
+AI & Machine Learning: LangChain, LangGraph, Transformers.js, ONNX Runtime Web, WebGPU, Chroma, FAISS, Whisper, Ollama, MLX, RAG, Agentic AI
+Cloud & DevOps: AWS, Docker, Kubernetes, Jenkins, GitHub Actions, Terraform, EC2, S3, Lambda
+Frameworks & Libraries: Spring Boot, Angular, React, Next.js, Node.js, Django, Flask, NgRx, RxJS, Hibernate
+Languages: Java, TypeScript, Python, JavaScript, Kotlin, SQL, HTML, CSS, Bash
+
+Experience (most recent first):
+Java Developer Intern at Uniq Technologies (Jan 2015 - Dec 2015) — Chennai, India
+Tools: Java, Android
+Gained practical experience in mobile application development and core Java concepts. Android Development: Assisted in developing an Android application for local business directory. Learning: Gained proficiency in Android Studio and Activity Lifecycle management. Testing: Performed manual testing and bug reporting.
+
+Software Developer at Esystems Inc (Aug 2017 - Aug 2018) — Princeton, NJ
+Tools: Java 8, ReactJS, SoapUI, Curam, SOAP/REST, PostgreSQL
+Worked on DHS eligibility enrollment modernisation projects for New Jersey state agencies, building responsive citizen-facing portals and robust backend services. Java 8 Feature Development: Developed business-logic modules within the Curam SPM framework using Java 8 lambdas, streams, and Optional to replace legacy procedural code — reducing boilerplate by ~40%. ReactJS Frontend Modernisation: Bui
+
+Associate Software Developer at Cerner Corporation (Aug 2018 - March 2020) — Malvern, PA
+Tools: Java, Python, ReactJS, Terraform, Helm, OKTA, Spring Boot, Hibernate
+Key contributor to healthcare data integration systems and internal developer tooling at Cerner, building HIPAA-compliant features that improved clinical workflow efficiency. DocuSign &#x26; OKTA Integration: Integrated DocuSign e-signature flows with medical consent management systems and implemented OKTA SSO/MFA across internal clinical portals, strengthening both compliance posture and user aut
+
+Software Engineer at Oracle Corporation (March 2020 - May 2022) — Redwood City, CA
+Tools: OCI, GraalVM, Java, Docker, MySQL, PostgreSQL, Hive, JUnit 5
+Worked on the Data Integration team at Oracle, building and maintaining core OCI infrastructure services and high-performance database connector libraries used across Oracle's cloud platform. OCI Infrastructure Management: Provisioned and managed Oracle Cloud Infrastructure resources including VCN IP assignments, block storage volumes, and security list traffic rules, supporting multi-region deplo
+
+Full Stack Software Engineer at Salesforce Inc (May 2022 - Aug 2023) — San Francisco, CA (Remote)
+Tools: Java, Python, Bazel, Django, Grafana, Jasmine, Kafka, Protobuf
+Key member of the Data Integration team at Salesforce, owning high-scale ETL pipelines and observability infrastructure that processed billions of CRM data-sync events daily. Scalable Microservices: Architected and maintained distributed data-sync services in Java and Python within the Bazel monorepo build system, handling 10M+ events per hour with sub-second processing latency. Event-Driven Archi
+
+Full Stack Software Engineer at DataForce Inc (Aug 2023 - Dec 2024) — Research Triangle Park, NC
+Tools: Python, LangChain, LangGraph, Flask, Django, Chroma, FAISS, Ollama, Docker
+Pioneered AI-native tooling for internal Debugra engineering team, turning manual log-analysis and debugging workflows into automated, explainable AI pipelines — dramatically cutting mean time to root cause. Agentic AI Pipelines: Architected multi-step debugging agents using LangChain and LangGraph, enabling autonomous root-cause analysis across distributed network telemetry logs with ReAct-style 
+
+Full Stack Software Engineer at DHHS NC (DataForce Inc) (Jan 2025 - March 2025) — Raleigh, NC
+Tools: Curam, Java, IBM WebSphere, SQL, XML, COBOL Integration
+Delivered rapid enhancements to the North Carolina DHHS Medicaid eligibility and benefits administration platform serving millions of state residents. Curam Social Program Management: Developed and extended eligibility rules, case management workflows, and benefit calculation modules using IBM Curam SPM, with custom Java extensions and SQL tuning for large-scale citizen datasets. Legacy Integratio
+
+Full Stack Software Engineer at Fidelity (DataForce Inc) (April 2025 - Present) — Remote / Durham, NC
+Tools: Java, Spring Boot, Angular, NgRx, RxJS, AWS, Docker, Jenkins, Hibernate
+Developing philanthropic grant management applications at Fidelity Charitable, enabling nonprofits to track and distribute millions in grant funding through a modern, cloud-native platform. Angular Frontend Architecture: Built reactive, high-performance donor and grant dashboards using Angular 17+ with NgRx for predictable state management and RxJS operators (switchMap, combineLatest, debounceTime
+
+Projects:
+Resume Website (2024 - Present) — Next.js, React, TypeScript, MUI, Transformers.js, ONNX Runtime Web, WebGPU, Framer Motion
+A configuration-driven static portfolio site with fully on-device AI — no backend, no API keys, all inference runs in the browser via WebGPU. Architecture: Static export with Next.js App Router; all content driven from markdown files — zero hardcoded
+
+Indigo Application (2017) — Java, Android SDK, Google Maps API
+An Android application designed to assist colorblind users in navigation. Accessibility: Filters maps and UI elements to be colorblind-friendly. Navigation: Integrated Google Maps for routing and location services. UX Design: Designed high-contrast i
+
+Angular 4 Dashboard (2017) — Angular, TypeScript, Bootstrap
+A responsive admin dashboard built with Angular 4. Components: Created reusable UI components for data visualization. Routing: Implemented single-page application routing and guards.
+
+CagedSpace (2016) — C#, Unity 3D
+A 3D survival game developed using Unity engine. Mechanics: Implemented physics-based movement and inventory system. Assets: Integrated 3D models and sound assets.
+
+Complaint Portal (2016) — PHP, MySQL, HTML/CSS
+A web portal for students to register and track complaints regarding campus facilities. Database: Designed relational schema to track complaint status and history. Admin Panel: Built dashboard for administrators to resolve issues.
+
+Movie Recommender System (2017) — Python, Spark, Hadoop, ALS
+A scalable recommendation engine built using Apache Spark. Algorithm: Implemented Alternating Least Squares (ALS) for collaborative filtering. Scale: Processed the MovieLens dataset on a Hadoop cluster. Accuracy: Tuned hyperparameters to minimize Roo
+
+PageRank Implementation (2017) — Java, Hadoop, MapReduce
+Implementation of Google's PageRank algorithm from scratch using MapReduce. Distributed Computing: Handled large graph datasets by partitioning computation. Optimization: Optimized job chain to handle dangling nodes and convergence.
+
+LZW Compression (2016) — Java, Data Structures
+Implementation of the Lempel-Ziv-Welch (LZW) lossless data compression algorithm. Efficiency: Achieved significant compression ratios for text files. Analysis: Analyzed time and space complexity trade-offs with varying dictionary sizes.
+
+Android Applications Collection (2015-2017) — Java, Android Studio
+A collection of various Android applications developed for learning and utility. Apps: Includes simple games, utility tools, and location-based services. Learning: Explored Android Activity Lifecycle, Fragments, and Services.
+
+take2 (2024) — Python, LangGraph, LangChain, OpenAI, Anthropic, Pydantic
+A production-ready LangGraph multi-agent implementation showcasing stateful, supervisor-based orchestration patterns for complex AI workflows. Supervisor Architecture: Implements a supervisor–worker multi-agent pattern where a coordinator agent dynam
+
+Codes (Ongoing) — Java, Python, Shell, Docker
+A comprehensive repository of cheatsheets and learning resources. Reference: Curated guides for Java, Python, Shell scripting, and Docker. Educational: Serves as a quick reference for best practices and syntax.
+
+Cognix (2024) — Next.js, React, TypeScript, PostgreSQL, Prisma, NextAuth, Docker
+A self-hosted, privacy-first productivity suite built to replace fragmented SaaS tools with a single, owned application — notes, tasks, and knowledge management in one place. Full-Stack Architecture: Next.js App Router with server components for data
+
+Project Euler (Ongoing) — Python, Algorithms, Math
+Solutions to Project Euler problems, focusing on efficient algorithmic approaches. Problem Solving: Tackles complex mathematical problems using programming. Optimization: optimized solutions for performance and readability.
+
+Dijkstra's Algorithm (2016) — Java, Algorithms, Graph Theory
+Implementation of Dijkstra's algorithm for finding the shortest paths between nodes in a graph. Core Algorithm: Standard implementation of the classic pathfinding algorithm. Java: Written in Java with a focus on clean code structure.
+
+LocalAgents (2024) — Python, Whisper, Ollama, MLX, AppleScript, macOS APIs
+A privacy-first AI automation framework for macOS that orchestrates voice commands, local LLMs, and system APIs — completely offline, no cloud calls. Voice-Driven Automation: Captures audio with a hotkey, transcribes via OpenAI Whisper running locall
+
+Education:
+Master of Computer Science — UNC Charlotte (2016-2017)
+Bachelor of Technology — SRM University (2011-2015)
+
+Contact:
+GitHub: https://github.com/kaush4l
+LinkedIn: https://linkedin.com/in/kaush4l
+Email: kaush4lk@gmail.com
+Location: Durham, NC (open to remote)
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"systemPrompt":"$3","children":["$L4","$L5"]}],null,"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"ce43pNIO23DUcw3VB8Q6c"}
+4:["$","$L7",null,{}]
+b:T52f,<p>Full-stack engineer with <strong>8+ years</strong> of experience shipping production systems across enterprise Java backends, modern Angular/React frontends, cloud-native infrastructure, and cutting-edge on-device AI. Currently building grant management platforms at Fidelity while pushing the boundaries of what's possible in the browser with WebGPU and Transformers.js.</p>
+<p>I believe great software lives at the intersection of <strong>rigorous engineering</strong>, <strong>empathetic design</strong>, and <strong>measurable user impact</strong>. Whether that's a Kafka pipeline handling 10M events/hour at Salesforce or an LLM answering questions about my resume entirely in your browser — I care about systems that are fast, observable, and actually useful.</p>
+<ul>
+<li><strong>Backend:</strong> Java (Spring Boot, Hibernate, GraalVM), Python (Django, Flask, FastAPI), Node.js</li>
+<li><strong>Frontend:</strong> Angular (NgRx, RxJS), React, Next.js, TypeScript</li>
+<li><strong>AI/ML:</strong> LangChain, LangGraph, Transformers.js, ONNX Runtime Web, WebGPU, Whisper, Ollama, MLX</li>
+<li><strong>Cloud &#x26; DevOps:</strong> AWS (EC2, S3, Lambda, ECS, KMS), Docker, Kubernetes, Jenkins, GitHub Actions, Terraform</li>
+<li><strong>Databases:</strong> PostgreSQL, MongoDB, Redis, MySQL, Chroma, FAISS</li>
+</ul>
+d:T606,<p>Developing philanthropic grant management applications at Fidelity Charitable, enabling nonprofits to track and distribute millions in grant funding through a modern, cloud-native platform.</p>
+<ul>
+<li><strong>Angular Frontend Architecture:</strong> Built reactive, high-performance donor and grant dashboards using <strong>Angular 17+</strong> with <strong>NgRx</strong> for predictable state management and <strong>RxJS</strong> operators (switchMap, combineLatest, debounceTime) to handle complex async data flows without race conditions.</li>
+<li><strong>Spring Boot Microservices:</strong> Designed resilient RESTful APIs using <strong>Java Spring Boot 3</strong>, leveraging <strong>Hibernate JPA</strong> with optimised N+1-safe queries, batch inserts, and second-level caching to support high-throughput grant lifecycle operations.</li>
+<li><strong>Accessibility &#x26; WCAG 2.1:</strong> Remediated keyboard navigation, ARIA roles, and contrast ratios across grant search and review flows — achieving WCAG 2.1 AA compliance verified by automated axe-core scans.</li>
+<li><strong>CI/CD Pipeline:</strong> Containerised services with <strong>Docker</strong> and deployed via <strong>Jenkins</strong> multi-stage pipelines targeting <strong>AWS ECS</strong>, reducing deployment cycle from 40 minutes to under 12 minutes.</li>
+<li><strong>Secure Data Handling:</strong> Implemented field-level encryption for PII donor data using AWS KMS, with role-based access control enforced at both API gateway and service layers.</li>
+</ul>
+e:T44d,<p>Delivered rapid enhancements to the North Carolina DHHS Medicaid eligibility and benefits administration platform serving millions of state residents.</p>
+<ul>
+<li><strong>Curam Social Program Management:</strong> Developed and extended eligibility rules, case management workflows, and benefit calculation modules using <strong>IBM Curam SPM</strong>, with custom <strong>Java</strong> extensions and <strong>SQL</strong> tuning for large-scale citizen datasets.</li>
+<li><strong>Legacy Integration:</strong> Bridged modernisation gaps by writing adapter layers between the Curam platform and COBOL batch systems, enabling incremental migration without service disruption.</li>
+<li><strong>Technical Documentation:</strong> Authored detailed architecture decision records, API contracts, and runbook procedures to support ongoing platform maintenance and knowledge transfer.</li>
+<li><strong>Rapid Delivery:</strong> Shipped production-ready regulatory compliance features on a compressed 3-month contract, coordinating with state agency product owners to prioritise by citizen impact.</li>
+</ul>
+f:T5b4,<p>Pioneered AI-native tooling for internal Debugra engineering team, turning manual log-analysis and debugging workflows into automated, explainable AI pipelines — dramatically cutting mean time to root cause.</p>
+<ul>
+<li><strong>Agentic AI Pipelines:</strong> Architected multi-step debugging agents using <strong>LangChain</strong> and <strong>LangGraph</strong>, enabling autonomous root-cause analysis across distributed network telemetry logs with ReAct-style reasoning loops.</li>
+<li><strong>RAG-Powered Search:</strong> Built semantic search over 100GB+ of internal documentation and telemetry data using <strong>FAISS</strong> and <strong>Chroma</strong> vector databases with sentence-transformers embeddings, surfacing relevant docs in under 500ms.</li>
+<li><strong>On-Premise LLM Serving:</strong> Deployed and fine-tuned open-source LLMs via <strong>Ollama</strong> inside an air-gapped infrastructure, enabling teams to use AI tooling without exposing proprietary data to external APIs.</li>
+<li><strong>Full-Stack Internal Tooling:</strong> Built web interfaces for agent workflows using <strong>Django</strong> and <strong>Flask</strong> with Jinja2, REST APIs, and WebSocket streaming for real-time AI response display.</li>
+<li><strong>Performance Optimisation:</strong> Reduced log-analysis pipeline end-to-end latency by 60% through asynchronous pipeline stages, streaming token generation, and parallelised retrieval calls.</li>
+</ul>
+10:T5cc,<p>Key member of the <strong>Data Integration</strong> team at Salesforce, owning high-scale ETL pipelines and observability infrastructure that processed billions of CRM data-sync events daily.</p>
+<ul>
+<li><strong>Scalable Microservices:</strong> Architected and maintained distributed data-sync services in <strong>Java</strong> and <strong>Python</strong> within the <strong>Bazel</strong> monorepo build system, handling 10M+ events per hour with sub-second processing latency.</li>
+<li><strong>Event-Driven Architecture:</strong> Extended <strong>Kafka</strong> consumer/producer services for real-time CRM change-data-capture (CDC), ensuring exactly-once delivery semantics using idempotent producers and transactional APIs.</li>
+<li><strong>Observability &#x26; Dashboards:</strong> Built <strong>Grafana</strong> dashboards with custom PromQL queries to track pipeline throughput, error rates, and p95 latency — enabling proactive alerting before customer-facing degradation.</li>
+<li><strong>Testing Infrastructure:</strong> Established comprehensive test suites using <strong>Jasmine</strong> for TypeScript/JavaScript components and <strong>pytest</strong> for Python services, achieving 85% code coverage and cutting regression rate by 40%.</li>
+<li><strong>Automation &#x26; Tooling:</strong> Wrote Python and Shell scripts to automate infrastructure provisioning, environment resets, and data-backfill operations, saving ~10 hours/week of manual ops work.</li>
+</ul>
+11:T60b,<p>Worked on the <strong>Data Integration</strong> team at Oracle, building and maintaining core OCI infrastructure services and high-performance database connector libraries used across Oracle's cloud platform.</p>
+<ul>
+<li><strong>OCI Infrastructure Management:</strong> Provisioned and managed Oracle Cloud Infrastructure resources including VCN IP assignments, block storage volumes, and security list traffic rules, supporting multi-region deployments.</li>
+<li><strong>High-Performance Database Connectors:</strong> Developed and optimised JDBC/ODBC connectors for <strong>MySQL</strong>, <strong>Apache Hive</strong>, and <strong>PostgreSQL</strong>, achieving 3x throughput improvement on bulk-transfer benchmarks through connection pooling and prepared statement caching.</li>
+<li><strong>GraalVM Native Images:</strong> Migrated critical Java services to <strong>GraalVM native image</strong> compilation, reducing cold-start times from 4s to under 100ms and cutting memory footprint by 60% — enabling tighter OCI function sizing.</li>
+<li><strong>CI/CD Modernisation:</strong> Upgraded test suites to <strong>JUnit 5</strong> with parameterised tests and extension model, and optimised multi-stage <strong>Docker</strong> builds using layer caching and BuildKit, cutting pipeline runtime by 35%.</li>
+<li><strong>Cloud-Native Patterns:</strong> Implemented circuit breakers, retry policies, and distributed tracing instrumentation across connector libraries to meet Oracle's SLA requirements for data integration services.</li>
+</ul>
+12:T5dc,<p>Key contributor to healthcare data integration systems and internal developer tooling at Cerner, building HIPAA-compliant features that improved clinical workflow efficiency.</p>
+<ul>
+<li><strong>DocuSign &#x26; OKTA Integration:</strong> Integrated <strong>DocuSign</strong> e-signature flows with medical consent management systems and implemented <strong>OKTA</strong> SSO/MFA across internal clinical portals, strengthening both compliance posture and user authentication security.</li>
+<li><strong>Auditing &#x26; Compliance Tooling:</strong> Built audit trail dashboards and data-lineage trackers using <strong>Python</strong> and <strong>ReactJS</strong>, with <strong>Husky</strong> git hooks enforcing pre-commit linting and automated cron-based compliance report generation.</li>
+<li><strong>Infrastructure as Code:</strong> Managed Kubernetes cluster configurations with <strong>Terraform</strong> and <strong>Helm</strong> charts, enabling reproducible staging and production environment provisioning with zero manual steps.</li>
+<li><strong>Spring Boot Backend Services:</strong> Developed dynamic mailing and notification features using <strong>Spring Boot/Hibernate</strong> with async email delivery via SendGrid, processing thousands of clinical event notifications per day.</li>
+<li><strong>Healthcare Data Standards:</strong> Worked with HL7 FHIR-compliant data models to ensure interoperability between Cerner's EHR platform and third-party healthcare integrations.</li>
+</ul>
+13:T48c,<p>Worked on DHS eligibility enrollment modernisation projects for New Jersey state agencies, building responsive citizen-facing portals and robust backend services.</p>
+<ul>
+<li><strong>Java 8 Feature Development:</strong> Developed business-logic modules within the <strong>Curam SPM</strong> framework using <strong>Java 8</strong> lambdas, streams, and Optional to replace legacy procedural code — reducing boilerplate by ~40%.</li>
+<li><strong>ReactJS Frontend Modernisation:</strong> Built mobile-responsive portal views for benefits applicants using <strong>ReactJS</strong> with controlled components and form validation, improving form completion rates for the pilot cohort.</li>
+<li><strong>API Integration &#x26; Testing:</strong> Standardised third-party service communication using <strong>SoapUI</strong> for SOAP endpoint regression testing and developed adapter layers to bridge Curam with external REST APIs.</li>
+<li><strong>Database Queries:</strong> Wrote and optimised complex <strong>PostgreSQL</strong> queries for eligibility determination rules, joining across multiple benefit program tables with proper indexing strategies.</li>
+</ul>
+5:["$","$L8",null,{"sx":{"maxWidth":1000,"mx":"auto","px":{"xs":2,"md":3}},"children":[["$","$L9",null,{}],["$","$La",null,{"items":[{"slug":"01-bio","contentHtml":"$b","title":"Kaushal Kanakamedala","subtitle":"Senior Software Engineer","location":"Durham, NC","featured":true}]}],["$","$Lc",null,{"id":"experience","title":"Experience","items":[{"slug":"08-fidelity","contentHtml":"$d","title":"Full Stack Software Engineer","subtitle":"Fidelity (DataForce Inc)","period":"April 2025 - Present","tools":["Java","Spring Boot","Angular","NgRx","RxJS","AWS","Docker","Jenkins","Hibernate"],"location":"Remote / Durham, NC","featured":false},{"slug":"07-dhhs-nc","contentHtml":"$e","title":"Full Stack Software Engineer","subtitle":"DHHS NC (DataForce Inc)","period":"Jan 2025 - March 2025","tools":["Curam","Java","IBM WebSphere","SQL","XML","COBOL Integration"],"location":"Raleigh, NC","featured":false},{"slug":"06-cisco","contentHtml":"$f","title":"Full Stack Software Engineer","subtitle":"DataForce Inc","period":"Aug 2023 - Dec 2024","tools":["Python","LangChain","LangGraph","Flask","Django","Chroma","FAISS","Ollama","Docker"],"location":"Research Triangle Park, NC","featured":false},{"slug":"05-salesforce","contentHtml":"$10","title":"Full Stack Software Engineer","subtitle":"Salesforce Inc","period":"May 2022 - Aug 2023","tools":["Java","Python","Bazel","Django","Grafana","Jasmine","Kafka","Protobuf"],"location":"San Francisco, CA (Remote)","featured":false},{"slug":"04-oracle","contentHtml":"$11","title":"Software Engineer","subtitle":"Oracle Corporation","period":"March 2020 - May 2022","tools":["OCI","GraalVM","Java","Docker","MySQL","PostgreSQL","Hive","JUnit 5"],"location":"Redwood City, CA","featured":false},{"slug":"03-cerner","contentHtml":"$12","title":"Associate Software Developer","subtitle":"Cerner Corporation","period":"Aug 2018 - March 2020","tools":["Java","Python","ReactJS","Terraform","Helm","OKTA","Spring Boot","Hibernate"],"location":"Malvern, PA","featured":false},{"slug":"02-esystems-inc","contentHtml":"$13","title":"Software Developer","subtitle":"Esystems Inc","period":"Aug 2017 - Aug 2018","tools":["Java 8","ReactJS","SoapUI","Curam","SOAP/REST","PostgreSQL"],"location":"Princeton, NJ","featured":false},{"slug":"01-uniq-technologies","contentHtml":"<p>Gained practical experience in mobile application development and core Java concepts.</p>\n<ul>\n<li><strong>Android Development:</strong> Assisted in developing an Android application for local business directory.</li>\n<li><strong>Learning:</strong> Gained proficiency in Android Studio and Activity Lifecycle management.</li>\n<li><strong>Testing:</strong> Performed manual testing and bug reporting.</li>\n</ul>\n","title":"Java Developer Intern","subtitle":"Uniq Technologies","period":"Jan 2015 - Dec 2015","tools":["Java","Android"],"location":"Chennai, India","featured":false}],"variant":"timeline"}],"$L14","$L15","$L16","$L17"]}]
+6:["$","$L18",null,{"children":["$","$19",null,{"name":"Next.MetadataOutlet","children":"$@1a"}]}]
+1b:T429,<p>A privacy-first AI automation framework for macOS that orchestrates voice commands, local LLMs, and system APIs — completely offline, no cloud calls.</p>
+<ul>
+<li><strong>Voice-Driven Automation:</strong> Captures audio with a hotkey, transcribes via <strong>OpenAI Whisper</strong> running locally, and routes intents to appropriate automation handlers (file operations, app control, web search).</li>
+<li><strong>Local LLM Orchestration:</strong> Uses <strong>Ollama</strong> with quantised open-source models (Llama, Mistral) and <strong>Apple MLX</strong> for M-chip accelerated inference — sub-2s end-to-end response on Apple Silicon.</li>
+<li><strong>Agentic Tool Use:</strong> Implements a lightweight ReAct loop where the LLM decides which tool to invoke (AppleScript, shell commands, Python modules) and interprets tool outputs to formulate next steps.</li>
+<li><strong>Privacy by Design:</strong> Zero telemetry, no internet required once models are downloaded — all processing happens on-device inside a sandboxed Python environment.</li>
+</ul>
+1c:T410,<p>A self-hosted, privacy-first productivity suite built to replace fragmented SaaS tools with a single, owned application — notes, tasks, and knowledge management in one place.</p>
+<ul>
+<li><strong>Full-Stack Architecture:</strong> Next.js App Router with server components for data fetching, server actions for mutations, and <strong>Prisma ORM</strong> over <strong>PostgreSQL</strong> for type-safe database access.</li>
+<li><strong>Authentication:</strong> Implemented credential and OAuth flows via <strong>NextAuth v5</strong>, with JWT session management and role-based access control protecting user data.</li>
+<li><strong>Rich Text &#x26; Markdown Editor:</strong> Integrated a Tiptap-based WYSIWYG editor with slash commands, code blocks, and real-time preview, supporting markdown shortcuts for power users.</li>
+<li><strong>Docker Deployment:</strong> Single <code>docker-compose up</code> deployment bundling Next.js, PostgreSQL, and a reverse proxy — enabling one-click self-hosting on any VPS or home server.</li>
+</ul>
+1d:T467,<p>A configuration-driven static portfolio site with fully on-device AI — no backend, no API keys, all inference runs in the browser via WebGPU.</p>
+<ul>
+<li><strong>Architecture:</strong> Static export with Next.js App Router; all content driven from markdown files — zero hardcoded HTML, making updates a single-file edit.</li>
+<li><strong>On-Device AI Pipeline:</strong> ASR (Whisper f16 via WebGPU) → LLM (Granite 4.0 350M ONNX q4f16) → TTS (KittenTTS-Nano ONNX) runs entirely client-side, processing voice questions and speaking responses without any server round-trip.</li>
+<li><strong>Web Workers:</strong> Each model runs in a dedicated Web Worker with structured message protocols, keeping the main thread unblocked and UI at 60fps during inference.</li>
+<li><strong>Progressive Enhancement:</strong> Gracefully degrades on browsers without WebGPU — shows clear status indicators and falls back to text-only interaction.</li>
+<li><strong>Performance:</strong> Static assets served from GitHub Pages CDN; LCP under 1.5s; models cached in IndexedDB after first load for instant subsequent sessions.</li>
+</ul>
+14:["$","$Lc",null,{"id":"projects","title":"Projects","items":[{"slug":"15-local-agents","contentHtml":"$1b","title":"LocalAgents","subtitle":"On-Device AI Automation","period":"2024","tools":["Python","Whisper","Ollama","MLX","AppleScript","macOS APIs"],"link":"https://github.com/kaush4l/LocalAgents","featured":false},{"slug":"15-dijkstra","contentHtml":"<p>Implementation of Dijkstra's algorithm for finding the shortest paths between nodes in a graph.</p>\n<ul>\n<li><strong>Core Algorithm:</strong> Standard implementation of the classic pathfinding algorithm.</li>\n<li><strong>Java:</strong> Written in Java with a focus on clean code structure.</li>\n</ul>\n","title":"Dijkstra's Algorithm","subtitle":"Pathfinding","period":"2016","tools":["Java","Algorithms","Graph Theory"],"link":"https://github.com/kaush4l/Dijkstra-s-algorithm","featured":false},{"slug":"14-euler","contentHtml":"<p>Solutions to Project Euler problems, focusing on efficient algorithmic approaches.</p>\n<ul>\n<li><strong>Problem Solving:</strong> Tackles complex mathematical problems using programming.</li>\n<li><strong>Optimization:</strong> optimized solutions for performance and readability.</li>\n</ul>\n","title":"Project Euler","subtitle":"Algorithm Challenges","period":"Ongoing","tools":["Python","Algorithms","Math"],"link":"https://github.com/kaush4l/Euler","featured":false},{"slug":"14-cognix","contentHtml":"$1c","title":"Cognix","subtitle":"Self-Hosted Productivity Suite","period":"2024","tools":["Next.js","React","TypeScript","PostgreSQL","Prisma","NextAuth","Docker"],"link":"https://github.com/kaush4l/Cognix","featured":false},{"slug":"13-codes","contentHtml":"<p>A comprehensive repository of cheatsheets and learning resources.</p>\n<ul>\n<li><strong>Reference:</strong> Curated guides for Java, Python, Shell scripting, and Docker.</li>\n<li><strong>Educational:</strong> Serves as a quick reference for best practices and syntax.</li>\n</ul>\n","title":"Codes","subtitle":"Knowledge Base","period":"Ongoing","tools":["Java","Python","Shell","Docker"],"link":"https://github.com/kaush4l/Codes","featured":false},{"slug":"12-take2","contentHtml":"<p>A production-ready LangGraph multi-agent implementation showcasing stateful, supervisor-based orchestration patterns for complex AI workflows.</p>\n<ul>\n<li><strong>Supervisor Architecture:</strong> Implements a supervisor–worker multi-agent pattern where a coordinator agent dynamically routes sub-tasks to specialised worker agents (researcher, coder, critic) based on task type.</li>\n<li><strong>Stateful Graph Execution:</strong> Uses LangGraph's StateGraph with TypedDict-annotated shared state, enabling agents to build on each other's outputs across multi-turn reasoning chains.</li>\n<li><strong>Tool &#x26; Retrieval Integration:</strong> Includes web search, code execution, and RAG-retrieval tools with structured Pydantic output schemas, ensuring type-safe agent communication.</li>\n<li><strong>Streaming &#x26; Observability:</strong> Streams intermediate agent steps via server-sent events, with LangSmith trace integration for visual debugging of agent decision paths.</li>\n</ul>\n","title":"take2","subtitle":"LangGraph Multi-Agent Framework","period":"2024","tools":["Python","LangGraph","LangChain","OpenAI","Anthropic","Pydantic"],"link":"https://github.com/kaush4l/take2","featured":false},{"slug":"09-android-applications","contentHtml":"<p>A collection of various Android applications developed for learning and utility.</p>\n<ul>\n<li><strong>Apps:</strong> Includes simple games, utility tools, and location-based services.</li>\n<li><strong>Learning:</strong> Explored Android Activity Lifecycle, Fragments, and Services.</li>\n</ul>\n","title":"Android Applications Collection","subtitle":"Project Portfolio","period":"2015-2017","tools":["Java","Android Studio"],"featured":false},{"slug":"08-lzw-compression","contentHtml":"<p>Implementation of the Lempel-Ziv-Welch (LZW) lossless data compression algorithm.</p>\n<ul>\n<li><strong>Efficiency:</strong> Achieved significant compression ratios for text files.</li>\n<li><strong>Analysis:</strong> Analyzed time and space complexity trade-offs with varying dictionary sizes.</li>\n</ul>\n","title":"LZW Compression","subtitle":"Algorithms","period":"2016","tools":["Java","Data Structures"],"link":"https://github.com/kaush4l/LZW-Compression","featured":false},{"slug":"07-pagerank","contentHtml":"<p>Implementation of Google's PageRank algorithm from scratch using MapReduce.</p>\n<ul>\n<li><strong>Distributed Computing:</strong> Handled large graph datasets by partitioning computation.</li>\n<li><strong>Optimization:</strong> Optimized job chain to handle dangling nodes and convergence.</li>\n</ul>\n","title":"PageRank Implementation","subtitle":"Distributed Systems","period":"2017","tools":["Java","Hadoop","MapReduce"],"link":"https://github.com/kaush4l/PageRank","featured":false},{"slug":"06-movie-recommender","contentHtml":"<p>A scalable recommendation engine built using Apache Spark.</p>\n<ul>\n<li><strong>Algorithm:</strong> Implemented Alternating Least Squares (ALS) for collaborative filtering.</li>\n<li><strong>Scale:</strong> Processed the MovieLens dataset on a Hadoop cluster.</li>\n<li><strong>Accuracy:</strong> Tuned hyperparameters to minimize Root Mean Square Error (RMSE).</li>\n</ul>\n","title":"Movie Recommender System","subtitle":"Big Data Project","period":"2017","tools":["Python","Spark","Hadoop","ALS"],"link":"https://github.com/kaush4l/MovieLens-Movie-Recommander-system","featured":false},{"slug":"05-complaint-portal","contentHtml":"<p>A web portal for students to register and track complaints regarding campus facilities.</p>\n<ul>\n<li><strong>Database:</strong> Designed relational schema to track complaint status and history.</li>\n<li><strong>Admin Panel:</strong> Built dashboard for administrators to resolve issues.</li>\n</ul>\n","title":"Complaint Portal","subtitle":"Web Application","period":"2016","tools":["PHP","MySQL","HTML/CSS"],"featured":false},{"slug":"04-cagedspace","contentHtml":"<p>A 3D survival game developed using Unity engine.</p>\n<ul>\n<li><strong>Mechanics:</strong> Implemented physics-based movement and inventory system.</li>\n<li><strong>Assets:</strong> Integrated 3D models and sound assets.</li>\n</ul>\n","title":"CagedSpace","subtitle":"Game Development","period":"2016","tools":["C#","Unity 3D"],"featured":false},{"slug":"03-angular-4","contentHtml":"<p>A responsive admin dashboard built with Angular 4.</p>\n<ul>\n<li><strong>Components:</strong> Created reusable UI components for data visualization.</li>\n<li><strong>Routing:</strong> Implemented single-page application routing and guards.</li>\n</ul>\n","title":"Angular 4 Dashboard","subtitle":"Frontend Project","period":"2017","tools":["Angular","TypeScript","Bootstrap"],"featured":false},{"slug":"02-indigo-application","contentHtml":"<p>An Android application designed to assist colorblind users in navigation.</p>\n<ul>\n<li><strong>Accessibility:</strong> Filters maps and UI elements to be colorblind-friendly.</li>\n<li><strong>Navigation:</strong> Integrated Google Maps for routing and location services.</li>\n<li><strong>UX Design:</strong> Designed high-contrast interfaces for better visibility.</li>\n</ul>\n","title":"Indigo Application","subtitle":"Course Project","period":"2017","tools":["Java","Android SDK","Google Maps API"],"link":"https://github.com/kaush4l/Indigo","featured":false},{"slug":"01-resume-website","contentHtml":"$1d","title":"Resume Website","subtitle":"Personal Project","period":"2024 - Present","tools":["Next.js","React","TypeScript","MUI","Transformers.js","ONNX Runtime Web","WebGPU","Framer Motion"],"link":"https://kaush4l.github.io","featured":false}],"variant":"grid"}]
+15:["$","$Lc",null,{"id":"education","title":"Education","items":[{"slug":"02-unc-charlotte","contentHtml":"<p>Completed rigorous coursework focused on advanced algorithms and distributed systems.</p>\n<ul>\n<li><strong>Projects:</strong> Implemented various heavy-hitter algorithms and mobile applications.</li>\n<li><strong>Coursework:</strong> Algorithms and Data Structures, Mobile Application Development, Cloud Computing, Network-based Applications.</li>\n<li><strong>Achievement:</strong> \"Good, better, best. Never let it rest. 'Till your good is better and your better is the best.\"</li>\n</ul>\n","title":"Master of Computer Science","subtitle":"UNC Charlotte","period":"2016-2017","tools":["Algorithms","Cloud Computing","Mobile Apps"],"location":"Charlotte, NC","featured":false},{"slug":"01-srm-university","contentHtml":"<p>Foundation in Computer Science and Engineering principles.</p>\n<ul>\n<li><strong>Focus:</strong> User Interface Design, Database Management, Object-Oriented Programming.</li>\n<li><strong>Activities:</strong> Active member of the Computer Science club.</li>\n</ul>\n","title":"Bachelor of Technology","subtitle":"SRM University","period":"2011-2015","tools":["Computer Science","Engineering"],"location":"Chennai, India","featured":false}],"variant":"timeline"}]
+16:["$","$L1e",null,{"items":[{"slug":"01-languages","contentHtml":"<p>Fluent in systems languages through to scripting and web technologies.</p>\n","title":"Languages","tags":["Java","TypeScript","Python","JavaScript","Kotlin","SQL","HTML","CSS","Bash"],"category":"Languages","featured":true},{"slug":"02-frameworks","contentHtml":"<p>Production experience across the full web stack, from reactive frontends to resilient backend services.</p>\n","title":"Frameworks & Libraries","tags":["Spring Boot","Angular","React","Next.js","Node.js","Django","Flask","NgRx","RxJS","Hibernate"],"category":"Frameworks","featured":true},{"slug":"03-cloud","contentHtml":"<p>Building and shipping containerised cloud-native applications with automated CI/CD pipelines.</p>\n","title":"Cloud & DevOps","tags":["AWS","Docker","Kubernetes","Jenkins","GitHub Actions","Terraform","EC2","S3","Lambda"],"category":"Cloud","featured":false},{"slug":"04-ai","contentHtml":"<p>Building both production server-side AI pipelines and privacy-first on-device AI that runs fully offline in the browser — no API keys, no cloud round-trips.</p>\n","title":"AI & Machine Learning","tags":["LangChain","LangGraph","Transformers.js","ONNX Runtime Web","WebGPU","Chroma","FAISS","Whisper","Ollama","MLX","RAG","Agentic AI"],"category":"AI","featured":true},{"slug":"05-tools","contentHtml":"<p>Persistent storage from relational to document stores, plus the everyday engineering toolkit.</p>\n","title":"Databases & Tools","tags":["PostgreSQL","MongoDB","Redis","MySQL","Git","JIRA","Postman","IntelliJ","VS Code"],"category":"Tools","featured":false}]}]
+17:["$","$L1f",null,{"items":[{"slug":"01-github","contentHtml":"<p>Browse my public repositories, experiments, and open-source contributions.</p>\n","title":"GitHub","subtitle":"Open-source projects & code","category":"social","icon":"github","url":"https://github.com/kaush4l","featured":true},{"slug":"02-linkedin","contentHtml":"<p>Connect with me professionally: work history, recommendations, and industry conversations.</p>\n","title":"LinkedIn","subtitle":"Professional profile & network","category":"social","icon":"linkedin","url":"https://linkedin.com/in/kaush4l","featured":true},{"slug":"03-email","contentHtml":"<p>Reach me directly for opportunities, collaborations, or just a good tech conversation.</p>\n","title":"Email","subtitle":"kaush4lk@gmail.com","category":"direct","icon":"email","url":"mailto:kaush4lk@gmail.com","featured":true}]}]
+1a:null
