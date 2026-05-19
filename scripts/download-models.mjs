@@ -38,8 +38,8 @@ function selectorFn(selectorCsv) {
     if (selector.has('all')) return true;
     const mid = String(modelId).toLowerCase();
     if (selector.has('stt') && mid.includes('whisper')) return true;
-    if (selector.has('tts') && (mid.includes('tts') || mid.includes('mms') || mid.includes('kitten') || mid.includes('supertonic') || mid.includes('supertone'))) return true;
-    if (selector.has('llm') && (mid.includes('granite') || mid.includes('onnx') || mid.includes('mistral') || mid.includes('ministral'))) return true;
+    if (selector.has('tts') && (mid.includes('kokoro') || mid.includes('tts'))) return true;
+    if (selector.has('llm') && (mid.includes('gemma') || mid.includes('granite') || mid.includes('llama') || mid.includes('onnx') || mid.includes('mistral'))) return true;
     return Array.from(selector).some(tok => mid.includes(tok));
   };
 }
@@ -127,31 +127,58 @@ async function main() {
           device: 'cpu',
           dtype: { encoder_model: 'fp16', decoder_model_merged: 'fp16' },
         });
-      } else if (lower.includes('kitten')) {
-        // TTS — KittenTTS StyleTTS2: download model files directly (not a transformers pipeline)
-        const hfBase = `https://huggingface.co/${modelId}/resolve/main`;
+      } else if (lower.includes('kokoro')) {
+        // TTS — Kokoro-82M: download tokenizer + ONNX model
         const destDir = path.join(cacheDir, modelId);
         await fs.mkdir(destDir, { recursive: true });
-        await fs.mkdir(path.join(destDir, 'onnx'), { recursive: true });
-        const files = ['kitten_config.json', 'onnx/model.onnx', 'voices.npz'];
-        for (const file of files) {
+
+        // Download tokenizer files
+        const tokenizerFiles = ['tokenizer.json', 'tokenizer_config.json', 'special_tokens_map.json', 'vocab.json', 'merges.txt'];
+        for (const file of tokenizerFiles) {
           const destPath = path.join(destDir, file);
-          if (!force && await exists(destPath)) {
-            console.log(`[models]   SKIP ${file} (exists)`);
-            continue;
-          }
-          console.log(`[models]   Downloading ${file}…`);
-          const r = await fetch(`${hfBase}/${file}`);
+          if (!force && await exists(destPath)) continue;
+          console.log(`[models]   Downloading tokenizer/${file}…`);
+          const r = await fetch(`https://huggingface.co/${modelId}/resolve/main/${file}`);
           if (!r.ok) throw new Error(`HTTP ${r.status} for ${file}`);
           const buf = await r.arrayBuffer();
           await fs.writeFile(destPath, Buffer.from(buf));
-          process.stdout.write(`\r[models] ${modelId} ${file} done   \n`);
         }
-      } else if (lower.includes('mms') || lower.includes('vits') || lower.includes('tts')) {
-        // TTS — VITS/MMS text-to-speech pipeline
-        await pipeline('text-to-speech', modelId, { ...common, device: 'cpu', dtype: 'fp32' });
+
+        // Download ONNX model files (may be in ./onnx/ subfolder)
+        const onnxFiles = ['model.onnx', 'model.onnx_data'];
+        for (const file of onnxFiles) {
+          const destPath = path.join(destDir, file);
+          if (!force && await exists(destPath)) continue;
+          console.log(`[models]   Downloading ${file}…`);
+          const r = await fetch(`https://huggingface.co/${modelId}/resolve/main/${file}`);
+          if (!r.ok) throw new Error(`HTTP ${r.status} for ${file}`);
+          const buf = await r.arrayBuffer();
+          await fs.writeFile(destPath, Buffer.from(buf));
+        }
+
+        // Also try the onnx/ subfolder
+        for (const file of onnxFiles) {
+          const destPath = path.join(destDir, 'onnx', file);
+          if (!force && await exists(destPath)) continue;
+          try {
+            const r = await fetch(`https://huggingface.co/${modelId}/resolve/main/onnx/${file}`);
+            if (r.ok) {
+              const buf = await r.arrayBuffer();
+              await fs.mkdir(path.join(destDir, 'onnx'), { recursive: true });
+              await fs.writeFile(destPath, Buffer.from(buf));
+              console.log(`[models]   Downloaded onnx/${file}`);
+            }
+          } catch { /* not present in onnx/ subfolder */ }
+        }
+      } else if (lower.includes('gemma') || lower.includes('granite') || lower.includes('mistral') || lower.includes('llama')) {
+        // LLM — causal LM model
+        await AutoTokenizer.from_pretrained(modelId, common);
+        await AutoModelForCausalLM.from_pretrained(modelId, {
+          ...common,
+          device: 'cpu',
+        });
       } else {
-        // LLM — text-only causal model (Granite, Qwen, etc.)
+        // Fallback — try AutoTokenizer + AutoModelForCausalLM
         await AutoTokenizer.from_pretrained(modelId, common);
         await AutoModelForCausalLM.from_pretrained(modelId, {
           ...common,

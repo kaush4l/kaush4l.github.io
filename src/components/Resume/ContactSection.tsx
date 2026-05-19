@@ -90,7 +90,7 @@ export default function ContactSection({ id = 'contact', items }: ContactSection
                                         elevation={0}
                                         sx={{
                                             p: 3,
-                                            width: 160,
+                                            width: { xs: '100%', sm: 140, md: 160 },
                                             display: 'flex',
                                             flexDirection: 'column',
                                             alignItems: 'center',

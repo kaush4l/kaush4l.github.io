@@ -18,25 +18,24 @@ function statusChip(label: string, state: { ready: boolean; loading: boolean; pr
 }
 
 export default function ModelStatusBanner() {
-    const { llm, stt, tts, autoLoadAll, modelName } = useModelContext();
+    const { llm, autoLoadAll, modelName } = useModelContext();
     const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null);
 
     useEffect(() => {
         setWebgpuSupported(isWebGPUSupported());
     }, []);
 
-    const anyLoading = llm.loading || stt.loading || tts.loading;
-    const anyReady = llm.ready || stt.ready || tts.ready;
-    const anyError = !!llm.error || !!stt.error || !!tts.error;
+    const anyLoading = llm.loading;
+    const anyReady = llm.ready;
+    const anyError = !!llm.error;
 
     const headline = useMemo(() => {
         if (webgpuSupported === false) return 'WebGPU required for on-device AI';
         if (anyLoading) return 'Initializing on-device AI…';
         if (anyError) return 'On-device AI failed to initialize';
-        if (llm.ready && stt.ready && tts.ready) return 'On-device AI is ready';
-        if (anyReady) return 'On-device AI partially ready';
+        if (llm.ready) return 'On-device AI is ready';
         return 'On-device AI is idle';
-    }, [anyError, anyLoading, anyReady, llm.ready, stt.ready, tts.ready, webgpuSupported]);
+    }, [anyError, anyLoading, llm.ready, webgpuSupported]);
 
     return (
         <Paper
@@ -58,7 +57,7 @@ export default function ModelStatusBanner() {
                             {headline}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Models load from <code>/models</code> and ONNX Runtime assets from <code>/onnxruntime</code> (offline).
+                            Models load from <code>/models</code> (offline).
                         </Typography>
                     </Box>
 
@@ -85,14 +84,12 @@ export default function ModelStatusBanner() {
                     )}
 
                     {statusChip('LLM', llm)}
-                    {statusChip('STT', stt)}
-                    {statusChip('TTS', tts)}
                     <Chip label={`LLM: ${modelName}`} size="small" variant="outlined" />
                 </Stack>
 
                 {anyError && (
                     <Alert severity="error">
-                        {llm.error || stt.error || tts.error}
+                        {llm.error}
                     </Alert>
                 )}
             </Stack>

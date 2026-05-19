@@ -59,8 +59,8 @@ export default function LayoutClient({ children, systemPrompt }: { children: Rea
                     <Box
                         sx={{
                             flexGrow: 1,
-                            py: 4,
-                            px: { xs: 2, sm: 3, md: 4 },
+                            py: { xs: 2, sm: 3, md: 4 },
+                            px: { xs: 1.5, sm: 2, md: 4 },
                             backgroundColor: 'background.default',
                         }}
                     >

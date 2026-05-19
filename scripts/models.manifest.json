@@ -1,16 +1,8 @@
 {
   "models": [
     {
-      "id": "onnx-community/whisper-tiny",
-      "localDir": "public/models/onnx-community/whisper-tiny"
-    },
-    {
-      "id": "onnx-community/KittenTTS-Nano-v0.8-ONNX",
-      "localDir": "public/models/onnx-community/KittenTTS-Nano-v0.8-ONNX"
-    },
-    {
-      "id": "onnx-community/granite-4.0-350m-ONNX-web",
-      "localDir": "public/models/onnx-community/granite-4.0-350m-ONNX-web"
+      "id": "onnx-community/gemma-4-E2B-it-ONNX",
+      "localDir": "public/models/onnx-community/gemma-4-E2B-it-ONNX"
     }
   ]
 }

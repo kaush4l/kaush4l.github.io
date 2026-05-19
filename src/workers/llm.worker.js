@@ -1,11 +1,11 @@
 /**
- * LLM Web Worker — granite-4.0-350m-ONNX-web (text-only, plug-in upgradeable)
+ * LLM Web Worker — Gemma-4-E2B (text-only, plug-in upgradeable)
  * Model ID is passed in the 'load' message — swap any text-gen model without rebuilding.
  */
 import {
     AutoTokenizer,
     TextStreamer,
-    AutoModelForCausalLM,
+    AutoModel,
 } from '@huggingface/transformers';
 import { configureTransformersEnv } from './transformersEnv';
 
@@ -49,10 +49,10 @@ async function loadModel(modelId, progressCallback) {
         progress_callback: wrappedProgressCallback,
     });
 
-    // q4f16: 4-bit weights with fp16 activations — correct dtype for WebGPU (~200 MB).
-    // q8: 8-bit fallback for WASM when WebGPU is unavailable (~400 MB, no int4 WASM kernels).
+    // Gemma-4-E2B uses Gemma4ForConditionalGeneration (multimodal architecture) but we only use
+    // the text generation head. AutoModel auto-discovers the correct class from config.architectures.
     const dtype = device === 'webgpu' ? 'q4f16' : 'q8';
-    model = await AutoModelForCausalLM.from_pretrained(modelId, {
+    model = await AutoModel.from_pretrained(modelId, {
         dtype,
         device,
         progress_callback: wrappedProgressCallback,

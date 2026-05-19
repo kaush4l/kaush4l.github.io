@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Alert,
     Avatar,
@@ -19,8 +19,9 @@ import {
 import SendIcon from '@mui/icons-material/Send';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
-
-import { useModelContext } from '@/context/ModelContext';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import Link from 'next/link';
+import { ModelProvider, useModelContext } from '@/context/ModelContext';
 import { useChatAI } from '@/hooks/useChatAI';
 
 // ── Quick-start prompt suggestions ───────────────────────────────────────────
@@ -33,7 +34,50 @@ const SUGGESTED_PROMPTS = [
     'How do you approach system design?',
 ];
 
-export default function AMAChatClient() {
+// ── Mini Header ───────────────────────────────────────────────────────────────
+function MiniHeader() {
+    return (
+        <Box
+            sx={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 1000,
+                bgcolor: 'background.paper',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                px: { xs: 2, sm: 3 },
+                py: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+            }}
+        >
+            <Tooltip title="Back to home">
+                <IconButton component={Link} href="/" color="primary" aria-label="back to home">
+                    <ArrowBackIcon />
+                </IconButton>
+            </Tooltip>
+            <Typography
+                variant="h6"
+                sx={{
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                }}
+            >
+                AMA
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+                Ask Kaushal Anything
+            </Typography>
+        </Box>
+    );
+}
+
+// ── Chat UI (consumes ModelProvider) ──────────────────────────────────────────
+function AMAChatContent() {
     const { llm, autoLoadAll } = useModelContext();
 
     const {
@@ -45,7 +89,7 @@ export default function AMAChatClient() {
         sendText,
         clearChat,
         scrollContainerRef,
-    } = useChatAI({ autoLoad: false });
+    } = useChatAI({ autoLoad: true });
 
     const shouldAutoScrollRef = useRef(true);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -55,14 +99,12 @@ export default function AMAChatClient() {
     const anyError = !!llm.error;
     const hasMessages = messages.length > 0 || !!streaming;
 
-    // ── Derive pipeline stage ─────────────────────────────────────────────────
     const pipelineStage = useMemo((): 'idle' | 'thinking' => {
         if (busy && !streaming) return 'thinking';
         if (busy && streaming) return 'thinking';
         return 'idle';
     }, [busy, streaming]);
 
-    // ── Auto-scroll to bottom ─────────────────────────────────────────────────
     useEffect(() => {
         if (!shouldAutoScrollRef.current) return;
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,62 +135,7 @@ export default function AMAChatClient() {
 
     return (
         <Box sx={{ maxWidth: 860, mx: 'auto', px: { xs: 1, sm: 2 } }}>
-            {/* ── Top bar ─────────────────────────────────────────────────── */}
-            <Paper
-                elevation={0}
-                sx={{
-                    p: 2,
-                    mb: 1.5,
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    background: (theme) =>
-                        theme.palette.mode === 'dark'
-                            ? 'rgba(124,58,237,0.06)'
-                            : 'rgba(124,58,237,0.03)',
-                }}
-            >
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} justifyContent="space-between">
-                    {/* Title & description */}
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Avatar
-                            sx={{
-                                width: 40, height: 40,
-                                background: 'linear-gradient(135deg, #7C3AED, #06B6D4)',
-                                fontSize: '1rem', fontWeight: 700,
-                            }}
-                        >
-                            KK
-                        </Avatar>
-                        <Box>
-                            <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
-                                Ask Me Anything
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                On-device AI — your browser, no cloud
-                            </Typography>
-                        </Box>
-                    </Stack>
-
-                    {/* Controls */}
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                        <Tooltip title={hasMessages ? 'Clear conversation' : ''}>
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    onClick={clearChat}
-                                    disabled={busy || anyLoading || !hasMessages}
-                                    aria-label="clear chat"
-                                >
-                                    <DeleteSweepIcon fontSize="small" />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    </Stack>
-                </Stack>
-            </Paper>
-
-            {/* ── Model status / loading card ──────────────────────────────── */}
+            {/* Model status / loading card */}
             {!ready && (
                 <Paper
                     elevation={0}
@@ -168,7 +155,7 @@ export default function AMAChatClient() {
                                 {llm.error}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.5 }}>
-                                Models are loaded from <code>/models</code> on first use. Run <code>bun run models:download</code> to cache them locally, or they will be fetched from HuggingFace Hub.
+                                Models are loaded from <code>/models</code> on first use. Run <code>bun run models:download</code> to cache them locally.
                             </Typography>
                         </Alert>
                     ) : anyLoading ? (
@@ -205,7 +192,7 @@ export default function AMAChatClient() {
                 </Paper>
             )}
 
-            {/* ── Ready bar (minimal, when loaded) ─────────────────────── */}
+            {/* Ready bar */}
             {ready && (
                 <Paper
                     elevation={0}
@@ -218,7 +205,6 @@ export default function AMAChatClient() {
                     }}
                 >
                     <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
-                        {/* Pipeline indicator */}
                         <Stack direction="row" spacing={1} alignItems="center">
                             <Box
                                 sx={{
@@ -243,7 +229,6 @@ export default function AMAChatClient() {
                                 </Typography>
                             </Box>
                         </Stack>
-
                         <Box
                             sx={{
                                 width: 8, height: 8, borderRadius: '50%',
@@ -255,7 +240,7 @@ export default function AMAChatClient() {
                 </Paper>
             )}
 
-            {/* ── Suggested prompts (shown before first message) ───────────── */}
+            {/* Suggested prompts */}
             {ready && !hasMessages && (
                 <Box sx={{ mb: 1.5 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 0.75, display: 'block', px: 0.5 }}>
@@ -283,7 +268,7 @@ export default function AMAChatClient() {
                 </Box>
             )}
 
-            {/* ── Message thread ───────────────────────────────────────────── */}
+            {/* Message thread */}
             <Paper
                 ref={scrollContainerRef}
                 onScroll={() => {
@@ -413,7 +398,7 @@ export default function AMAChatClient() {
                 </Stack>
             </Paper>
 
-            {/* ── Input bar ────────────────────────────────────────────────── */}
+            {/* Input bar */}
             <Paper
                 elevation={0}
                 sx={{
@@ -475,5 +460,16 @@ export default function AMAChatClient() {
                 </Stack>
             </Paper>
         </Box>
+    );
+}
+
+// ── Exported component ────────────────────────────────────────────────────────
+
+export default function AMAPageClient() {
+    return (
+        <ModelProvider>
+            <MiniHeader />
+            <AMAChatContent />
+        </ModelProvider>
     );
 }

@@ -69,7 +69,7 @@ export default function SkillsSection({ id = 'skills', items }: SkillsSectionPro
                     sx={{
                         display: 'grid',
                         gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: 'repeat(3, 1fr)' },
-                        gap: 2,
+                        gap: { xs: 1.5, md: 2 },
                     }}
                 >
                     {Object.entries(groups).map(([category, groupItems], groupIdx) => {

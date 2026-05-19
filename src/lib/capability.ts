@@ -10,24 +10,14 @@ export interface CapabilityResult {
         fp16: boolean;
     };
     recommended: {
-        stt: string;
-        tts: string;
         llm: string;
     };
 }
 
 export const MODELS = {
-    stt: {
-        // whisper-tiny f16 — fast multilingual ASR, small footprint on WebGPU
-        default: 'onnx-community/whisper-tiny',
-    },
-    tts: {
-        // KittenTTS Nano — StyleTTS2, 15M params, 24 kHz, direct ONNX Runtime (no transformers pipeline)
-        default: 'onnx-community/KittenTTS-Nano-v0.8-ONNX',
-    },
     llm: {
-        // Granite 4.0 350M — IBM's web-optimised ONNX causal LM (q4f16)
-        default: 'onnx-community/granite-4.0-350m-ONNX-web',
+        // Gemma-4-E2B-it — 2B parameter instruction-tuned LLM, ONNX-q4f16 for WebGPU
+        default: 'onnx-community/gemma-4-E2B-it-ONNX',
     },
 };
 
@@ -68,8 +58,6 @@ export async function checkCapability(): Promise<CapabilityResult> {
         else tier = 'Low';
     }
 
-    const useHighPerf = ['High', 'Ultra'].includes(tier);
-
     return {
         tier,
         details: {
@@ -80,8 +68,6 @@ export async function checkCapability(): Promise<CapabilityResult> {
             fp16,
         },
         recommended: {
-            stt: MODELS.stt.default,
-            tts: MODELS.tts.default,
             llm: MODELS.llm.default,
         },
     };

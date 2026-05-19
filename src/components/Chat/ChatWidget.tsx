@@ -1,13 +1,13 @@
 'use client';
 
-// ChatWidget — refactored to delegate all AI logic to useChatAI hook.
+// ChatWidget — text-only LLM chat (STT/TTS removed).
 
 import { useState } from 'react';
 import {
     Box,
+    Button,
     Typography,
     TextField,
-    Button,
     IconButton,
     Paper,
     Avatar,
@@ -19,35 +19,22 @@ import {
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
-import MicIcon from '@mui/icons-material/Mic';
-import StopIcon from '@mui/icons-material/Stop';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import VolumeOffIcon from '@mui/icons-material/VolumeOff';
-import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import ImageIcon from '@mui/icons-material/Image';
 import { useModelContext } from '@/context/ModelContext';
-import { TextStreamAccumulator, AsyncQueue } from '@/lib/queue-manager';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useChatAI } from '@/hooks/useChatAI';
 
 export default function ChatWidget() {
     useTheme(); // keep dark-mode reactivity
     const [isOpen, setIsOpen] = useState(false);
-    const { llm, stt, tts, modelName, autoLoadAll } = useModelContext();
+    const { llm, autoLoadAll } = useModelContext();
 
     const {
         messages,
         streamingContent,
         busy,
-        isRecording,
-        liveTranscript,
-        ttsEnabled,
-        setTtsEnabled,
         input,
         setInput,
         sendMessage,
-        startRecording,
-        stopRecording,
         scrollContainerRef,
         messagesEndRef,
         shouldAutoScrollRef,
@@ -55,9 +42,7 @@ export default function ChatWidget() {
 
     const handleOpen = () => {
         setIsOpen(true);
-        const anyReady = llm.ready && stt.ready && tts.ready;
-        const anyLoading = llm.loading || stt.loading || tts.loading;
-        if (!anyReady && !anyLoading && !llm.error && !stt.error && !tts.error) {
+        if (!llm.ready && !llm.loading && !llm.error) {
             void autoLoadAll().catch(() => {});
         }
     };
@@ -82,7 +67,7 @@ export default function ChatWidget() {
                                 >
                                     <ChatIcon fontSize="large" />
                                 </IconButton>
-                                {(llm.loading || stt.loading || tts.loading || busy) && (
+                                {(llm.loading || busy) && (
                                     <CircularProgress size={72} sx={{ position: 'absolute', top: -4, left: -4, color: busy ? 'secondary.main' : 'success.main', opacity: 0.6, pointerEvents: 'none' }} />
                                 )}
                             </Box>
@@ -107,17 +92,12 @@ export default function ChatWidget() {
                                     <Avatar sx={{ bgcolor: 'white', color: 'primary.main', width: 32, height: 32 }}>AI</Avatar>
                                     <Box>
                                         <Typography variant="subtitle2" fontWeight={700}>Chat with Kaushal</Typography>
-                                        <Typography variant="caption" sx={{ opacity: 0.8 }}>{modelName} · {llm.ready ? 'Online' : 'Loading…'}</Typography>
+                                        <Typography variant="caption" sx={{ opacity: 0.8 }}>{llm.ready ? 'Online' : 'Loading…'}</Typography>
                                     </Box>
                                 </Box>
-                                <Box>
-                                    <IconButton data-testid="chat-tts-toggle" aria-label="toggle tts" size="small" color="inherit" onClick={() => setTtsEnabled((v) => !v)}>
-                                        {ttsEnabled ? <VolumeUpIcon fontSize="small" /> : <VolumeOffIcon fontSize="small" />}
-                                    </IconButton>
-                                    <IconButton data-testid="chat-close" aria-label="close chat" size="small" color="inherit" onClick={() => setIsOpen(false)}>
-                                        <CloseIcon fontSize="small" />
-                                    </IconButton>
-                                </Box>
+                                <IconButton data-testid="chat-close" aria-label="close chat" size="small" color="inherit" onClick={() => setIsOpen(false)}>
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
                             </Box>
 
                             {/* Messages */}
@@ -131,20 +111,20 @@ export default function ChatWidget() {
                                 }}
                                 sx={{ flexGrow: 1, p: 2, overflowY: 'auto', bgcolor: 'background.default', display: 'flex', flexDirection: 'column', gap: 2 }}
                             >
-                                {(llm.error || stt.error || tts.error) && (
+                                {llm.error && (
                                     <Paper elevation={0} sx={{ p: 1.5, borderRadius: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>
-                                        <Typography variant="body2">{llm.error || stt.error || tts.error}</Typography>
+                                        <Typography variant="body2">{llm.error}</Typography>
                                         <Button data-testid="chat-retry-models" size="small" variant="contained" color="inherit" sx={{ mt: 1 }} onClick={() => void autoLoadAll().catch(() => {})}>
-                                            Retry loading models
+                                            Retry loading model
                                         </Button>
                                     </Paper>
                                 )}
 
                                 {!llm.ready && !llm.error && (
                                     <Paper elevation={0} sx={{ p: 1.5, borderRadius: 3, bgcolor: 'action.hover' }}>
-                                        <Typography variant="body2">Loading on-device models (WebGPU required)…</Typography>
+                                        <Typography variant="body2">Loading on-device model (WebGPU required)…</Typography>
                                         <Typography variant="caption" color="text.secondary">
-                                            STT {stt.loading ? `${stt.progress}%` : stt.ready ? '✓' : '…'} · LLM {llm.loading ? `${llm.progress}%` : llm.ready ? '✓' : '…'} · TTS {tts.loading ? `${tts.progress}%` : tts.ready ? '✓' : '…'}
+                                            LLM {llm.loading ? `${llm.progress}%` : llm.ready ? '✓' : '…'}
                                         </Typography>
                                     </Paper>
                                 )}
@@ -189,24 +169,20 @@ export default function ChatWidget() {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <TextField
                                         fullWidth
-                                        placeholder={!llm.ready ? 'Loading models…' : isRecording ? 'Listening…' : 'Type a message…'}
+                                        placeholder={!llm.ready ? 'Loading model…' : 'Type a message…'}
                                         size="small"
                                         variant="outlined"
-                                        value={isRecording ? liveTranscript : input}
-                                        onChange={(e) => { if (!isRecording) setInput(e.target.value); }}
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
                                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                                        disabled={!llm.ready || busy || isRecording}
+                                        disabled={!llm.ready || busy}
                                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: 4, bgcolor: 'action.hover' } }}
                                     />
-                                    {!input.trim() && !liveTranscript ? (
-                                        <IconButton color={isRecording ? 'error' : 'default'} onClick={() => isRecording ? stopRecording() : void startRecording().catch(() => {})} disabled={!stt.ready}>
-                                            {isRecording ? <StopIcon /> : <MicIcon />}
-                                        </IconButton>
-                                    ) : (
+                                    {input.trim() ? (
                                         <IconButton color="primary" onClick={() => sendMessage()} disabled={busy}>
                                             <SendIcon />
                                         </IconButton>
-                                    )}
+                                    ) : null}
                                 </Box>
                             </Box>
                         </Paper>

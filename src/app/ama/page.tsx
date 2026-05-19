@@ -1,11 +1,5 @@
-import { Layout } from '@/components/Layout';
-import AMAChatClient from './AMAChatClient';
+import AMAPageClient from './AMAPageClient';
 
-export default async function AMAPage() {
-    return (
-        <Layout>
-            <AMAChatClient />
-        </Layout>
-    );
+export default function AMAPage() {
+    return <AMAPageClient />;
 }
-

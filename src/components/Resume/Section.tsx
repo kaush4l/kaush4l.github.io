@@ -46,14 +46,14 @@ export default function Section({ id, title, items, variant = 'timeline', icon, 
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 2,
-                    mb: 4,
+                    gap: { xs: 1.5, sm: 2 },
+                    mb: { xs: 3, md: 4 },
                 }}
             >
                 <Box
                     sx={{
-                        width: 48,
-                        height: 4,
+                        width: { xs: 36, sm: 40, md: 48 },
+                        height: { xs: 3, sm: 4, md: 4 },
                         borderRadius: 2,
                         background: `linear-gradient(90deg, ${displayColor} 0%, transparent 100%)`,
                     }}
@@ -62,12 +62,18 @@ export default function Section({ id, title, items, variant = 'timeline', icon, 
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 1,
+                        gap: { xs: 0.75, sm: 1 },
                         color: displayColor,
                     }}
                 >
                     {displayIcon}
-                    <Typography variant="h4" fontWeight={700} color="text.primary">
+                    <Typography
+                        variant="h5"
+                        sx={{
+                            fontSize: { xs: '1.4rem', sm: '1.6rem', md: '1.8rem' },
+                            fontWeight: 700,
+                        }}
+                    >
                         {title}
                     </Typography>
                 </Box>
@@ -82,8 +88,13 @@ export default function Section({ id, title, items, variant = 'timeline', icon, 
                         </Grid>
                     ))}
                 </Grid>
-            ) : (
-                <Box sx={{ pl: 2 }}>
+            )            : (
+                <Box
+                    sx={{
+                        pl: { xs: 1, sm: 2, md: 3 },
+                        '& > div': { pl: { xs: 2.5, sm: 3, md: 4 } },
+                    }}
+                >
                     {items.map((item) => (
                         <ContentCard key={item.slug} item={item} variant="timeline" />
                     ))}

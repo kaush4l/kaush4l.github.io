@@ -16,7 +16,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Link from 'next/link';
 import { useModelContext } from '@/context/ModelContext';
 import { usePathname } from 'next/navigation';
-import { useColorMode } from '@/theme/ThemeProvider';
+import { useThemeContext } from '@/theme/ThemeProvider';
 
 
 interface HeaderProps {
@@ -33,7 +33,7 @@ export default function Header({ onMenuToggle, menuButtonRef, loadingStatus }: H
     const theme = useTheme();
     const pathname = usePathname();
     const showAmaStatus = pathname === '/ama';
-    const { mode, toggleColorMode } = useColorMode();
+    const { mode, toggleColorMode } = useThemeContext();
 
     return (
         <AppBar
@@ -137,7 +137,7 @@ function ModelStatus({
 }
 
 function StatusBadge() {
-    const { llm, stt, tts } = useModelContext();
+    const { llm } = useModelContext();
 
     return (
         <Box sx={{
@@ -151,9 +151,7 @@ function StatusBadge() {
             border: '1px solid',
             borderColor: 'divider'
         }}>
-            <ModelStatus name="STT" state={stt} />
             <ModelStatus name="LLM" state={llm} />
-            <ModelStatus name="TTS" state={tts} />
             <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
         </Box>
     );

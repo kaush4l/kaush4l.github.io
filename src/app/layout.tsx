@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Amarante } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 
@@ -11,11 +11,11 @@ export const metadata: Metadata = {
   keywords: ["Software Engineer", "AI", "WebGPU", "React", "Next.js", "Portfolio"],
 };
 
-const inter = Inter({
+const amarante = Amarante({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-amarante",
 });
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.variable} suppressHydrationWarning>
+      <body className={amarante.variable} suppressHydrationWarning>
         <AppRouterCacheProvider>
           <ThemeProvider>
             {children}

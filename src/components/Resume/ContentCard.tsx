@@ -17,8 +17,8 @@ export default function ContentCard({ item, variant = 'card' }: ContentCardProps
             <Box
                 sx={{
                     position: 'relative',
-                    pl: 4,
-                    pb: 4,
+                    pl: { xs: 2.5, sm: 3, md: 4 },
+                    pb: { xs: 3, sm: 3.5, md: 4 },
                     borderLeft: '2px solid',
                     borderColor: 'divider',
                     '&:last-child': { borderColor: 'transparent' },

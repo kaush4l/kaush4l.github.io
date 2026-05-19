@@ -61,12 +61,18 @@ export default function AboutSection({ id = 'about', items }: AboutSectionProps)
                     }}
                 >
                     {/* Avatar */}
-                    <Box sx={{ flexShrink: 0 }}>
+                    <Box
+                        sx={{
+                            flexShrink: 0,
+                            mb: { xs: 2, md: 0 },
+                            alignSelf: { xs: 'center', md: 'flex-start' },
+                        }}
+                    >
                         <Avatar
                             sx={{
-                                width: 120,
-                                height: 120,
-                                fontSize: '3rem',
+                                width: { xs: 80, md: 120 },
+                                height: { xs: 80, md: 120 },
+                                fontSize: { xs: '1.8rem', md: '3rem' },
                                 background: `linear-gradient(135deg, ${COLORS.purple.main} 0%, ${COLORS.cyan.main} 100%)`,
                                 fontWeight: 700,
                             }}

@@ -10,16 +10,12 @@ interface ModelState {
 }
 
 interface ModelContextType {
-    stt: ModelState;
-    tts: ModelState;
     llm: ModelState;
     modelName: string;
     systemPrompt: string;
     autoLoadAll: () => Promise<void>;
 
-    // Workers - exposed for consumption by Chat Widget
-    sttWorker: Worker | null;
-    ttsWorker: Worker | null;
+    // Worker exposed for consumption by Chat Widget
     llmWorker: Worker | null;
 }
 
@@ -32,33 +28,22 @@ export function useModelContext() {
 }
 
 export function ModelProvider({ children, initialSystemPrompt = '' }: { children: ReactNode, initialSystemPrompt?: string }) {
-    const [stt, setStt] = useState<ModelState>({ ready: false, loading: false, progress: 0 });
-    const [tts, setTts] = useState<ModelState>({ ready: false, loading: false, progress: 0 });
     const [llm, setLlm] = useState<ModelState>({ ready: false, loading: false, progress: 0 });
     const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
 
-    // ... rest of context ...
-
-    // Keep workers in refs so we don't re-render too often, but expose them? 
-    // Actually we need state for them if we want to trigger updates in consumers? 
-    // No, refs are fine, consumers just need the instance. But consumers mount later.
     const [workers, setWorkers] = useState<{
-        stt: Worker | null;
-        tts: Worker | null;
         llm: Worker | null;
-    }>({ stt: null, tts: null, llm: null });
+    }>({ llm: null });
 
     const autoLoadPromiseRef = useRef<Promise<void> | null>(null);
 
     const terminateWorkers = useCallback(() => {
-        try { workers.stt?.terminate(); } catch { }
-        try { workers.tts?.terminate(); } catch { }
         try { workers.llm?.terminate(); } catch { }
-        setWorkers({ stt: null, tts: null, llm: null });
-    }, [workers.llm, workers.stt, workers.tts]);
+        setWorkers({ llm: null });
+    }, [workers.llm]);
 
     const loadWorker = async (
-        type: 'stt' | 'tts' | 'llm',
+        type: 'llm',
         createWorker: () => Worker,
         modelId: string,
         setState: React.Dispatch<React.SetStateAction<ModelState>>
@@ -86,12 +71,9 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
                 const { type: msgType, data } = e.data;
 
                 if (msgType === 'progress') {
-                    // Transformers.js progress_callback sends {status, progress, ...}
-                    // Progress is already a percentage (0-100), not a fraction
                     const rawProgress = data?.progress ?? 0;
-                    // Handle both percentage (0-100) and fraction (0-1) formats
                     const normalizedProgress = rawProgress > 1 ? rawProgress : rawProgress * 100;
-                    const progress = Math.min(99, Math.round(normalizedProgress)); // Cap at 99 until ready
+                    const progress = Math.min(99, Math.round(normalizedProgress));
                     setState(prev => ({ ...prev, progress, loading: true }));
                 } else if (msgType === 'ready') {
                     setState({ ready: true, loading: false, progress: 100 });
@@ -105,7 +87,6 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
 
             const errorHandler = (e: ErrorEvent) => {
                 const parts = [e?.message || `Worker error while loading ${type}`];
-                // Some browsers provide these; they are very helpful for worker-load failures.
                 const anyE = e as any;
                 if (anyE?.filename) parts.push(`file: ${anyE.filename}`);
                 if (typeof anyE?.lineno === 'number') parts.push(`line: ${anyE.lineno}`);
@@ -131,41 +112,27 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
         if (autoLoadPromiseRef.current) return autoLoadPromiseRef.current;
 
         autoLoadPromiseRef.current = (async () => {
-            console.log('Auto-loading all models in parallel...');
+            console.log('Auto-loading LLM model...');
 
-            // If we already have workers and all models are ready, no-op.
-            if (workers.stt && workers.tts && workers.llm && stt.ready && tts.ready && llm.ready) {
+            // If we already have workers and the model is ready, no-op.
+            if (workers.llm && llm.ready) {
                 return;
             }
 
             // If retrying after a failure, terminate old workers first.
-            if (workers.stt || workers.tts || workers.llm) {
+            if (workers.llm) {
                 terminateWorkers();
             }
 
-            // Load all workers in parallel for faster startup.
-            const [sttW, ttsW, llmW] = await Promise.all([
-                loadWorker(
-                    'stt',
-                    () => new Worker(new URL('../workers/stt.worker.js', import.meta.url), { type: 'module' }),
-                    MODELS.stt.default,
-                    setStt
-                ),
-                loadWorker(
-                    'tts',
-                    () => new Worker(new URL('../workers/tts.worker.js', import.meta.url), { type: 'module' }),
-                    MODELS.tts.default,
-                    setTts
-                ),
-                loadWorker(
-                    'llm',
-                    () => new Worker(new URL('../workers/llm.worker.js', import.meta.url), { type: 'module' }),
-                    MODELS.llm.default,
-                    setLlm
-                ),
-            ]);
+            // Load the LLM worker.
+            const llmW = await loadWorker(
+                'llm',
+                () => new Worker(new URL('../workers/llm.worker.js', import.meta.url), { type: 'module' }),
+                MODELS.llm.default,
+                setLlm
+            );
 
-            setWorkers({ stt: sttW, tts: ttsW, llm: llmW });
+            setWorkers({ llm: llmW });
         })();
 
         try {
@@ -175,22 +142,17 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
         }
     }, [
         llm.ready,
-        stt.ready,
         terminateWorkers,
-        tts.ready,
         workers.llm,
-        workers.stt,
-        workers.tts,
     ]);
 
     // Always keep a ref to the latest autoLoadAll so the startup effect (with
     // empty deps) never calls a stale closure without needing autoLoadAll in
-    // its dependency array (which would cause it to re-fire on every load).
+    // its dependency array.
     const autoLoadAllRef = useRef(autoLoadAll);
     useEffect(() => { autoLoadAllRef.current = autoLoadAll; });
 
     // Auto-initialize models on startup without blocking first paint.
-    // Empty dep array: intentionally runs once on mount only.
     useEffect(() => {
         if (typeof window === 'undefined') return;
         let cancelled = false;
@@ -220,11 +182,9 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
 
     return (
         <ModelContext.Provider value={{
-            stt, tts, llm, systemPrompt,
+            llm, systemPrompt,
             modelName: MODELS.llm.default.split('/').pop() || 'Unknown',
             autoLoadAll,
-            sttWorker: workers.stt,
-            ttsWorker: workers.tts,
             llmWorker: workers.llm
         }}>
             {children}
