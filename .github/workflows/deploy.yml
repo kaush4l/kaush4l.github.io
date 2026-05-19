@@ -25,7 +25,10 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run build
+          echo "Build completed, checking out directory:"
+          ls -la out/ 2>/dev/null || echo "out/ directory not found"
 
       - name: Create .nojekyll
         run: |
