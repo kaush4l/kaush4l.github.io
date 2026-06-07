@@ -80,7 +80,7 @@ async function main() {
 
   // Lazy import so the script remains a simple Node entrypoint.
   const transformers = await import('@huggingface/transformers');
-  const { env, pipeline, AutoTokenizer, AutoModelForCausalLM } = transformers;
+  const { env, pipeline, AutoTokenizer, AutoModelForCausalLM, AutoProcessor, Gemma4ForConditionalGeneration } = transformers;
 
   // Configure Transformers.js to download into the static site's hosted path.
   env.allowRemoteModels = true;
@@ -170,8 +170,18 @@ async function main() {
             }
           } catch { /* not present in onnx/ subfolder */ }
         }
-      } else if (lower.includes('gemma') || lower.includes('granite') || lower.includes('mistral') || lower.includes('llama')) {
-        // LLM — causal LM model
+      } else if (lower.includes('gemma')) {
+        // Gemma-4 is multimodal (text + audio + vision). Use the processor and
+        // the conditional-generation class so ALL required q4 ONNX files
+        // (decoder, embed_tokens, audio_encoder, vision_encoder) get cached.
+        await AutoProcessor.from_pretrained(modelId, common);
+        await Gemma4ForConditionalGeneration.from_pretrained(modelId, {
+          ...common,
+          device: 'cpu',
+          dtype: 'q4',
+        });
+      } else if (lower.includes('granite') || lower.includes('mistral') || lower.includes('llama')) {
+        // Text-only causal LM models.
         await AutoTokenizer.from_pretrained(modelId, common);
         await AutoModelForCausalLM.from_pretrained(modelId, {
           ...common,

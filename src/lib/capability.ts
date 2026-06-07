@@ -16,7 +16,8 @@ export interface CapabilityResult {
 
 export const MODELS = {
     llm: {
-        // Gemma-4-E2B-it — 2B parameter instruction-tuned LLM, ONNX-q4f16 for WebGPU
+        // Gemma-4-E2B-it — multimodal (text + audio + vision) instruction-tuned
+        // model, q4-quantized ONNX. q4f16 on WebGPU, q4 on the wasm fallback.
         default: 'onnx-community/gemma-4-E2B-it-ONNX',
     },
 };
@@ -34,7 +35,9 @@ export async function checkCapability(): Promise<CapabilityResult> {
             const adapter = await gpu.requestAdapter();
             if (adapter) {
                 webgpu = true;
-                const info = await adapter.requestAdapterInfo?.() || {};
+                // `adapter.info` is the current API; fall back to the legacy
+                // async `requestAdapterInfo()` on older browsers.
+                const info = (adapter as any).info || (await (adapter as any).requestAdapterInfo?.()) || {};
                 renderer = (info as any).description || (info as any).vendor || 'Generic WebGPU';
 
                 // Check FP16 support

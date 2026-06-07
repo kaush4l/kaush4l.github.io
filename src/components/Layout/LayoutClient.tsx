@@ -7,8 +7,9 @@ import Sidebar from './Sidebar';
 import Footer from './Footer';
 import ChatWidget from '@/components/Chat/ChatWidget';
 import { ModelProvider } from '@/context/ModelContext';
+import type { NavItem } from '@/lib/contentTypes';
 
-export default function LayoutClient({ children, systemPrompt }: { children: ReactNode, systemPrompt: string }) {
+export default function LayoutClient({ children, systemPrompt, nav }: { children: ReactNode, systemPrompt: string, nav: NavItem[] }) {
     const theme = useTheme();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const menuButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -39,7 +40,7 @@ export default function LayoutClient({ children, systemPrompt }: { children: Rea
         <ModelProvider initialSystemPrompt={systemPrompt}>
             <Box sx={{ display: 'flex', minHeight: '100vh' }}>
                 <Header onMenuToggle={toggleSidebar} menuButtonRef={menuButtonRef} />
-                <Sidebar open={sidebarOpen} onClose={closeSidebar} />
+                <Sidebar open={sidebarOpen} onClose={closeSidebar} nav={nav} />
 
                 <Box
                     component="main"

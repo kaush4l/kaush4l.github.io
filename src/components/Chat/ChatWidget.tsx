@@ -1,6 +1,6 @@
 'use client';
 
-// ChatWidget — text-only LLM chat (STT/TTS removed).
+// ChatWidget — on-device LLM chat with text + voice (multimodal) input.
 
 import { useState } from 'react';
 import {
@@ -19,9 +19,12 @@ import {
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
+import MicIcon from '@mui/icons-material/Mic';
+import StopIcon from '@mui/icons-material/Stop';
 import { useModelContext } from '@/context/ModelContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useChatAI } from '@/hooks/useChatAI';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 
 export default function ChatWidget() {
     useTheme(); // keep dark-mode reactivity
@@ -35,15 +38,31 @@ export default function ChatWidget() {
         input,
         setInput,
         sendMessage,
+        sendAudio,
         scrollContainerRef,
         messagesEndRef,
         shouldAutoScrollRef,
     } = useChatAI({ autoLoad: false });
 
+    const recorder = useAudioRecorder();
+
     const handleOpen = () => {
         setIsOpen(true);
         if (!llm.ready && !llm.loading && !llm.error) {
             void autoLoadAll().catch(() => {});
+        }
+    };
+
+    const handleMic = async () => {
+        if (recorder.recording) {
+            const audio = await recorder.stop();
+            if (audio && audio.length) void sendAudio(audio);
+        } else {
+            try {
+                await recorder.start();
+            } catch {
+                /* microphone permission denied or unavailable */
+            }
         }
     };
 
@@ -167,15 +186,29 @@ export default function ChatWidget() {
                             {/* Input Bar */}
                             <Box sx={{ p: 1, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Tooltip title={recorder.recording ? 'Stop & send voice' : 'Record a voice message'} placement="top">
+                                        <span>
+                                            <IconButton
+                                                data-testid="chat-mic"
+                                                aria-label={recorder.recording ? 'stop recording' : 'record voice message'}
+                                                color={recorder.recording ? 'error' : 'primary'}
+                                                onClick={handleMic}
+                                                disabled={!llm.ready || (busy && !recorder.recording)}
+                                                sx={recorder.recording ? { animation: 'micpulse 1.2s infinite' } : undefined}
+                                            >
+                                                {recorder.recording ? <StopIcon /> : <MicIcon />}
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
                                     <TextField
                                         fullWidth
-                                        placeholder={!llm.ready ? 'Loading model…' : 'Type a message…'}
+                                        placeholder={recorder.recording ? 'Recording… tap stop to send' : !llm.ready ? 'Loading model…' : 'Type or speak…'}
                                         size="small"
                                         variant="outlined"
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
                                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                                        disabled={!llm.ready || busy}
+                                        disabled={!llm.ready || busy || recorder.recording}
                                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: 4, bgcolor: 'action.hover' } }}
                                     />
                                     {input.trim() ? (
@@ -184,6 +217,7 @@ export default function ChatWidget() {
                                         </IconButton>
                                     ) : null}
                                 </Box>
+                                <style>{`@keyframes micpulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
                             </Box>
                         </Paper>
                     </motion.div>

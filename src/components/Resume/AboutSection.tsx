@@ -7,10 +7,11 @@ import { COLORS } from '@/theme/theme';
 
 interface AboutSectionProps {
     id?: string;
+    title?: string;
     items: ContentItem[];
 }
 
-export default function AboutSection({ id = 'about', items }: AboutSectionProps) {
+export default function AboutSection({ id = 'about', title = 'About', items }: AboutSectionProps) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const bio = items[0];
@@ -41,7 +42,7 @@ export default function AboutSection({ id = 'about', items }: AboutSectionProps)
                         display: 'inline-block',
                     }}
                 >
-                    About
+                    {title}
                 </Typography>
 
                 <Paper

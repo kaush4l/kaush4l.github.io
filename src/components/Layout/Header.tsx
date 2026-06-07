@@ -16,7 +16,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Link from 'next/link';
 import { useModelContext } from '@/context/ModelContext';
 import { usePathname } from 'next/navigation';
-import { useThemeContext } from '@/theme/ThemeProvider';
+import { useThemeContext, ThemeVariantSwitcher } from '@/theme/ThemeProvider';
 
 
 interface HeaderProps {
@@ -84,6 +84,9 @@ export default function Header({ onMenuToggle, menuButtonRef, loadingStatus }: H
                 {/* Status Indicator */}
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     {showAmaStatus && <StatusBadge />}
+
+                    {/* Theme palette picker — grouped with the light/dark toggle. */}
+                    <ThemeVariantSwitcher />
 
                     <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
                         <IconButton onClick={toggleColorMode} color="primary" aria-label="toggle color mode">

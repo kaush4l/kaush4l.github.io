@@ -1,138 +1,192 @@
 /**
- * LLM Web Worker — Gemma-4-E2B (text-only, plug-in upgradeable)
- * Model ID is passed in the 'load' message — swap any text-gen model without rebuilding.
+ * LLM Web Worker — on-device multimodal inference (Gemma-4-E2B by default).
+ *
+ * Protocol (see workerTypes.ts):
+ *   in  { type: 'load',     data: { model } }
+ *   in  { type: 'generate', data: { messages, audio?, requestId } }
+ *   out { type: 'progress' | 'ready' | 'complete' | 'error', data }
+ *
+ * `messages` is the chat history. `audio`, when present, is a mono 16 kHz
+ * Float32Array attached to the latest user turn so the model can transcribe and
+ * answer it in a single pass.
+ *
+ * SECURITY: retrieved/transcribed content is DATA, never instructions — it is
+ * only ever fed back to the model as user content, never executed.
  */
 import {
-    AutoTokenizer,
+    AutoProcessor,
+    Gemma4ForConditionalGeneration,
     TextStreamer,
-    AutoModel,
 } from '@huggingface/transformers';
 import { configureTransformersEnv } from './transformersEnv';
 
 const { localModelPath } = configureTransformersEnv();
 
-let tokenizer = null;
-let model = null;
-let currentModelId = null;
+const MAX_NEW_TOKENS = 512;
 
-async function detectDevice() {
-    if (navigator.gpu) {
+let model = null;
+let processor = null;
+let device = null;
+
+// ─── Loading ──────────────────────────────────────────────────────────────
+
+/** Choose the best execution device once. WebGPU when usable, else wasm. */
+async function pickDevice() {
+    if (typeof navigator !== 'undefined' && navigator.gpu) {
         try {
             const adapter = await navigator.gpu.requestAdapter();
             if (adapter) return 'webgpu';
         } catch {
-            // fall through
+            /* WebGPU present but unusable — fall through to wasm */
         }
     }
     return 'wasm';
 }
 
-async function loadModel(modelId, progressCallback) {
-    const device = await detectDevice();
-    console.log(`[LLM Worker] Loading ${modelId} on ${device}`);
-
-    const progressMap = new Map();
-    const wrappedProgressCallback = (progress) => {
-        if (progress.file) {
-            progressMap.set(progress.file, { loaded: progress.loaded ?? 0, total: progress.total ?? 0 });
-            if (progress.status === 'progress') {
-                let tL = 0, tS = 0;
-                for (const p of progressMap.values()) { tL += p.loaded; tS += p.total; }
-                if (tS > 0) progressCallback({ status: 'progress', progress: (tL / tS) * 100 });
+/** Collapse per-file download progress into one 0-100 percentage. */
+function progressAggregator(report) {
+    const files = new Map();
+    return (p) => {
+        if (!p) return;
+        if (p.file && (p.status === 'progress' || p.status === 'done')) {
+            files.set(p.file, { loaded: p.loaded ?? 0, total: p.total ?? 0 });
+            let loaded = 0;
+            let total = 0;
+            for (const f of files.values()) {
+                loaded += f.loaded;
+                total += f.total;
             }
+            if (total > 0) report({ status: 'progress', progress: (loaded / total) * 100 });
         } else {
-            progressCallback(progress);
+            report(p);
         }
     };
-
-    tokenizer = await AutoTokenizer.from_pretrained(modelId, {
-        progress_callback: wrappedProgressCallback,
-    });
-
-    // Gemma-4-E2B uses Gemma4ForConditionalGeneration (multimodal architecture) but we only use
-    // the text generation head. AutoModel auto-discovers the correct class from config.architectures.
-    const dtype = device === 'webgpu' ? 'q4f16' : 'q8';
-    model = await AutoModel.from_pretrained(modelId, {
-        dtype,
-        device,
-        progress_callback: wrappedProgressCallback,
-    });
-
-    currentModelId = modelId;
-    console.log(`[LLM Worker] Loaded ${modelId}`);
 }
 
+async function load(modelId, report) {
+    device = await pickDevice();
+    console.log(`[LLM Worker] Loading ${modelId} on ${device}`);
+    const onProgress = progressAggregator(report);
+
+    processor = await AutoProcessor.from_pretrained(modelId, { progress_callback: onProgress });
+
+    // q4f16 is the smallest fast path on WebGPU; q4 for the wasm fallback.
+    const dtype = device === 'webgpu' ? 'q4f16' : 'q4';
+    model = await Gemma4ForConditionalGeneration.from_pretrained(modelId, {
+        dtype,
+        device,
+        progress_callback: onProgress,
+    });
+
+    console.log(`[LLM Worker] Ready: ${modelId}`);
+}
+
+// ─── Message shaping ────────────────────────────────────────────────────────
+
+/**
+ * Fold any system messages into the first user turn. The Gemma chat template
+ * has no dedicated system role, so we prepend the system text instead.
+ */
+function foldSystem(messages) {
+    const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n\n');
+    const rest = messages.filter((m) => m.role !== 'system').map((m) => ({ ...m }));
+
+    if (!system) return rest;
+    const firstUser = rest.find((m) => m.role === 'user');
+    if (firstUser) {
+        firstUser.content = `${system}\n\n${firstUser.content}`;
+    } else {
+        rest.unshift({ role: 'user', content: system });
+    }
+    return rest;
+}
+
+/**
+ * Attach an audio block to the final user turn (transformers.js multimodal
+ * content format). Other turns keep their plain-string content.
+ */
+function attachAudio(messages) {
+    const out = messages.slice();
+    for (let i = out.length - 1; i >= 0; i--) {
+        if (out[i].role === 'user') {
+            out[i] = {
+                role: 'user',
+                content: [
+                    { type: 'audio' },
+                    { type: 'text', text: out[i].content || 'Transcribe what I said, then answer it.' },
+                ],
+            };
+            break;
+        }
+    }
+    return out;
+}
+
+// ─── Generation ─────────────────────────────────────────────────────────────
+
+async function generate({ messages, audio, requestId }, report) {
+    if (!model || !processor) throw new Error('Model not loaded');
+
+    const hasAudio = audio instanceof Float32Array && audio.length > 0;
+    const folded = foldSystem(messages);
+    const chat = hasAudio ? attachAudio(folded) : folded;
+
+    const prompt = processor.apply_chat_template(chat, { add_generation_prompt: true });
+
+    // processor(text, images, audio, options). Text-only turns can tokenize
+    // directly; audio turns must go through the full multimodal processor.
+    const inputs = hasAudio
+        ? await processor(prompt, null, audio, { add_special_tokens: false })
+        : processor.tokenizer(prompt, { add_special_tokens: false });
+
+    const streamer = new TextStreamer(processor.tokenizer, {
+        skip_prompt: true,
+        skip_special_tokens: true,
+        callback_function: (text) => report({ status: 'stream', output: text, requestId }),
+    });
+
+    const outputs = await model.generate({
+        ...inputs,
+        max_new_tokens: MAX_NEW_TOKENS,
+        do_sample: false,
+        repetition_penalty: 1.2,
+        streamer,
+    });
+
+    const decoded = processor.batch_decode(
+        outputs.slice(null, [inputs.input_ids.dims.at(-1), null]),
+        { skip_special_tokens: true },
+    );
+    return (decoded[0] ?? '').trim();
+}
+
+// ─── Message pump ─────────────────────────────────────────────────────────
+
 self.addEventListener('message', async (event) => {
-    const { type, data } = event.data;
+    const { type, data } = event.data ?? {};
+    const post = (t, d) => self.postMessage({ type: t, data: d });
 
     if (type === 'load') {
         try {
-            self.postMessage({ type: 'progress', data: { status: 'loading', progress: 0 } });
-            const modelId = data.model;
-            await loadModel(modelId, (x) => {
-                self.postMessage({ type: 'progress', data: x });
-            });
-            self.postMessage({ type: 'ready' });
+            post('progress', { status: 'loading', progress: 0 });
+            await load(data.model, (p) => post('progress', p));
+            post('ready');
         } catch (err) {
             const message = err?.message || String(err);
-            self.postMessage({
-                type: 'error',
-                data: `Failed to load LLM model from ${localModelPath}. Ensure model files exist under public/models. Details: ${message}`,
-            });
+            post('error', `Failed to load ${data?.model} from ${localModelPath} or the HF Hub. ${message}`);
         }
-    } else if (type === 'generate') {
+        return;
+    }
+
+    if (type === 'generate') {
+        const requestId = data?.requestId;
         try {
-            if (!tokenizer || !model) throw new Error('Model not loaded');
-
-            const { messages, requestId } = data || {};
-
-            // Apply chat template for conversational generation
-            const prompt = tokenizer.apply_chat_template(messages, {
-                add_generation_prompt: true,
-                tokenize: false,
-            });
-
-            const inputs = await tokenizer(prompt, { add_special_tokens: false });
-
-            const streamer = new TextStreamer(tokenizer, {
-                skip_prompt: true,
-                skip_special_tokens: true,
-                callback_function: (text) => {
-                    self.postMessage({
-                        type: 'progress',
-                        data: requestId
-                            ? { status: 'stream', output: text, requestId }
-                            : { status: 'stream', output: text },
-                    });
-                },
-            });
-
-            const outputs = await model.generate({
-                ...inputs,
-                max_new_tokens: 384,
-                do_sample: false,
-                repetition_penalty: 1.2,
-                streamer,
-            });
-
-            const decoded = tokenizer.batch_decode(
-                outputs.slice(null, [inputs.input_ids.dims.at(-1), null]),
-                { skip_special_tokens: true }
-            );
-
-            const outputText = decoded[0]?.trim() || '';
-            self.postMessage({
-                type: 'complete',
-                data: requestId ? { output: outputText, requestId } : outputText,
-            });
+            const output = await generate(data, (p) => post('progress', p));
+            post('complete', requestId ? { output, requestId } : output);
         } catch (err) {
-            console.error('[LLM Worker] Generation error:', err);
+            console.error('[LLM Worker] generate failed:', err);
             const message = err?.message || String(err);
-            const requestId = data?.requestId;
-            self.postMessage({
-                type: 'error',
-                data: requestId ? { message, requestId } : message,
-            });
+            post('error', requestId ? { message, requestId } : message);
         }
     }
 });

@@ -1,6 +1,6 @@
 /**
- * Shared typed message protocol for LLM web workers.
- * After STT/TTS removal, only LLM message types remain.
+ * Shared typed message protocol for the multimodal LLM web worker.
+ * The worker runs a Gemma-4-class model that accepts text and audio.
  */
 
 // ─── Inbound messages (main thread → worker) ───────────────────────────────
@@ -14,7 +14,8 @@ export interface GenerateMessage {
     type: 'generate';
     data: {
         messages: Array<{ role: string; content: string }>;
-        images?: string[];
+        /** Mono 16 kHz PCM attached to the latest user turn (voice input). */
+        audio?: Float32Array;
         requestId?: string;
         max_new_tokens?: number;
     };

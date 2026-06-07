@@ -23,10 +23,11 @@ const LABEL_MAP: Record<string, string> = {
 
 interface ContactSectionProps {
     id?: string;
+    title?: string;
     items: ContentItem[];
 }
 
-export default function ContactSection({ id = 'contact', items }: ContactSectionProps) {
+export default function ContactSection({ id = 'contact', title = 'Contact', items }: ContactSectionProps) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
 
@@ -54,7 +55,7 @@ export default function ContactSection({ id = 'contact', items }: ContactSection
                         display: 'inline-block',
                     }}
                 >
-                    Contact
+                    {title}
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
                     Let&apos;s connect. Find me on any of the platforms below.

@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "models:download": "node scripts/download-models.mjs",
-    "postinstall": "node scripts/copy-onnxruntime-assets.mjs",
-    "prebuild": "node scripts/copy-onnxruntime-assets.mjs",
+    "models:download": "bun scripts/download-models.mjs",
+    "postinstall": "bun scripts/copy-onnxruntime-assets.mjs",
+    "prebuild": "bun scripts/copy-onnxruntime-assets.mjs",
     "dev": "next dev --webpack",
     "dev:turbo": "next dev --turbopack",
     "build": "next build",

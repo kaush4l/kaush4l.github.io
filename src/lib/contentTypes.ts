@@ -27,6 +27,34 @@ export interface Section {
     items: ContentItem[];
 }
 
+/**
+ * Render layouts a section can declare in its `_section.md` frontmatter.
+ * The page never hardcodes a layout — it reads this value per folder.
+ */
+export type SectionLayout = 'timeline' | 'grid' | 'skills' | 'about' | 'contact';
+
+/**
+ * A fully-resolved content section: identity + presentation metadata + entries.
+ * Everything here is derived from the folder name and the folder's `_section.md`,
+ * never from hardcoded component logic.
+ */
+export interface SiteSection {
+    id: string;            // slug derived from folder name, e.g. 'experience'
+    title: string;         // display title from metadata or derived from folder name
+    layout: SectionLayout; // which renderer to use
+    icon: string;          // icon registry key, e.g. 'work'
+    order: number;         // numeric folder prefix (controls page order)
+    items: ContentItem[];  // entries, pre-sorted per the section's `sort` field
+}
+
+/** Navigation entry derived from a SiteSection (used by the Sidebar). */
+export interface NavItem {
+    id: string;
+    title: string;
+    icon: string;
+    href: string;          // e.g. '/#experience'
+}
+
 export interface AMAContent {
     slug: string;
     title: string;

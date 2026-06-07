@@ -3,9 +3,36 @@ import path from 'path';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
-import { ContentItem, Section, AMAContent } from './contentTypes';
+import { ContentItem, Section, AMAContent, SiteSection, SectionLayout, NavItem } from './contentTypes';
 
 const contentDirectory = path.join(process.cwd(), 'content');
+
+/**
+ * Files that describe a section or document a folder are NOT content entries.
+ * Entry files are plain `NN-name.md`; anything starting with `_` (e.g. the
+ * `_section.md` metadata file) or a README is excluded.
+ */
+function isEntryFile(fileName: string): boolean {
+    if (!fileName.endsWith('.md')) return false;
+    if (fileName.startsWith('_')) return false;
+    if (fileName.toLowerCase() === 'readme.md') return false;
+    return true;
+}
+
+/** Title-case a folder slug: `cloud-devops` -> `Cloud Devops`. */
+function humanize(slug: string): string {
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Default icon registry key per known section id; falls back to a generic key. */
+const DEFAULT_SECTION_ICON: Record<string, string> = {
+    education: 'school',
+    experience: 'work',
+    projects: 'code',
+    about: 'person',
+    skills: 'build',
+    contact: 'contact',
+};
 
 /**
  * Strip HTML tags safely (handles edge cases better than a simple regex).
@@ -65,7 +92,7 @@ export async function getContent(section: string, ascending = false): Promise<Co
         return [];
     }
 
-    const fileNames = fs.readdirSync(sectionPath).filter(f => f.endsWith('.md'));
+    const fileNames = fs.readdirSync(sectionPath).filter(isEntryFile);
 
     const allContentData = await Promise.all(
         fileNames.map((fileName) =>
@@ -87,6 +114,73 @@ export const getEducation  = () => getContent('01-education', true);
 export const getAbout      = () => getContent('04-about', true);
 export const getSkills     = () => getContent('05-skills', true);
 export const getContact    = () => getContent('06-contact', true);
+
+// ─── Metadata-driven sections ─────────────────────────────────────────────────
+
+interface SectionMeta {
+    title: string;
+    layout: SectionLayout;
+    icon: string;
+    sort: 'asc' | 'desc';
+}
+
+const VALID_LAYOUTS: SectionLayout[] = ['timeline', 'grid', 'skills', 'about', 'contact'];
+
+/**
+ * Read a section's `_section.md` frontmatter, falling back to defaults derived
+ * from the folder name. This is the single source of truth for how a section is
+ * presented — no section styling or ordering is hardcoded in components.
+ */
+function readSectionMeta(folderName: string, id: string): SectionMeta {
+    const defaults: SectionMeta = {
+        title: humanize(id),
+        layout: 'timeline',
+        icon: DEFAULT_SECTION_ICON[id] ?? 'folder',
+        sort: 'asc',
+    };
+
+    const metaPath = path.join(contentDirectory, folderName, '_section.md');
+    if (!fs.existsSync(metaPath)) return defaults;
+
+    const { data } = matter(fs.readFileSync(metaPath, 'utf8'));
+    return {
+        title: typeof data.title === 'string' ? data.title : defaults.title,
+        layout: VALID_LAYOUTS.includes(data.layout) ? (data.layout as SectionLayout) : defaults.layout,
+        icon: typeof data.icon === 'string' ? data.icon : defaults.icon,
+        sort: data.sort === 'desc' ? 'desc' : data.sort === 'asc' ? 'asc' : defaults.sort,
+    };
+}
+
+/**
+ * Resolve every content folder into a fully-described section: identity,
+ * presentation metadata, and pre-sorted entries. The home page renders purely
+ * from this list, so adding/removing/reordering a section is a folder change.
+ */
+export async function getSiteSections(): Promise<SiteSection[]> {
+    if (!fs.existsSync(contentDirectory)) return [];
+
+    const dirs = fs.readdirSync(contentDirectory, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && /^\d+-/.test(d.name))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    return Promise.all(
+        dirs.map(async (dir) => {
+            const id = dir.name.replace(/^\d+-/, '');
+            const order = parseInt(dir.name.match(/^(\d+)-/)?.[1] ?? '0', 10);
+            const meta = readSectionMeta(dir.name, id);
+            const items = await getContent(dir.name, meta.sort === 'asc');
+            return { id, order, title: meta.title, layout: meta.layout, icon: meta.icon, items };
+        }),
+    );
+}
+
+/** Navigation derived from sections — keeps the sidebar in sync with content. */
+export async function getNav(): Promise<NavItem[]> {
+    const sections = await getSiteSections();
+    return sections
+        .filter((s) => s.items.length > 0)
+        .map((s) => ({ id: s.id, title: s.title, icon: s.icon, href: `/#${s.id}` }));
+}
 
 /**
  * Get all sections with their content

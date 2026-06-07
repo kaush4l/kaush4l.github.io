@@ -1,54 +1,26 @@
 import { Box } from '@mui/material';
 import { Layout } from '@/components/Layout';
 import ModelStatusBanner from '@/components/ModelStatusBanner';
-import { Section, AboutSection, SkillsSection, ContactSection } from '@/components/Resume';
+import { SectionRenderer } from '@/components/Resume';
 import { HeroSwitcher } from '@/components/Hero';
-import { getContent, getAbout, getSkills, getContact } from '@/lib/content';
+import { getSiteSections } from '@/lib/content';
 
 export default async function Home() {
-  const [experience, projects, education, about, skills, contact] = await Promise.all([
-    getContent('02-experience'),
-    getContent('03-projects'),
-    getContent('01-education'),
-    getAbout(),
-    getSkills(),
-    getContact(),
-  ]);
+  // Every section — its title, layout, icon, order and entries — comes from the
+  // content/ folder structure. Nothing about the resume is hardcoded here.
+  const sections = await getSiteSections();
 
   return (
     <Layout>
-      {/* Hero — full-width, outside constrained box */}
+      {/* Hero — full-width visual lead-in, outside the constrained content box */}
       <HeroSwitcher />
 
       <Box sx={{ maxWidth: 1000, mx: 'auto', px: { xs: 2, md: 3 } }}>
         <ModelStatusBanner />
 
-        <AboutSection items={about} />
-
-        <Section
-          id="experience"
-          title="Experience"
-          items={experience}
-          variant="timeline"
-        />
-
-        <Section
-          id="projects"
-          title="Projects"
-          items={projects}
-          variant="grid"
-        />
-
-        <Section
-          id="education"
-          title="Education"
-          items={education}
-          variant="timeline"
-        />
-
-        <SkillsSection items={skills} />
-
-        <ContactSection items={contact} />
+        {sections.map((section) => (
+          <SectionRenderer key={section.id} section={section} />
+        ))}
       </Box>
     </Layout>
   );

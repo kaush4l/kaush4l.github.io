@@ -7,15 +7,17 @@ import { COLORS } from '@/theme/theme';
 
 interface SkillsSectionProps {
     id?: string;
+    title?: string;
     items: ContentItem[];
 }
 
+// Keyed by the `category` value in each skills `.md` frontmatter.
 const CATEGORY_ICONS: Record<string, string> = {
     Languages: '{ }',
     Frameworks: '⚛',
-    'Cloud & DevOps': '☁',
-    'AI & ML': '🤖',
-    'Tools & Databases': '🛠',
+    Cloud: '☁',
+    AI: '🤖',
+    Tools: '🛠',
 };
 
 const chipColorIndex = (i: number, isDark: boolean) => {
@@ -26,15 +28,16 @@ const chipColorIndex = (i: number, isDark: boolean) => {
     return palettes[i % 2];
 };
 
-export default function SkillsSection({ id = 'skills', items }: SkillsSectionProps) {
+export default function SkillsSection({ id = 'skills', title = 'Skills', items }: SkillsSectionProps) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
 
-    // Group by category
-    const groups = items.reduce<Record<string, ContentItem[]>>((acc, item) => {
+    // Group by category; carry a display label (the entry title is friendlier
+    // than the short category key, e.g. "Cloud & DevOps" vs "Cloud").
+    const groups = items.reduce<Record<string, { label: string; items: ContentItem[] }>>((acc, item) => {
         const key = item.category ?? item.title ?? 'Other';
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(item);
+        if (!acc[key]) acc[key] = { label: item.title ?? key, items: [] };
+        acc[key].items.push(item);
         return acc;
     }, {});
 
@@ -62,7 +65,7 @@ export default function SkillsSection({ id = 'skills', items }: SkillsSectionPro
                         display: 'inline-block',
                     }}
                 >
-                    Skills
+                    {title}
                 </Typography>
 
                 <Box
@@ -72,13 +75,16 @@ export default function SkillsSection({ id = 'skills', items }: SkillsSectionPro
                         gap: { xs: 1.5, md: 2 },
                     }}
                 >
-                    {Object.entries(groups).map(([category, groupItems], groupIdx) => {
-                        // Each item in the group may have comma-separated skills in description
-                        const allSkills = groupItems.flatMap((item) =>
-                            (item.description ?? item.title ?? '')
-                                .split(',')
-                                .map((s) => s.trim())
-                                .filter(Boolean),
+                    {Object.entries(groups).map(([category, group], groupIdx) => {
+                        // Skills live in the `tags` frontmatter array; fall back to a
+                        // comma-separated `description` for older entries.
+                        const allSkills = group.items.flatMap((item) =>
+                            item.tags && item.tags.length
+                                ? item.tags
+                                : (item.description ?? '')
+                                      .split(',')
+                                      .map((s) => s.trim())
+                                      .filter(Boolean),
                         );
 
                         return (
@@ -120,7 +126,7 @@ export default function SkillsSection({ id = 'skills', items }: SkillsSectionPro
                                         }}
                                     >
                                         <span>{CATEGORY_ICONS[category] ?? '◆'}</span>
-                                        {category}
+                                        {group.label}
                                     </Typography>
 
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>

@@ -44,8 +44,9 @@ export default function HeroSwitcher() {
                 <Box
                     sx={{
                         position: 'fixed',
-                        bottom: { xs: 16, md: 80 },
-                        right: { xs: 16, md: 20 },
+                        // Bottom-left so it never collides with the chat FAB (bottom-right).
+                        bottom: { xs: 16, md: 20 },
+                        left: { xs: 16, md: 20 },
                         zIndex: 9999,
                         display: 'flex',
                         alignItems: 'center',
@@ -57,7 +58,7 @@ export default function HeroSwitcher() {
                         p: 0.75,
                         boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                         transform: { xs: 'scale(0.85)', md: 'scale(1)' },
-                        transformOrigin: 'right bottom',
+                        transformOrigin: 'left bottom',
                     }}
                 >
                     <Tooltip title="Hero variant" placement="left">

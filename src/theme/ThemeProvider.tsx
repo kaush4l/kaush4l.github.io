@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { ThemeProvider as MUIThemeProvider, CssBaseline, Box, IconButton, Fade, Paper, Typography } from '@mui/material';
+import { ThemeProvider as MUIThemeProvider, CssBaseline, Box, IconButton, Menu, MenuItem, ListItemText, Tooltip, Typography } from '@mui/material';
 import type { PaletteMode } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
@@ -139,13 +139,6 @@ export const THEME_PALETTES: Record<ThemeVariant, ThemePalette> = {
         chipBg: 'rgba(168,85,247,0.15)',
         chipColor: '#C084FC',
     },
-};
-
-const VARIANT_LABELS: Record<ThemeVariant, string> = {
-    a: 'A — Purple Glow',
-    b: 'B — Deep Slate',
-    c: 'C — Clean Minimal',
-    d: 'D — Neon Cyber',
 };
 
 // ─── Theme factory ───────────────────────────────────────────────────────────
@@ -314,7 +307,6 @@ const COLOR_STORAGE_KEY = 'kk-color-mode';
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [variant, setVariantState] = useState<ThemeVariant>('a');
     const [mode, setMode] = useState<PaletteMode>('light');
-    const [showPanel, setShowPanel] = useState(false);
 
     // Load persisted state
     useEffect(() => {
@@ -351,154 +343,79 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             <MUIThemeProvider theme={theme}>
                 <CssBaseline />
                 {children}
-                {/* Theme Switcher Panel */}
-                <ThemeSwitcherPanel
-                    show={showPanel}
-                    setShow={setShowPanel}
-                    variant={variant}
-                    setVariant={setVariant}
-                    isDark={isDark}
-                />
-                {/* Floating toggle button */}
-                <IconButton
-                    onClick={() => setShowPanel((p) => !p)}
-                    sx={{
-                        position: 'fixed',
-                        bottom: 20,
-                        right: 20,
-                        zIndex: 1300,
-                        width: 48,
-                        height: 48,
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        boxShadow: 4,
-                        '&:hover': { bgcolor: 'primary.dark' },
-                        transition: 'all 0.2s',
-                    }}
-                    aria-label="switch theme"
-                >
-                    <ColorLensIcon />
-                </IconButton>
             </MUIThemeProvider>
         </ThemeContext.Provider>
     );
 }
 
-// ─── Theme Switcher Panel ────────────────────────────────────────────────────
+// ─── Theme Variant Switcher (header-anchored) ─────────────────────────────────
 
-function ThemeSwitcherPanel({
-    show,
-    setShow,
-    variant,
-    setVariant,
-    isDark,
-}: {
-    show: boolean;
-    setShow: (v: boolean) => void;
-    variant: ThemeVariant;
-    setVariant: (v: ThemeVariant) => void;
-    isDark: boolean;
-}) {
+/**
+ * A compact theme-palette picker meant to live in the header next to the
+ * light/dark toggle. UX rationale: a page should have a single primary floating
+ * action (the chat FAB). Secondary, infrequent controls like theme selection
+ * belong with related controls in the header, not stacked as a competing FAB.
+ */
+export function ThemeVariantSwitcher() {
+    const { variant, setVariant } = useThemeContext();
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const open = Boolean(anchorEl);
+
     return (
-        <Fade in={show} timeout={300}>
-            <Paper
-                sx={{
-                    position: 'fixed',
-                    bottom: { xs: 80, md: 100 },
-                    right: { xs: 16, md: 20 },
-                    left: { xs: 16, sm: 'auto' },
-                    zIndex: 1300,
-                    p: { xs: 1.5, md: 2 },
-                    borderRadius: 3,
-                    boxShadow: 8,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    minWidth: { xs: 'calc(100vw - 32px)', sm: 200 },
-                    maxWidth: 240,
-                }}
+        <>
+            <Tooltip title="Theme">
+                <IconButton
+                    color="primary"
+                    onClick={(e) => setAnchorEl(e.currentTarget)}
+                    aria-label="switch theme"
+                    aria-haspopup="true"
+                    aria-expanded={open ? 'true' : undefined}
+                >
+                    <ColorLensIcon />
+                </IconButton>
+            </Tooltip>
+            <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={() => setAnchorEl(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                slotProps={{ paper: { sx: { mt: 1, minWidth: 220, borderRadius: 3, p: 0.5 } } }}
             >
                 <Typography
                     variant="overline"
-                    sx={{
-                        display: 'block',
-                        mb: 1.5,
-                        fontWeight: 700,
-                        color: 'text.secondary',
-                        letterSpacing: '0.08em',
-                    }}
+                    sx={{ display: 'block', px: 1.5, py: 0.5, fontWeight: 700, color: 'text.secondary', letterSpacing: '0.08em' }}
                 >
-                    THEME
+                    Theme
                 </Typography>
                 {(['a', 'b', 'c', 'd'] as ThemeVariant[]).map((v) => {
                     const p = THEME_PALETTES[v];
                     const isActive = v === variant;
                     return (
-                        <Box
+                        <MenuItem
                             key={v}
-                            onClick={() => setVariant(v)}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1.5,
-                                p: 1.25,
-                                borderRadius: 2,
-                                mb: 0.75,
-                                cursor: 'pointer',
-                                border: '1.5px solid',
-                                borderColor: isActive ? p.primary : 'transparent',
-                                backgroundColor: isActive ? `${p.primary}12` : 'transparent',
-                                transition: 'all 0.15s',
-                                '&:hover': {
-                                    backgroundColor: `${p.primary}08`,
-                                },
-                            }}
+                            selected={isActive}
+                            onClick={() => { setVariant(v); setAnchorEl(null); }}
+                            sx={{ borderRadius: 2, gap: 1.5, mx: 0.5, my: 0.25 }}
                         >
-                            {/* Color swatch */}
                             <Box
                                 sx={{
-                                    width: 32,
-                                    height: 32,
+                                    width: 24,
+                                    height: 24,
                                     borderRadius: '50%',
                                     background: `linear-gradient(135deg, ${p.primary} 0%, ${p.secondary} 100%)`,
                                     flexShrink: 0,
-                                    border: '2px solid',
-                                    borderColor: isActive ? p.primary : 'transparent',
                                 }}
                             />
-                            <Box sx={{ flex: 1 }}>
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        fontWeight: isActive ? 700 : 500,
-                                        color: 'text.primary',
-                                        fontSize: '0.85rem',
-                                    }}
-                                >
-                                    {p.label}
-                                </Typography>
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: 'text.secondary',
-                                        fontSize: '0.7rem',
-                                    }}
-                                >
-                                    {VARIANT_LABELS[v]}
-                                </Typography>
-                            </Box>
-                            {isActive && (
-                                <CheckCircleIcon
-                                    sx={{
-                                        fontSize: 18,
-                                        color: p.primary,
-                                        flexShrink: 0,
-                                    }}
-                                />
-                            )}
-                        </Box>
+                            <ListItemText
+                                primary={p.label}
+                                primaryTypographyProps={{ fontWeight: isActive ? 700 : 500, fontSize: '0.9rem' }}
+                            />
+                            {isActive && <CheckCircleIcon sx={{ fontSize: 18, color: p.primary }} />}
+                        </MenuItem>
                     );
                 })}
-            </Paper>
-        </Fade>
+            </Menu>
+        </>
     );
 }

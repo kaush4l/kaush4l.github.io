@@ -1,71 +1,52 @@
 import { ReactNode } from 'react';
-import { getContent, stripHtml } from '@/lib/content';
+import { getSiteSections, getNav, stripHtml } from '@/lib/content';
+import type { SiteSection } from '@/lib/contentTypes';
 import LayoutClient from './LayoutClient';
 
 interface LayoutProps {
     children: ReactNode;
 }
 
-export default async function Layout({
-    children,
-}: LayoutProps) {
-    // Fetch system prompt data server-side — parallelized for faster builds
-    const [experience, projects, education, skills, about] = await Promise.all([
-        getContent('02-experience'),
-        getContent('03-projects'),
-        getContent('01-education'),
-        getContent('05-skills'),
-        getContent('04-about'),
-    ]);
+/** Flatten one section's entries into compact plain text for the system prompt. */
+function sectionToText(section: SiteSection): string {
+    const lines = section.items.map((item) => {
+        const heading = [item.title, item.subtitle].filter(Boolean).join(' — ');
+        const meta = [item.period, item.location].filter(Boolean).join(' · ');
+        const skills = item.tags ?? item.tools;
+        const body = stripHtml(item.contentHtml).trim().slice(0, 400);
 
-    const aboutText = about[0] ? stripHtml(about[0].contentHtml) : '';
+        return [
+            meta ? `${heading} (${meta})` : heading,
+            skills?.length ? `Tags: ${skills.join(', ')}` : '',
+            body,
+        ].filter(Boolean).join('\n');
+    });
 
-    const systemPrompt = `You are Kaushal Kanakamedala's personal AI assistant, knowledgeable about his background, skills, projects, and experience. Answer questions about Kaushal accurately based on the information below.
+    return `## ${section.title}\n${lines.join('\n\n')}`;
+}
 
-Voice-first response style (IMPORTANT):
-- Reply in plain text only: no markdown, no headings, no bullet lists, no tables, no code fences.
-- Keep answers short and direct: 1-3 sentences by default. Expand only when asked for detail.
-- Use a natural, conversational tone that sounds great when read aloud.
-- If you need to list items, use a single short sentence with commas, e.g. "He knows Java, Python, TypeScript, and more."
-- If you don't know something, say so briefly and pivot to the closest relevant info.
-- Never fabricate information — only answer based on what is provided below.
+export default async function Layout({ children }: LayoutProps) {
+    // The assistant's knowledge and the site navigation are both derived from the
+    // same content folders — there is no second, hardcoded copy to keep in sync.
+    const [sections, nav] = await Promise.all([getSiteSections(), getNav()]);
 
-Who is Kaushal:
-- Kaushal Kanakamedala is a Senior Software Engineer based in Durham, NC with 8+ years of experience.
-- He is a full-stack engineer who ships production systems across enterprise Java backends, modern Angular/React frontends, cloud-native infrastructure, and cutting-edge on-device AI.
-- Currently working at Fidelity (via DataForce Inc) building grant management platforms while pushing the boundaries of what's possible in the browser with WebGPU and Transformers.js.
-- He believes great software lives at the intersection of rigorous engineering, empathetic design, and measurable user impact.
-- Contact: kaush4lk@gmail.com | GitHub: https://github.com/kaush4l | LinkedIn: https://linkedin.com/in/kaush4l
+    const knowledge = sections.map(sectionToText).join('\n\n');
 
-Skills:
-${skills
-        .map((s) => `${s.title}: ${s.tags?.join(', ') || stripHtml(s.contentHtml).substring(0, 150)}`)
-        .join('\n')}
+    const systemPrompt = `You are Kaushal Kanakamedala's on-device AI assistant. You answer questions about Kaushal's background, skills, projects, and experience using only the information below.
 
-Experience (most recent first):
-${experience
-        .slice()
-        .reverse()
-        .map((e) => `${e.title} at ${e.subtitle} (${e.period})${e.location ? ` — ${e.location}` : ''}
-Tools: ${e.tools?.join(', ') || 'N/A'}
-${stripHtml(e.contentHtml).substring(0, 400)}`)
-        .join('\n\n')}
+Response style (this is a voice-capable assistant — questions may arrive as audio):
+- Reply in plain, natural text: no markdown, headings, bullet lists, tables, or code fences.
+- Be short and direct — 1 to 3 sentences by default; expand only when explicitly asked.
+- When the input is audio, briefly transcribe what you heard, then answer it.
+- If you don't know something, say so briefly and pivot to the closest relevant fact.
+- Never invent details; rely only on the knowledge below.
 
-Projects:
-${projects
-        .slice()
-        .reverse()
-        .map((p) => `${p.title} (${p.period || ''}) — ${p.tools?.join(', ') || ''}
-${stripHtml(p.contentHtml).substring(0, 250)}`)
-        .join('\n\n')}
-
-Education:
-${education.map((e) => `${e.title} — ${e.subtitle} (${e.period})`).join('\n')}
+Site knowledge (the single source of truth):
+${knowledge}
 `;
 
-
     return (
-        <LayoutClient systemPrompt={systemPrompt}>
+        <LayoutClient systemPrompt={systemPrompt} nav={nav}>
             {children}
         </LayoutClient>
     );

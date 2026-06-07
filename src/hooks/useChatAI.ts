@@ -35,6 +35,7 @@ export interface UseChatAIReturn {
 
     // Actions
     sendText: (text: string) => Promise<void>;
+    sendAudio: (audio: Float32Array) => Promise<void>;
     sendMessage: (overrideContent?: string) => void;
     clearChat: () => void;
 
@@ -181,6 +182,36 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
         llmWorker.postMessage({ type: 'generate', data: { messages: history, requestId: llmRequestId } });
     }, [autoLoadAll, busy, llm.ready, llmWorker, messages, systemPrompt]);
 
+    // ── Send Audio (multimodal voice input) ─────────────────────────────────
+    const sendAudio = useCallback(async (audio: Float32Array) => {
+        if (busy || audio.length === 0) return;
+        if (!llm.ready || !llmWorker) {
+            await autoLoadAll().catch(() => {});
+            if (!llmWorker) return;
+        }
+
+        const llmRequestId = makeRequestId('llm');
+        activeLlmRequestIdRef.current = llmRequestId;
+
+        // The bubble is a placeholder; the model receives the raw audio and is
+        // instructed (worker-side) to transcribe and answer it.
+        setMessages((prev) => [...prev, { role: 'user', content: '🎤 Voice message' }]);
+        setBusy(true);
+        setStreamingContent('');
+        streamingBufferRef.current = '';
+
+        const history: ChatMessage[] = [
+            { role: 'system', content: systemPrompt },
+            ...messages,
+            { role: 'user', content: '' },
+        ];
+
+        llmWorker.postMessage({
+            type: 'generate',
+            data: { messages: history, audio, requestId: llmRequestId },
+        });
+    }, [autoLoadAll, busy, llm.ready, llmWorker, messages, systemPrompt]);
+
     // ── sendMessage: convenience wrapper (reads local input) ─────
     const sendMessage = useCallback((overrideContent?: string) => {
         const content = overrideContent ?? input.trim();
@@ -203,6 +234,7 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
         input,
         setInput,
         sendText,
+        sendAudio,
         sendMessage,
         clearChat,
         scrollContainerRef,

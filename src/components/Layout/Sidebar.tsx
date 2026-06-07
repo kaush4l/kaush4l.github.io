@@ -12,15 +12,10 @@ import {
     useTheme,
     useMediaQuery,
 } from '@mui/material';
-import SchoolIcon from '@mui/icons-material/School';
-import WorkIcon from '@mui/icons-material/Work';
-import CodeIcon from '@mui/icons-material/Code';
-import HomeIcon from '@mui/icons-material/Home';
-import PersonIcon from '@mui/icons-material/Person';
-import BuildIcon from '@mui/icons-material/Build';
-import ContactMailIcon from '@mui/icons-material/ContactMail';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { NavItem } from '@/lib/contentTypes';
+import { SectionIcon } from '@/components/icons';
 
 const DRAWER_WIDTH = 260;
 const COLLAPSED_WIDTH = 72;
@@ -28,27 +23,19 @@ const COLLAPSED_WIDTH = 72;
 interface SidebarProps {
     open: boolean;
     onClose: () => void;
+    nav: NavItem[];
 }
 
-const menuItems = [
-    { text: 'Home', icon: <HomeIcon />, href: '/', section: null },
-    { divider: true },
-    { text: 'About', icon: <PersonIcon />, href: '/#about', section: 'about' },
-    { text: 'Experience', icon: <WorkIcon />, href: '/#experience', section: 'experience' },
-    { text: 'Projects', icon: <CodeIcon />, href: '/#projects', section: 'projects' },
-    { text: 'Education', icon: <SchoolIcon />, href: '/#education', section: 'education' },
-    { text: 'Skills', icon: <BuildIcon />, href: '/#skills', section: 'skills' },
-    { text: 'Contact', icon: <ContactMailIcon />, href: '/#contact', section: 'contact' },
-];
-
-export default function Sidebar({ open, onClose }: SidebarProps) {
+export default function Sidebar({ open, onClose, nav }: SidebarProps) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const pathname = usePathname();
 
     const isActive = (href: string) => {
         if (href === '/') return pathname === '/';
-        return pathname.startsWith(href.split('#')[0]);
+        const base = href.split('#')[0];
+        // In-page hash links (e.g. /#about) are anchors, not active routes.
+        return base !== '/' && pathname.startsWith(base);
     };
 
     const drawerContent = (
@@ -58,61 +45,60 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             </Box>
 
             <List sx={{ flexGrow: 1, px: 1 }}>
-                {menuItems.map((item, index) => {
-                    if ('divider' in item && item.divider) {
-                        return <Divider key={index} sx={{ my: 1 }} />;
-                    }
-
-                    const menuItem = item as { text: string; icon: React.ReactNode; href: string; section: string | null };
+                {/* Home + a divider, then one entry per content section (metadata-driven). */}
+                {[{ text: 'Home', icon: 'home', href: '/' }, ...nav.map((n) => ({ text: n.title, icon: n.icon, href: n.href }))].map((menuItem, index) => {
                     const active = isActive(menuItem.href);
 
                     return (
-                        <ListItem key={menuItem.text} disablePadding sx={{ mb: 0.5 }}>
-                            <ListItemButton
-                                component={Link}
-                                href={menuItem.href}
-                                aria-label={menuItem.text}
-                                onClick={(e) => {
-                                    // Prevent focus from remaining inside the temporary Drawer as it closes.
-                                    if (e.currentTarget instanceof HTMLElement) {
-                                        e.currentTarget.blur();
-                                    }
-                                    onClose();
-                                }}
-                                sx={{
-                                    borderRadius: 2,
-                                    minHeight: 48,
-                                    justifyContent: open ? 'flex-start' : 'center',
-                                    px: 2.5,
-                                    backgroundColor: active ? 'primary.main' : 'transparent',
-                                    color: active ? 'white' : 'text.primary',
-                                    '&:hover': {
-                                        backgroundColor: active ? 'primary.dark' : 'rgba(124, 58, 237, 0.08)',
-                                    },
-                                    transition: 'all 0.2s ease-in-out',
-                                }}
-                            >
-                                <ListItemIcon
+                        <Box component="span" key={menuItem.href} sx={{ display: 'block' }}>
+                            {index === 1 && <Divider sx={{ my: 1 }} />}
+                            <ListItem disablePadding sx={{ mb: 0.5 }}>
+                                <ListItemButton
+                                    component={Link}
+                                    href={menuItem.href}
+                                    aria-label={menuItem.text}
+                                    onClick={(e) => {
+                                        // Prevent focus from remaining inside the temporary Drawer as it closes.
+                                        if (e.currentTarget instanceof HTMLElement) {
+                                            e.currentTarget.blur();
+                                        }
+                                        onClose();
+                                    }}
                                     sx={{
-                                        minWidth: 0,
-                                        mr: open ? 2 : 0,
-                                        justifyContent: 'center',
-                                        color: active ? 'white' : 'primary.main',
+                                        borderRadius: 2,
+                                        minHeight: 48,
+                                        justifyContent: open ? 'flex-start' : 'center',
+                                        px: 2.5,
+                                        backgroundColor: active ? 'primary.main' : 'transparent',
+                                        color: active ? 'white' : 'text.primary',
+                                        '&:hover': {
+                                            backgroundColor: active ? 'primary.dark' : 'rgba(124, 58, 237, 0.08)',
+                                        },
+                                        transition: 'all 0.2s ease-in-out',
                                     }}
                                 >
-                                    {menuItem.icon}
-                                </ListItemIcon>
-                                {open && (
-                                    <ListItemText
-                                        primary={menuItem.text}
-                                        primaryTypographyProps={{
-                                            fontWeight: active ? 600 : 500,
-                                            fontSize: '0.9rem',
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 0,
+                                            mr: open ? 2 : 0,
+                                            justifyContent: 'center',
+                                            color: active ? 'white' : 'primary.main',
                                         }}
-                                    />
-                                )}
-                            </ListItemButton>
-                        </ListItem>
+                                    >
+                                        <SectionIcon name={menuItem.icon} />
+                                    </ListItemIcon>
+                                    {open && (
+                                        <ListItemText
+                                            primary={menuItem.text}
+                                            primaryTypographyProps={{
+                                                fontWeight: active ? 600 : 500,
+                                                fontSize: '0.9rem',
+                                            }}
+                                        />
+                                    )}
+                                </ListItemButton>
+                            </ListItem>
+                        </Box>
                     );
                 })}
             </List>
