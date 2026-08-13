@@ -21,7 +21,17 @@ export interface GenerateMessage {
     };
 }
 
-export type LLMInbound = LoadMessage | GenerateMessage;
+/**
+ * Halt the in-flight generation. The worker interrupts its stopping criteria;
+ * the run then finishes early and still posts `complete` with whatever it had,
+ * which the main thread's request-id guard discards (D6).
+ */
+export interface InterruptMessage {
+    type: 'interrupt';
+    data?: { requestId?: string };
+}
+
+export type LLMInbound = LoadMessage | GenerateMessage | InterruptMessage;
 
 // ─── Outbound messages (worker → main thread) ──────────────────────────────
 

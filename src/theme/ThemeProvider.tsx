@@ -6,6 +6,45 @@ import { createTheme } from '@mui/material/styles';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
+// Expose a first-class mono family on the theme so components never hardcode a
+// monospace stack. Populated below from the `--font-mono` next/font variable.
+declare module '@mui/material/styles' {
+    interface TypographyVariants {
+        fontFamilyMono: string;
+    }
+    interface TypographyVariantsOptions {
+        fontFamilyMono?: string;
+    }
+}
+
+// ─── Design tokens ───────────────────────────────────────────────────────────
+
+/** Font stacks. The variables are defined by next/font in `layout.tsx`. */
+const FONT_SANS = 'var(--font-sans), system-ui, -apple-system, sans-serif';
+const FONT_MONO = 'var(--font-mono), ui-monospace, monospace';
+
+/**
+ * Corner-radius scale — the single source of corner geometry.
+ * `shape.borderRadius` stays at MUI's default base of 4 — every
+ * `sx={{ borderRadius: n }}` in the codebase was written against that
+ * multiplier. Component surfaces use explicit px from this scale and nothing
+ * else; import it (`import { RADIUS } from '@/theme/ThemeProvider'`) rather
+ * than re-declaring or writing px literals.
+ *
+ * `tail` is the squared-off corner a speech bubble turns toward its author.
+ */
+export const RADIUS = {
+    tail: '4px',
+    chip: '8px',
+    card: '16px',
+    floating: '20px',
+    pill: '999px',
+} as const;
+
+/** Named-property transitions only — never `all`. Decelerate curve, 150ms. */
+const TRANSITION =
+    'transform 150ms cubic-bezier(0.2,0,0,1), box-shadow 150ms cubic-bezier(0.2,0,0,1), border-color 150ms linear';
+
 // ─── Theme variant definitions ───────────────────────────────────────────────
 
 export type ThemeVariant = 'a' | 'b' | 'c' | 'd';
@@ -13,14 +52,35 @@ export type ThemeVariant = 'a' | 'b' | 'c' | 'd';
 export interface ThemePalette {
     name: string;
     label: string;
+    /**
+     * True when `bg`/`surface` are dark. The palettes carry their own surfaces,
+     * so darkness is a property of the *variant*, not of the light/dark toggle —
+     * `isDark` below is `dark || mode === 'dark'`.
+     */
+    dark: boolean;
+    // ─── Color-usage contract (read before adding a call site) ───────────────
+    // `primary`/`secondary` are FILL colors: backgrounds, bars, dots, icons on
+    // a neutral surface at ≥ 3:1. They are NOT text colors — `secondary` in
+    // particular is a saturated cyan/green that measures ~2.4:1 as body text on
+    // a light surface.
+    // For TEXT and small icons use the tonal channel that opposes the surface:
+    //   light surface → `…Dark`   |   dark surface → `…Light`
+    // Both channels are verified ≥ 4.5:1 against this palette's own
+    // `bg`/`surface` (see the ratios noted per variant).
+    // When a fill is used *behind* text, the text takes `contrastText` — never
+    // a hardcoded `#fff`, and never a mode-derived guess (see D2).
     // Primary brand color
     primary: string;
     primaryLight: string;
     primaryDark: string;
+    /** Text/icon color on a `primary` fill. Verified ≥ 4.5:1 per variant. */
+    primaryContrast: string;
     // Secondary accent
     secondary: string;
     secondaryLight: string;
     secondaryDark: string;
+    /** Text/icon color on a `secondary` fill. Verified ≥ 4.5:1 per variant. */
+    secondaryContrast: string;
     // Surface/background
     bg: string;
     bgAlt: string;
@@ -47,12 +107,15 @@ export const THEME_PALETTES: Record<ThemeVariant, ThemePalette> = {
     a: {
         name: 'a',
         label: 'Purple Glow',
+        dark: false,
         primary: '#7C3AED',
         primaryLight: '#A78BFA',
         primaryDark: '#5B21B6',
+        primaryContrast: '#FFFFFF', // 5.70:1 on #7C3AED
         secondary: '#06B6D4',
         secondaryLight: '#67E8F9',
-        secondaryDark: '#0E7490',
+        secondaryDark: '#0E7490', // text channel — 5.13:1 on #FAFAFA, 5.36:1 on #FFFFFF
+        secondaryContrast: '#062A32', // 6.25:1 on #06B6D4 (white would be 2.43:1)
         bg: '#FAFAFA',
         bgAlt: '#F3F0FF',
         surface: '#FFFFFF',
@@ -71,12 +134,15 @@ export const THEME_PALETTES: Record<ThemeVariant, ThemePalette> = {
     b: {
         name: 'b',
         label: 'Deep Slate',
+        dark: true,
         primary: '#F59E0B',
-        primaryLight: '#FCD34D',
+        primaryLight: '#FCD34D', // text channel (dark palette) — 12.38:1 on #0F172A
         primaryDark: '#D97706',
+        primaryContrast: '#231A02', // 8.01:1 on #F59E0B (white would be 2.15:1)
         secondary: '#10B981',
-        secondaryLight: '#6EE7B7',
+        secondaryLight: '#6EE7B7', // text channel (dark palette) — 11.71:1 on #0F172A, 9.60:1 on #1E293B
         secondaryDark: '#059669',
+        secondaryContrast: '#04231A', // 6.57:1 on #10B981
         bg: '#0F172A',
         bgAlt: '#1E293B',
         surface: '#1E293B',
@@ -95,12 +161,15 @@ export const THEME_PALETTES: Record<ThemeVariant, ThemePalette> = {
     c: {
         name: 'c',
         label: 'Clean Minimal',
+        dark: false,
         primary: '#2563EB',
         primaryLight: '#60A5FA',
-        primaryDark: '#1D4ED8',
+        primaryDark: '#1D4ED8', // text channel — 6.70:1 on #FFFFFF
+        primaryContrast: '#FFFFFF', // 5.17:1 on #2563EB
         secondary: '#16A34A',
         secondaryLight: '#4ADE80',
-        secondaryDark: '#15803D',
+        secondaryDark: '#15803D', // text channel — 5.02:1 on #FFFFFF
+        secondaryContrast: '#04231A', // 5.06:1 on #16A34A (white would be 3.30:1)
         bg: '#FFFFFF',
         bgAlt: '#F8FAFC',
         surface: '#FFFFFF',
@@ -119,12 +188,15 @@ export const THEME_PALETTES: Record<ThemeVariant, ThemePalette> = {
     d: {
         name: 'd',
         label: 'Neon Cyber',
+        dark: true,
         primary: '#A855F7',
-        primaryLight: '#D8B4FE',
+        primaryLight: '#D8B4FE', // text channel (dark palette) — 11.17:1 on #0A0A0F
         primaryDark: '#7C3AED',
+        primaryContrast: '#12071F', // 4.93:1 on #A855F7 (white would be 3.96:1)
         secondary: '#22D3EE',
-        secondaryLight: '#67E8F9',
-        secondaryDark: '#06B6D4',
+        secondaryLight: '#67E8F9', // text channel (dark palette) — 13.63:1 on #0A0A0F
+        secondaryDark: '#06B6D4', // 8.14:1 on #0A0A0F
+        secondaryContrast: '#062A32', // 8.39:1 on #22D3EE (white would be 1.81:1)
         bg: '#0A0A0F',
         bgAlt: '#111118',
         surface: '#111118',
@@ -145,9 +217,9 @@ export const THEME_PALETTES: Record<ThemeVariant, ThemePalette> = {
 
 function createThemeForVariant(variant: ThemeVariant, mode: PaletteMode) {
     const p = THEME_PALETTES[variant];
-    // Force dark mode for theme d, or use mode if explicitly 'dark'
-    const forcedMode: PaletteMode = variant === 'd' ? 'dark' : mode;
-    const isDark = variant === 'd' || forcedMode === 'dark';
+    // A palette that ships dark surfaces is dark regardless of the toggle.
+    const forcedMode: PaletteMode = p.dark ? 'dark' : mode;
+    const isDark = p.dark || forcedMode === 'dark';
 
     return createTheme({
         palette: {
@@ -156,13 +228,16 @@ function createThemeForVariant(variant: ThemeVariant, mode: PaletteMode) {
                 main: p.primary,
                 light: p.primaryLight,
                 dark: p.primaryDark,
-                contrastText: isDark ? '#000000' : '#FFFFFF',
+                // Mode-independent: `contrastText` describes the fill it sits
+                // on, not the page mode. Deriving it from `isDark` is what put
+                // black on #7C3AED at 3.69:1 (D2).
+                contrastText: p.primaryContrast,
             },
             secondary: {
                 main: p.secondary,
                 light: p.secondaryLight,
                 dark: p.secondaryDark,
-                contrastText: '#FFFFFF',
+                contrastText: p.secondaryContrast,
             },
             background: {
                 default: p.bg,
@@ -181,24 +256,32 @@ function createThemeForVariant(variant: ThemeVariant, mode: PaletteMode) {
             },
         },
         typography: {
-            fontFamily: '"Amarante", "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-            h1: { fontWeight: 400, letterSpacing: '-0.02em' },
-            h2: { fontWeight: 400, letterSpacing: '-0.01em' },
-            h3: { fontWeight: 400 },
-            h4: { fontWeight: 400 },
-            h5: { fontWeight: 400 },
-            h6: { fontWeight: 400 },
-            button: { textTransform: 'none', fontWeight: 400 },
+            fontFamily: FONT_SANS,
+            fontFamilyMono: FONT_MONO,
+            // Weight scale is exactly three steps: 400 body / 500 emphasis / 600 headings.
+            h1: { fontWeight: 600, letterSpacing: '-0.02em' },
+            h2: { fontWeight: 600, letterSpacing: '-0.01em' },
+            h3: { fontWeight: 600 },
+            h4: { fontWeight: 600 },
+            h5: { fontWeight: 600 },
+            h6: { fontWeight: 600 },
+            subtitle1: { fontWeight: 500 },
+            subtitle2: { fontWeight: 500 },
+            button: { textTransform: 'none', fontWeight: 500 },
         },
-        shape: { borderRadius: 16 },
+        shape: { borderRadius: 4 },
         components: {
             MuiButton: {
                 styleOverrides: {
                     root: {
-                        borderRadius: 24,
+                        borderRadius: RADIUS.pill,
                         padding: '10px 24px',
-                        transition: 'all 0.2s ease-in-out',
+                        transition: TRANSITION,
                         '&:hover': {
+                            transform: 'translateY(-1px)',
+                            boxShadow: `0 4px 14px ${isDark ? `${p.primary}55` : `${p.primary}38`}`,
+                        },
+                        '&:focus-visible': {
                             transform: 'translateY(-1px)',
                             boxShadow: `0 4px 14px ${isDark ? `${p.primary}55` : `${p.primary}38`}`,
                         },
@@ -211,11 +294,15 @@ function createThemeForVariant(variant: ThemeVariant, mode: PaletteMode) {
             MuiCard: {
                 styleOverrides: {
                     root: {
-                        borderRadius: 16,
+                        borderRadius: RADIUS.card,
                         border: `1px solid ${p.cardBorder}`,
                         boxShadow: p.cardShadow,
-                        transition: 'all 0.3s ease-in-out',
+                        transition: TRANSITION,
                         '&:hover': {
+                            boxShadow: `0 20px 32px ${isDark ? 'rgba(0,0,0,0.5)' : `${p.primary}15`}`,
+                            transform: 'translateY(-2px)',
+                        },
+                        '&:focus-within': {
                             boxShadow: `0 20px 32px ${isDark ? 'rgba(0,0,0,0.5)' : `${p.primary}15`}`,
                             transform: 'translateY(-2px)',
                         },
@@ -224,10 +311,18 @@ function createThemeForVariant(variant: ThemeVariant, mode: PaletteMode) {
             },
             MuiChip: {
                 styleOverrides: {
-                    root: { borderRadius: 8, fontWeight: 500 },
+                    root: {
+                        borderRadius: RADIUS.chip,
+                        fontWeight: 500,
+                        transition: TRANSITION,
+                    },
                     outlined: {
                         borderColor: isDark ? `${p.primary}55` : `${p.primary}44`,
                         '&:hover': {
+                            backgroundColor: isDark ? `${p.primary}25` : `${p.primary}15`,
+                            borderColor: p.primary,
+                        },
+                        '&:focus-visible': {
                             backgroundColor: isDark ? `${p.primary}25` : `${p.primary}15`,
                             borderColor: p.primary,
                         },
@@ -237,33 +332,32 @@ function createThemeForVariant(variant: ThemeVariant, mode: PaletteMode) {
                         '&:hover': {
                             backgroundColor: isDark ? `${p.secondary}25` : `${p.secondary}15`,
                         },
+                        '&:focus-visible': {
+                            backgroundColor: isDark ? `${p.secondary}25` : `${p.secondary}15`,
+                        },
                     },
                 },
             },
-            MuiDrawer: {
-                styleOverrides: {
-                    paper: {
-                        borderRight: 'none',
-                        backgroundColor: isDark ? '#0D0D14' : '#FFFFFF',
-                        boxShadow: isDark
-                            ? '4px 0 24px rgba(0,0,0,0.5)'
-                            : '4px 0 24px rgba(0,0,0,0.05)',
-                    },
-                },
-            },
-            MuiAppBar: {
-                styleOverrides: {
-                    root: {
-                        backgroundColor: isDark ? 'rgba(15,15,20,0.85)' : 'rgba(255,255,255,0.85)',
-                        backdropFilter: 'blur(16px)',
-                        boxShadow: `0 1px 0 0 ${isDark ? 'rgba(167,139,250,0.12)' : `${p.cardBorder}`}`,
-                    },
-                },
-            },
+            // No MuiDrawer / MuiAppBar overrides: `Sidebar.tsx` and `Header.tsx`
+            // own those two surfaces via `sx`, which wins over theme-level
+            // styleOverrides. Declaring them here only produced dead literals
+            // that disagreed with the components (E6).
             MuiPaper: {
                 styleOverrides: {
                     root: {
                         backgroundImage: 'none',
+                    },
+                    // `rounded` (not `root`) so the AppBar and Drawer — which render
+                    // square Papers — keep their flush edges.
+                    rounded: {
+                        borderRadius: RADIUS.card,
+                    },
+                },
+            },
+            MuiMenu: {
+                styleOverrides: {
+                    paper: {
+                        borderRadius: RADIUS.floating,
                     },
                 },
             },
@@ -293,50 +387,104 @@ export function useThemeContext() {
     return useContext(ThemeContext);
 }
 
-// Legacy COLORS export — alias for Theme A palette for backward compatibility
-export const COLORS = {
-    purple: THEME_PALETTES.a,
-    cyan: { main: THEME_PALETTES.a.secondary, light: THEME_PALETTES.a.secondaryLight, dark: THEME_PALETTES.a.secondaryDark },
-};
-
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 const VARIANT_STORAGE_KEY = 'kk-theme-variant';
 const COLOR_STORAGE_KEY = 'kk-color-mode';
 
+/**
+ * Reads the mode the pre-paint script in `layout.tsx` already stamped onto
+ * `<html>`, so React's first render agrees with the painted document instead of
+ * assuming light and repainting after hydration.
+ */
+function readStampedMode(): PaletteMode {
+    if (typeof document === 'undefined') return 'light';
+    return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+}
+
+/**
+ * The stylesheet-layer tokens `globals.css` consumes (focus ring, `li::marker`,
+ * prose links, both scrollbar colors, the root background/foreground).
+ *
+ * `globals.css` declares literals for these, but only as the **pre-hydration
+ * default** — they are variant `a`. There are four palettes, so once React is
+ * alive the resolved palette must write the real values here or a reader on
+ * variant `b` gets amber surfaces with purple focus rings (E5).
+ */
+function applyPaletteTokens(p: ThemePalette, isDark: boolean) {
+    if (typeof document === 'undefined') return;
+    const s = document.documentElement.style;
+    s.setProperty('--primary', p.primary);
+    // Fill-only — its single consumer is the `.gradient-text` utility.
+    s.setProperty('--secondary', p.secondary);
+    // Links are body text — take the tonal channel that opposes the surface,
+    // never `primary` itself.
+    s.setProperty('--link', isDark ? p.primaryLight : p.primaryDark);
+    s.setProperty('--scrollbar-thumb', p.scrollbarThumb);
+    s.setProperty('--scrollbar-hover', p.scrollbarHover);
+    s.setProperty('--bg', p.bg);
+    s.setProperty('--text', p.text);
+}
+
+/** Keeps the document, the stylesheet tokens and localStorage in one state. */
+function applyColorMode(next: PaletteMode) {
+    if (typeof document === 'undefined') return;
+    document.documentElement.dataset.theme = next;
+    document.documentElement.style.colorScheme = next;
+    try {
+        localStorage.setItem(COLOR_STORAGE_KEY, next);
+    } catch {
+        /* private mode — the in-memory state still holds */
+    }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [variant, setVariantState] = useState<ThemeVariant>('a');
-    const [mode, setMode] = useState<PaletteMode>('light');
+    const [mode, setMode] = useState<PaletteMode>(readStampedMode);
 
     // Load persisted state
     useEffect(() => {
-        const savedVariant = localStorage.getItem(VARIANT_STORAGE_KEY) as ThemeVariant | null;
-        if (savedVariant && ['a', 'b', 'c', 'd'].includes(savedVariant)) {
-            setVariantState(savedVariant);
+        try {
+            const savedVariant = localStorage.getItem(VARIANT_STORAGE_KEY) as ThemeVariant | null;
+            if (savedVariant && ['a', 'b', 'c', 'd'].includes(savedVariant)) {
+                setVariantState(savedVariant);
+            }
+        } catch {
+            /* private mode */
         }
-        const savedMode = localStorage.getItem(COLOR_STORAGE_KEY) as PaletteMode | null;
-        if (savedMode === 'dark' || savedMode === 'light') {
-            setMode(savedMode);
-        } else if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            setMode('dark');
-        }
+        // The blocking script has already resolved storage + media query; adopt
+        // whatever it stamped in case the static markup hydrated as light.
+        setMode(readStampedMode());
     }, []);
 
     const setVariant = useCallback((v: ThemeVariant) => {
         setVariantState(v);
-        localStorage.setItem(VARIANT_STORAGE_KEY, v);
+        try {
+            localStorage.setItem(VARIANT_STORAGE_KEY, v);
+        } catch {
+            /* private mode */
+        }
     }, []);
 
     const toggleColorMode = useCallback(() => {
         setMode((prev) => {
             const next: PaletteMode = prev === 'light' ? 'dark' : 'light';
-            localStorage.setItem(COLOR_STORAGE_KEY, next);
+            applyColorMode(next);
             return next;
         });
     }, []);
 
     const theme = useMemo(() => createThemeForVariant(variant, mode), [variant, mode]);
-    const isDark = variant === 'd' || mode === 'dark';
+    const isDark = THEME_PALETTES[variant].dark || mode === 'dark';
+
+    // Dark palettes ('b', 'd') render dark regardless of `mode`; keep the
+    // stylesheet token layer and the native color-scheme aligned with what is
+    // actually painted, and re-derive the tokens whenever the palette changes.
+    useEffect(() => {
+        document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+        applyPaletteTokens(THEME_PALETTES[variant], isDark);
+    }, [isDark, variant]);
 
     return (
         <ThemeContext.Provider value={{ variant, setVariant, mode, toggleColorMode, isDark }}>
@@ -380,11 +528,11 @@ export function ThemeVariantSwitcher() {
                 onClose={() => setAnchorEl(null)}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                slotProps={{ paper: { sx: { mt: 1, minWidth: 220, borderRadius: 3, p: 0.5 } } }}
+                slotProps={{ paper: { sx: { mt: 1, minWidth: 220, borderRadius: '20px', p: 0.5 } } }}
             >
                 <Typography
                     variant="overline"
-                    sx={{ display: 'block', px: 1.5, py: 0.5, fontWeight: 700, color: 'text.secondary', letterSpacing: '0.08em' }}
+                    sx={{ display: 'block', px: 1.5, py: 0.5, fontWeight: 600, color: 'text.secondary', letterSpacing: '0.08em' }}
                 >
                     Theme
                 </Typography>
@@ -396,7 +544,7 @@ export function ThemeVariantSwitcher() {
                             key={v}
                             selected={isActive}
                             onClick={() => { setVariant(v); setAnchorEl(null); }}
-                            sx={{ borderRadius: 2, gap: 1.5, mx: 0.5, my: 0.25 }}
+                            sx={{ borderRadius: '8px', gap: 1.5, mx: 0.5, my: 0.25 }}
                         >
                             <Box
                                 sx={{
@@ -409,7 +557,7 @@ export function ThemeVariantSwitcher() {
                             />
                             <ListItemText
                                 primary={p.label}
-                                primaryTypographyProps={{ fontWeight: isActive ? 700 : 500, fontSize: '0.9rem' }}
+                                primaryTypographyProps={{ fontWeight: isActive ? 600 : 400, fontSize: '0.9rem' }}
                             />
                             {isActive && <CheckCircleIcon sx={{ fontSize: 18, color: p.primary }} />}
                         </MenuItem>

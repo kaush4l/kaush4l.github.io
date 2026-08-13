@@ -1,3 +1,5 @@
+import manifest from '../../scripts/models.manifest.json';
+
 export type SystemTier = 'Low' | 'Medium' | 'High' | 'Ultra';
 
 export interface CapabilityResult {
@@ -14,13 +16,36 @@ export interface CapabilityResult {
     };
 }
 
+/**
+ * The model record is the manifest record — id and download size travel
+ * together, so the number the UI shows can never drift from the model it
+ * describes (F3). `bytes` is written by `scripts/download-models.mjs`, which
+ * sums the exact files the runtime fetches at the declared dtype from the
+ * Hugging Face tree API.
+ */
+const LLM_MODEL = manifest.models.find((m) => m.role === 'llm') ?? manifest.models[0];
+
 export const MODELS = {
     llm: {
         // Gemma-4-E2B-it — multimodal (text + audio + vision) instruction-tuned
         // model, q4-quantized ONNX. q4f16 on WebGPU, q4 on the wasm fallback.
-        default: 'onnx-community/gemma-4-E2B-it-ONNX',
+        default: LLM_MODEL.id,
+        /** On-the-wire bytes for a first load, or `null` when unsourced. */
+        bytes: (LLM_MODEL.bytes as number | undefined) ?? null,
     },
 };
+
+/**
+ * Human-readable transfer size. Decimal GB/MB, because that is the unit a
+ * data plan is sold in. Returns `null` when there is no sourced number —
+ * callers must render nothing rather than a guess.
+ */
+export function formatBytes(bytes: number | null | undefined): string | null {
+    if (typeof bytes !== 'number' || !Number.isFinite(bytes) || bytes <= 0) return null;
+    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+    if (bytes >= 1e6) return `${Math.round(bytes / 1e6)} MB`;
+    return `${Math.round(bytes / 1e3)} KB`;
+}
 
 export async function checkCapability(): Promise<CapabilityResult> {
     let tier: SystemTier = 'Low';

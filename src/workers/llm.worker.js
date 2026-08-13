@@ -2,8 +2,9 @@
  * LLM Web Worker — on-device multimodal inference (Gemma-4-E2B by default).
  *
  * Protocol (see workerTypes.ts):
- *   in  { type: 'load',     data: { model } }
- *   in  { type: 'generate', data: { messages, audio?, requestId } }
+ *   in  { type: 'load',      data: { model } }
+ *   in  { type: 'generate',  data: { messages, audio?, requestId } }
+ *   in  { type: 'interrupt' }  — halts the in-flight generation
  *   out { type: 'progress' | 'ready' | 'complete' | 'error', data }
  *
  * `messages` is the chat history. `audio`, when present, is a mono 16 kHz
@@ -16,6 +17,7 @@
 import {
     AutoProcessor,
     Gemma4ForConditionalGeneration,
+    InterruptableStoppingCriteria,
     TextStreamer,
 } from '@huggingface/transformers';
 import { configureTransformersEnv } from './transformersEnv';
@@ -27,6 +29,8 @@ const MAX_NEW_TOKENS = 512;
 let model = null;
 let processor = null;
 let device = null;
+/** Stopping criteria of the in-flight generation, so it can be interrupted. */
+let activeStopper = null;
 
 // ─── Loading ──────────────────────────────────────────────────────────────
 
@@ -145,13 +149,22 @@ async function generate({ messages, audio, requestId }, report) {
         callback_function: (text) => report({ status: 'stream', output: text, requestId }),
     });
 
-    const outputs = await model.generate({
-        ...inputs,
-        max_new_tokens: MAX_NEW_TOKENS,
-        do_sample: false,
-        repetition_penalty: 1.2,
-        streamer,
-    });
+    const stopper = new InterruptableStoppingCriteria();
+    activeStopper = stopper;
+
+    let outputs;
+    try {
+        outputs = await model.generate({
+            ...inputs,
+            max_new_tokens: MAX_NEW_TOKENS,
+            do_sample: false,
+            repetition_penalty: 1.2,
+            stopping_criteria: stopper,
+            streamer,
+        });
+    } finally {
+        if (activeStopper === stopper) activeStopper = null;
+    }
 
     const decoded = processor.batch_decode(
         outputs.slice(null, [inputs.input_ids.dims.at(-1), null]),
@@ -175,6 +188,14 @@ self.addEventListener('message', async (event) => {
             const message = err?.message || String(err);
             post('error', `Failed to load ${data?.model} from ${localModelPath} or the HF Hub. ${message}`);
         }
+        return;
+    }
+
+    if (type === 'interrupt') {
+        // Cooperative abort: the criteria stops the decode loop at the next
+        // token, `generate` returns its partial output, and the main thread's
+        // request-id guard discards the resulting `complete` (D6).
+        activeStopper?.interrupt();
         return;
     }
 

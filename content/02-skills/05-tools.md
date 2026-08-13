@@ -1,6 +1,6 @@
 ---
 title: "Databases & Tools"
-category: "Tools"
+icon: handyman
 tags: ["PostgreSQL", "MongoDB", "Redis", "MySQL", "Git", "JIRA", "Postman", "IntelliJ", "VS Code"]
 ---
 

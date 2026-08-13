@@ -2,7 +2,11 @@
   "models": [
     {
       "id": "onnx-community/gemma-4-E2B-it-ONNX",
-      "localDir": "public/models/onnx-community/gemma-4-E2B-it-ONNX"
+      "localDir": "public/models/onnx-community/gemma-4-E2B-it-ONNX",
+      "role": "llm",
+      "runtimeDtype": "q4f16",
+      "bytes": 3401448652,
+      "bytesMeasuredAt": "2026-08-13"
     }
   ]
 }

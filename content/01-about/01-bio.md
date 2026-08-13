@@ -2,15 +2,11 @@
 title: "Kaushal Kanakamedala"
 subtitle: "Senior Software Engineer"
 location: "Durham, NC"
-featured: true
+headline: "Senior Software Engineer · Durham, NC"
+proof: "8+ years · Fidelity · Salesforce · Oracle · Cerner · Kafka pipelines at 10M+ events/hour"
+highlights: ["Java", "Spring Boot", "Angular", "React", "WebGPU", "Transformers.js"]
 ---
 
-Full-stack engineer with **8+ years** of experience shipping production systems across enterprise Java backends, modern Angular/React frontends, cloud-native infrastructure, and cutting-edge on-device AI. Currently building grant management platforms at Fidelity while pushing the boundaries of what's possible in the browser with WebGPU and Transformers.js.
+Full-stack engineer with **8+ years** shipping production systems — enterprise Java backends, Angular and React frontends, cloud-native infrastructure, and on-device AI that runs in the browser. Currently building grant management applications at Fidelity Charitable.
 
-I believe great software lives at the intersection of **rigorous engineering**, **empathetic design**, and **measurable user impact**. Whether that's a Kafka pipeline handling 10M events/hour at Salesforce or an LLM answering questions about my resume entirely in your browser — I care about systems that are fast, observable, and actually useful.
-
-- **Backend:** Java (Spring Boot, Hibernate, GraalVM), Python (Django, Flask, FastAPI), Node.js
-- **Frontend:** Angular (NgRx, RxJS), React, Next.js, TypeScript
-- **AI/ML:** LangChain, LangGraph, Transformers.js, ONNX Runtime Web, WebGPU, Whisper, Ollama, MLX
-- **Cloud & DevOps:** AWS (EC2, S3, Lambda, ECS, KMS), Docker, Kubernetes, Jenkins, GitHub Actions, Terraform
-- **Databases:** PostgreSQL, MongoDB, Redis, MySQL, Chroma, FAISS
+The **Kafka** change-data-capture pipelines I worked on at Salesforce moved **10M+ events per hour**, and almost none of the hard problems were throughput — they were idempotency and exactly-once delivery when a consumer replays a partition. That is the same instinct behind the assistant on this page: it answers from a model running on **your** GPU rather than on a server I have to keep up, so there is no key to leak, no bill to meter, and nothing to trust me about.

@@ -2,8 +2,9 @@
 title: "take2"
 subtitle: "LangGraph Multi-Agent Framework"
 period: "2024"
-tools: ["Python", "LangGraph", "LangChain", "OpenAI", "Anthropic", "Pydantic"]
+tools: ["LangGraph", "LangChain", "Pydantic", "Python", "OpenAI", "Anthropic"]
 link: "https://github.com/kaush4l/take2"
+description: "A production-ready LangGraph multi-agent implementation showcasing stateful, supervisor-based orchestration for complex AI workflows."
 ---
 
 A production-ready LangGraph multi-agent implementation showcasing stateful, supervisor-based orchestration patterns for complex AI workflows.

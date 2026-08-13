@@ -16,18 +16,90 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 function parseArgs(argv) {
-  const args = { models: 'all', force: false, manifest: 'scripts/models.manifest.json' };
+  const args = { models: 'all', force: false, manifest: 'scripts/models.manifest.json', sizesOnly: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--models' && argv[i + 1]) {
       args.models = argv[++i];
     } else if (a === '--force') {
       args.force = true;
+    } else if (a === '--sizes-only') {
+      args.sizesOnly = true;
     } else if (a === '--manifest' && argv[i + 1]) {
       args.manifest = argv[++i];
     }
   }
   return args;
+}
+
+// ─── Download size, sourced rather than guessed (F3) ─────────────────────────
+//
+// The UI tells the visitor how much it is about to spend of their bandwidth, so
+// that number has to come from the same record as the model id. The Hub's tree
+// API knows the byte size of every file; we sum exactly the files the *runtime*
+// loads for the declared dtype, and write the total back into the manifest next
+// to the id it describes. `src/lib/capability.ts` imports that manifest, so the
+// id and the size can never drift apart silently.
+
+/** ONNX graph components the web worker instantiates for Gemma-4. */
+const RUNTIME_ONNX_COMPONENTS = ['decoder_model_merged', 'embed_tokens', 'audio_encoder', 'vision_encoder'];
+/** Non-ONNX repo assets transformers.js fetches (tokenizer, processor, configs). */
+const RUNTIME_ASSET_EXTENSIONS = ['.json', '.jinja', '.txt', '.model'];
+const ONNX_FILE_RE = /^(.+?)(?:_(fp16|q4f16|q4|quantized|int8|uint8|bnb4|q8))?\.onnx(?:_data(?:_\d+)?)?$/;
+
+/**
+ * Total on-the-wire bytes a browser downloads for `modelId` at `dtype`.
+ * Returns `null` when the Hub cannot be reached — never a guess.
+ */
+async function fetchRuntimeBytes(modelId, dtype) {
+  let tree;
+  try {
+    const r = await fetch(`https://huggingface.co/api/models/${modelId}/tree/main?recursive=1`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    tree = await r.json();
+  } catch (e) {
+    console.warn(`[models] size: could not reach the Hub for ${modelId} (${e?.message || e}) — keeping the manifest value.`);
+    return null;
+  }
+  if (!Array.isArray(tree)) return null;
+
+  let total = 0;
+  for (const f of tree) {
+    if (f?.type !== 'file' || typeof f.size !== 'number') continue;
+    const p = String(f.path);
+    if (p.startsWith('onnx/')) {
+      const m = ONNX_FILE_RE.exec(p.slice('onnx/'.length));
+      if (!m) continue;
+      if (RUNTIME_ONNX_COMPONENTS.includes(m[1]) && m[2] === dtype) total += f.size;
+    } else if (RUNTIME_ASSET_EXTENSIONS.some(ext => p.endsWith(ext))) {
+      total += f.size;
+    }
+  }
+  return total > 0 ? total : null;
+}
+
+/** Refresh `bytes` on every selected manifest entry, in place. */
+async function refreshManifestSizes(manifestPath, data, selectedIds) {
+  let changed = false;
+  for (const entry of data?.models ?? []) {
+    if (!entry?.id || !selectedIds.has(entry.id)) continue;
+    const dtype = entry.runtimeDtype || 'q4f16';
+    const bytes = await fetchRuntimeBytes(entry.id, dtype);
+    if (bytes == null) continue;
+    if (entry.bytes !== bytes) {
+      console.log(`[models] size ${entry.id} (${dtype}): ${entry.bytes ?? 'unset'} → ${bytes}`);
+      entry.bytes = bytes;
+      changed = true;
+    } else {
+      console.log(`[models] size ${entry.id} (${dtype}): ${bytes} (unchanged)`);
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (entry.bytesMeasuredAt !== today && changed) entry.bytesMeasuredAt = today;
+  }
+  if (changed) {
+    await fs.writeFile(manifestPath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
+    console.log(`[models] wrote ${manifestPath}`);
+  }
 }
 
 function selectorFn(selectorCsv) {
@@ -59,7 +131,7 @@ async function exists(filePath) {
 }
 
 async function main() {
-  const { models, force, manifest } = parseArgs(process.argv.slice(2));
+  const { models, force, manifest, sizesOnly } = parseArgs(process.argv.slice(2));
   const repoRoot = process.cwd();
   const manifestPath = path.resolve(repoRoot, manifest);
 
@@ -75,6 +147,10 @@ async function main() {
     console.log('[models] No models selected.');
     return;
   }
+
+  // Keep the advertised download size sourced from the Hub, not hand-measured.
+  await refreshManifestSizes(manifestPath, data, new Set(selected.map(s => s.id)));
+  if (sizesOnly) return;
 
   const cacheDir = path.resolve(repoRoot, 'public/models');
 

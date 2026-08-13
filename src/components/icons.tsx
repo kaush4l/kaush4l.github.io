@@ -16,6 +16,15 @@ import BuildIcon from '@mui/icons-material/Build';
 import ContactMailIcon from '@mui/icons-material/ContactMail';
 import HomeIcon from '@mui/icons-material/Home';
 import FolderIcon from '@mui/icons-material/Folder';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import LayersIcon from '@mui/icons-material/Layers';
+import CloudIcon from '@mui/icons-material/Cloud';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import HandymanIcon from '@mui/icons-material/Handyman';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import EmailIcon from '@mui/icons-material/Email';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 const REGISTRY: Record<string, ComponentType<SvgIconProps>> = {
     school: SchoolIcon,
@@ -26,9 +35,26 @@ const REGISTRY: Record<string, ComponentType<SvgIconProps>> = {
     contact: ContactMailIcon,
     home: HomeIcon,
     folder: FolderIcon,
+    // Skill-category glyphs. All monochrome MUI icons so the five panel headers
+    // read as one set and inherit the palette (no OS emoji, no ASCII).
+    terminal: TerminalIcon,
+    layers: LayersIcon,
+    cloud: CloudIcon,
+    psychology: PsychologyIcon,
+    handyman: HandymanIcon,
+    // Contact channels. A new channel is a content file plus one line here —
+    // no component change.
+    github: GitHubIcon,
+    linkedin: LinkedInIcon,
+    email: EmailIcon,
+    link: OpenInNewIcon,
 };
 
-export function SectionIcon({ name, ...props }: { name: string } & SvgIconProps) {
-    const Cmp = REGISTRY[name] ?? FolderIcon;
+export function SectionIcon({
+    name,
+    fallback = 'folder',
+    ...props
+}: { name: string; fallback?: string } & SvgIconProps) {
+    const Cmp = REGISTRY[name] ?? REGISTRY[fallback] ?? FolderIcon;
     return <Cmp {...props} />;
 }

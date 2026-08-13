@@ -1,6 +1,6 @@
 ---
 title: "Cloud & DevOps"
-category: "Cloud"
+icon: cloud
 tags: ["AWS", "Docker", "Kubernetes", "Jenkins", "GitHub Actions", "Terraform", "EC2", "S3", "Lambda"]
 ---
 

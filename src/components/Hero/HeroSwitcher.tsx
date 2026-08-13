@@ -5,15 +5,22 @@ import dynamic from 'next/dynamic';
 import { Box, ButtonGroup, Button, Tooltip } from '@mui/material';
 import TuneIcon from '@mui/icons-material/Tune';
 
-// Lazy-load each hero to keep initial bundle lean
-const HeroA = dynamic(() => import('./HeroA'), { ssr: false });
+// E1: HeroA is imported STATICALLY so it is present in the static export's HTML.
+// `dynamic(..., { ssr: false })` shipped a hero-less document, and the hero then
+// mounted after hydration and shoved the whole page down ~85vh.
+import HeroA from './HeroA';
+import type { HeroProps } from './HeroA';
+
+// B/C/D exist only for the dev-only variant picker, so they stay lazy.
+// E4: this is only true because `./index.ts` does not re-export them — a barrel
+// re-export puts them back in the page's module graph and defeats the split.
 const HeroB = dynamic(() => import('./HeroB'), { ssr: false });
 const HeroC = dynamic(() => import('./HeroC'), { ssr: false });
 const HeroD = dynamic(() => import('./HeroD'), { ssr: false });
 
 export type HeroVariant = 'A' | 'B' | 'C' | 'D';
 
-const HEROES: Record<HeroVariant, React.ComponentType> = {
+const HEROES: Record<HeroVariant, React.ComponentType<HeroProps>> = {
     A: HeroA, B: HeroB, C: HeroC, D: HeroD,
 };
 const HERO_LABELS: Record<HeroVariant, string> = {
@@ -29,17 +36,23 @@ function getInitialVariant(): HeroVariant {
     return 'A';
 }
 
-export default function HeroSwitcher() {
+/**
+ * F1: the about item travels `page.tsx` → here → the rendered hero, so the
+ * fold's copy is authored in `content/01-about/01-bio.md` like everything else.
+ */
+export default function HeroSwitcher({ about }: HeroProps) {
     const [variant, setVariant] = useState<HeroVariant>(getInitialVariant);
     const isDev = process.env.NODE_ENV === 'development';
 
     const Hero = HEROES[variant];
 
     return (
-        <Box sx={{ position: 'relative' }}>
-            <Hero />
+        // E1: the height is reserved on the wrapper, so swapping variants (or a
+        // lazy variant arriving late) can never reflow the document.
+        <Box sx={{ position: 'relative', minHeight: { xs: '75vh', md: '85vh' } }}>
+            <Hero about={about} />
 
-            {/* Dev-mode floating variant picker */}
+            {/* E7: dev-only variant picker (the theme picker is gated the same way) */}
             {isDev && (
                 <Box
                     sx={{
@@ -54,9 +67,8 @@ export default function HeroSwitcher() {
                         bgcolor: 'background.paper',
                         border: '1px solid',
                         borderColor: 'divider',
-                        borderRadius: 3,
+                        borderRadius: '20px',
                         p: 0.75,
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                         transform: { xs: 'scale(0.85)', md: 'scale(1)' },
                         transformOrigin: 'left bottom',
                     }}
@@ -68,12 +80,11 @@ export default function HeroSwitcher() {
                         {(['A', 'B', 'C', 'D'] as HeroVariant[]).map((v) => (
                             <Tooltip key={v} title={HERO_LABELS[v]} placement="top">
                                 <Button
-                                    key={v}
                                     onClick={() => setVariant(v)}
                                     variant={variant === v ? 'contained' : 'outlined'}
                                     sx={{
                                         minWidth: 32,
-                                        fontWeight: 700,
+                                        fontWeight: 500,
                                         fontSize: '0.75rem',
                                         px: 0,
                                     }}

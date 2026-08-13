@@ -1,115 +1,109 @@
 'use client';
 
-import { Box, Typography, Avatar, Paper, useTheme } from '@mui/material';
-import { motion } from 'framer-motion';
+import { Box, Typography, Avatar, Paper, Stack } from '@mui/material';
+import PlaceIcon from '@mui/icons-material/Place';
 import type { ContentItem } from '@/lib/contentTypes';
-import { COLORS } from '@/theme/theme';
+import SectionHeading from './SectionHeading';
+import { RADIUS } from '@/theme/ThemeProvider';
 
 interface AboutSectionProps {
     id?: string;
     title?: string;
+    icon?: string;
+    accent?: 'primary' | 'secondary';
     items: ContentItem[];
 }
 
-export default function AboutSection({ id = 'about', title = 'About', items }: AboutSectionProps) {
-    const theme = useTheme();
-    const isDark = theme.palette.mode === 'dark';
+/** Derive avatar initials from content rather than hardcoding them. */
+function initialsFrom(name: string | undefined): string {
+    if (!name) return '';
+    return name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? '')
+        .join('');
+}
+
+export default function AboutSection({
+    id = 'about',
+    title = 'About',
+    icon = 'person',
+    accent,
+    items,
+}: AboutSectionProps) {
     const bio = items[0];
 
     if (!bio) return null;
 
     return (
-        <Box
-            component="section"
-            id={id}
-            sx={{ py: 8, scrollMarginTop: 80 }}
-        >
-            <motion.div
-                initial={{ opacity: 0, y: 32 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.6 }}
-            >
-                <Typography
-                    variant="h4"
-                    fontWeight={800}
-                    sx={{
-                        mb: 4,
-                        background: `linear-gradient(135deg, ${COLORS.purple.main} 0%, ${COLORS.cyan.main} 100%)`,
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        display: 'inline-block',
-                    }}
-                >
-                    {title}
-                </Typography>
+        <Box component="section" id={id} sx={{ py: { xs: 6, md: 10 } }}>
+            <SectionHeading icon={icon} title={title} accent={accent} />
 
-                <Paper
-                    elevation={0}
+            <Paper
+                elevation={0}
+                sx={{
+                    p: { xs: 3, md: 4 },
+                    borderRadius: RADIUS.card,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    gap: 4,
+                    alignItems: { xs: 'center', md: 'flex-start' },
+                }}
+            >
+                {/* Avatar */}
+                <Box
                     sx={{
-                        p: { xs: 3, md: 4 },
-                        borderRadius: 3,
-                        border: '1px solid',
-                        borderColor: isDark ? 'rgba(124,58,237,0.25)' : 'rgba(124,58,237,0.15)',
-                        background: isDark
-                            ? 'linear-gradient(135deg, rgba(124,58,237,0.06) 0%, rgba(6,182,212,0.06) 100%)'
-                            : 'linear-gradient(135deg, rgba(124,58,237,0.04) 0%, rgba(6,182,212,0.04) 100%)',
-                        display: 'flex',
-                        flexDirection: { xs: 'column', md: 'row' },
-                        gap: 4,
-                        alignItems: { xs: 'center', md: 'flex-start' },
+                        flexShrink: 0,
+                        mb: { xs: 2, md: 0 },
+                        alignSelf: { xs: 'center', md: 'flex-start' },
                     }}
                 >
-                    {/* Avatar */}
-                    <Box
+                    <Avatar
+                        alt={bio.title}
                         sx={{
-                            flexShrink: 0,
-                            mb: { xs: 2, md: 0 },
-                            alignSelf: { xs: 'center', md: 'flex-start' },
+                            width: { xs: 80, md: 120 },
+                            height: { xs: 80, md: 120 },
+                            fontSize: { xs: '1.8rem', md: '3rem' },
+                            fontWeight: 600,
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
                         }}
                     >
-                        <Avatar
-                            sx={{
-                                width: { xs: 80, md: 120 },
-                                height: { xs: 80, md: 120 },
-                                fontSize: { xs: '1.8rem', md: '3rem' },
-                                background: `linear-gradient(135deg, ${COLORS.purple.main} 0%, ${COLORS.cyan.main} 100%)`,
-                                fontWeight: 700,
-                            }}
-                        >
-                            KK
-                        </Avatar>
-                    </Box>
+                        {initialsFrom(bio.title)}
+                    </Avatar>
+                </Box>
 
-                    {/* Bio text */}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                        {bio.title && (
-                            <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-                                {bio.title}
+                {/* Bio text — the name is already in the header and the hero; it does
+                    not get a third slot here. */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                    {bio.location && (
+                        <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={0.5}
+                            sx={{ mb: 1.5, color: 'text.secondary' }}
+                        >
+                            <PlaceIcon sx={{ fontSize: 18 }} />
+                            <Typography variant="caption" sx={{ letterSpacing: '0.02em' }}>
+                                {bio.location}
                             </Typography>
-                        )}
-                        {bio.description && (
-                            <Typography
-                                variant="body1"
-                                color="text.secondary"
-                                sx={{ mb: 2, fontStyle: 'italic' }}
-                            >
-                                {bio.description}
-                            </Typography>
-                        )}
-                        <Box
-                            className="prose-content"
-                            dangerouslySetInnerHTML={{ __html: bio.contentHtml }}
-                            sx={{
-                                '& ul': { pl: 2 },
-                                '& li': { mb: 0.5 },
-                                '& strong': { color: isDark ? COLORS.purple.light : COLORS.purple.main },
-                            }}
-                        />
-                    </Box>
-                </Paper>
-            </motion.div>
+                        </Stack>
+                    )}
+                    <Box
+                        className="prose-content"
+                        dangerouslySetInnerHTML={{ __html: bio.contentHtml }}
+                        sx={{
+                            color: 'text.primary',
+                            maxWidth: '68ch',
+                            '& strong': { fontWeight: 600, color: 'text.primary' },
+                        }}
+                    />
+                </Box>
+            </Paper>
         </Box>
     );
 }

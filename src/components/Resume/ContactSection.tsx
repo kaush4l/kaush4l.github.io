@@ -1,140 +1,176 @@
 'use client';
 
-import { Box, Typography, Paper, Link as MuiLink, useTheme } from '@mui/material';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import EmailIcon from '@mui/icons-material/Email';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { useState } from 'react';
+import { Box, Typography, Paper, IconButton, Tooltip, Link as MuiLink, Stack } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 import { motion } from 'framer-motion';
 import type { ContentItem } from '@/lib/contentTypes';
-import { COLORS } from '@/theme/theme';
-
-const ICON_MAP: Record<string, React.ReactNode> = {
-    github: <GitHubIcon sx={{ fontSize: 32 }} />,
-    linkedin: <LinkedInIcon sx={{ fontSize: 32 }} />,
-    email: <EmailIcon sx={{ fontSize: 32 }} />,
-};
-
-const LABEL_MAP: Record<string, string> = {
-    github: 'GitHub',
-    linkedin: 'LinkedIn',
-    email: 'Email',
-};
+import SectionHeading from './SectionHeading';
+import { SectionIcon } from '@/components/icons';
+import { RADIUS } from '@/theme/ThemeProvider';
 
 interface ContactSectionProps {
     id?: string;
     title?: string;
+    icon?: string;
+    accent?: 'primary' | 'secondary';
+    /** Opening line from the section's `_section.md`. Nothing is rendered without it. */
+    intro?: string;
     items: ContentItem[];
 }
 
-export default function ContactSection({ id = 'contact', title = 'Contact', items }: ContactSectionProps) {
-    const theme = useTheme();
-    const isDark = theme.palette.mode === 'dark';
+export default function ContactSection({
+    id = 'contact',
+    title = 'Contact',
+    icon = 'contact',
+    accent,
+    intro,
+    items,
+}: ContactSectionProps) {
+    const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+
+    const copy = async (slug: string, value: string) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            setCopiedSlug(slug);
+            window.setTimeout(() => setCopiedSlug((s) => (s === slug ? null : s)), 1800);
+        } catch {
+            /* Clipboard unavailable (insecure context) — the address is still selectable. */
+        }
+    };
 
     return (
-        <Box
-            component="section"
-            id={id}
-            sx={{ py: 8, scrollMarginTop: 80 }}
-        >
-            <motion.div
-                initial={{ opacity: 0, y: 32 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.6 }}
+        <Box component="section" id={id} sx={{ py: { xs: 6, md: 10 } }}>
+            <SectionHeading icon={icon} title={title} accent={accent} />
+
+            {/* The last prose before the footer is content, not a component string. */}
+            {intro && (
+                <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4, maxWidth: '60ch' }}>
+                    {intro}
+                </Typography>
+            )}
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 3,
+                    justifyContent: { xs: 'center', sm: 'flex-start' },
+                }}
             >
-                <Typography
-                    variant="h4"
-                    fontWeight={800}
-                    sx={{
-                        mb: 1,
-                        background: `linear-gradient(135deg, ${COLORS.purple.main} 0%, ${COLORS.cyan.main} 100%)`,
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        display: 'inline-block',
-                    }}
-                >
-                    {title}
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                    Let&apos;s connect. Find me on any of the platforms below.
-                </Typography>
+                {items.map((item) => {
+                    const iconKey = item.icon ?? (item.title ?? '').toLowerCase();
+                    const label = item.title ?? 'Link';
+                    // A `mailto:` (or `tel:`) target is a literal string a recruiter
+                    // needs to paste into an ATS — offer a copy control for it.
+                    const copyable = Boolean(item.subtitle && item.url?.includes('mailto:'));
+                    const copied = copiedSlug === item.slug;
 
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: 3,
-                        justifyContent: { xs: 'center', sm: 'flex-start' },
-                    }}
-                >
-                    {items.map((item, i) => {
-                        const iconKey = item.icon ?? (item.title ?? '').toLowerCase();
-                        const icon = ICON_MAP[iconKey] ?? <OpenInNewIcon sx={{ fontSize: 32 }} />;
-                        const label = LABEL_MAP[iconKey] ?? item.title ?? 'Link';
-                        const isPurple = i % 2 === 0;
-
-                        return (
-                            <motion.div
-                                key={item.slug}
-                                whileHover={{ y: -4, scale: 1.03 }}
-                                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    return (
+                        <motion.div
+                            key={item.slug}
+                            whileHover={{ y: -4 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                        >
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 3,
+                                    // Wide enough that the full address sits on one
+                                    // line beside its copy button from `sm` up.
+                                    width: { xs: '100%', sm: 260, md: 280 },
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    borderRadius: RADIUS.card,
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    bgcolor: 'background.paper',
+                                    transition:
+                                        'transform 150ms cubic-bezier(0.2,0,0,1), box-shadow 150ms cubic-bezier(0.2,0,0,1), border-color 150ms linear',
+                                    '&:hover': { borderColor: 'primary.main' },
+                                }}
                             >
                                 <MuiLink
                                     href={item.url ?? '#'}
                                     target={item.url?.startsWith('mailto') ? undefined : '_blank'}
                                     rel="noopener noreferrer"
                                     underline="none"
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        color: 'primary.main',
+                                    }}
                                 >
-                                    <Paper
-                                        elevation={0}
-                                        sx={{
-                                            p: 3,
-                                            width: { xs: '100%', sm: 140, md: 160 },
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: 1.5,
-                                            borderRadius: 3,
-                                            border: '1px solid',
-                                            borderColor: isDark
-                                                ? isPurple ? 'rgba(124,58,237,0.3)' : 'rgba(6,182,212,0.3)'
-                                                : isPurple ? 'rgba(124,58,237,0.2)' : 'rgba(6,182,212,0.2)',
-                                            background: isDark
-                                                ? isPurple ? 'rgba(124,58,237,0.06)' : 'rgba(6,182,212,0.06)'
-                                                : isPurple ? 'rgba(124,58,237,0.04)' : 'rgba(6,182,212,0.04)',
-                                            cursor: 'pointer',
-                                            transition: 'border-color 0.2s, box-shadow 0.2s',
-                                            '&:hover': {
-                                                borderColor: isPurple ? COLORS.purple.main : COLORS.cyan.main,
-                                                boxShadow: isPurple
-                                                    ? `0 8px 24px ${isDark ? 'rgba(124,58,237,0.2)' : 'rgba(124,58,237,0.12)'}`
-                                                    : `0 8px 24px ${isDark ? 'rgba(6,182,212,0.2)' : 'rgba(6,182,212,0.12)'}`,
-                                            },
-                                        }}
-                                    >
-                                        <Box
+                                    <SectionIcon name={iconKey} fallback="link" sx={{ fontSize: 32 }} />
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                        {label}
+                                    </Typography>
+                                </MuiLink>
+
+                                {item.subtitle && (
+                                    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ maxWidth: '100%' }}>
+                                        <Typography
+                                            variant="caption"
                                             sx={{
-                                                color: isPurple ? COLORS.purple.main : COLORS.cyan.main,
+                                                color: 'text.secondary',
+                                                userSelect: 'all',
+                                                textAlign: 'center',
+                                                // Only break when there is genuinely no
+                                                // room — never mid-word in an address
+                                                // that fits, and never hyphenated.
+                                                overflowWrap: 'anywhere',
+                                                hyphens: 'none',
                                             }}
                                         >
-                                            {icon}
-                                        </Box>
-                                        <Typography
-                                            variant="body2"
-                                            fontWeight={600}
-                                            sx={{ color: 'text.primary' }}
-                                        >
-                                            {label}
+                                            {item.subtitle}
                                         </Typography>
-                                    </Paper>
-                                </MuiLink>
-                            </motion.div>
-                        );
-                    })}
-                </Box>
-            </motion.div>
+                                        {copyable && (
+                                            <Tooltip title={copied ? 'Copied' : `Copy ${label.toLowerCase()}`}>
+                                                <IconButton
+                                                    size="small"
+                                                    aria-label={copied ? 'Copied' : `Copy ${label.toLowerCase()}`}
+                                                    onClick={() => copy(item.slug, item.subtitle as string)}
+                                                    sx={{ color: copied ? 'success.main' : 'text.secondary' }}
+                                                >
+                                                    {copied ? (
+                                                        <CheckIcon sx={{ fontSize: 16 }} />
+                                                    ) : (
+                                                        <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                                    )}
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                    </Stack>
+                                )}
+
+                                {/* The authored body — what this channel is actually
+                                    for. Three identical tiles become three offers. */}
+                                {item.contentHtml && (
+                                    <Box
+                                        className="prose-content"
+                                        dangerouslySetInnerHTML={{ __html: item.contentHtml }}
+                                        sx={{
+                                            mt: 0.5,
+                                            color: 'text.secondary',
+                                            fontSize: '0.75rem',
+                                            lineHeight: 1.5,
+                                            textAlign: 'center',
+                                            textWrap: 'balance',
+                                            '& p': { m: 0 },
+                                        }}
+                                    />
+                                )}
+                            </Paper>
+                        </motion.div>
+                    );
+                })}
+            </Box>
         </Box>
     );
 }

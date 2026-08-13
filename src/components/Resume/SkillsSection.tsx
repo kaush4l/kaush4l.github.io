@@ -1,160 +1,134 @@
 'use client';
 
-import { Box, Typography, Chip, Paper, useTheme } from '@mui/material';
-import { motion } from 'framer-motion';
+import { Box, Typography, Chip, Paper } from '@mui/material';
 import type { ContentItem } from '@/lib/contentTypes';
-import { COLORS } from '@/theme/theme';
+import SectionHeading from './SectionHeading';
+import { SectionIcon } from '@/components/icons';
+import { RADIUS } from '@/theme/ThemeProvider';
 
 interface SkillsSectionProps {
     id?: string;
     title?: string;
+    icon?: string;
+    accent?: 'primary' | 'secondary';
     items: ContentItem[];
 }
 
-// Keyed by the `category` value in each skills `.md` frontmatter.
-const CATEGORY_ICONS: Record<string, string> = {
-    Languages: '{ }',
-    Frameworks: '⚛',
-    Cloud: '☁',
-    AI: '🤖',
-    Tools: '🛠',
-};
-
-const chipColorIndex = (i: number, isDark: boolean) => {
-    const palettes = [
-        { bg: isDark ? 'rgba(124,58,237,0.18)' : 'rgba(124,58,237,0.1)', color: isDark ? COLORS.purple.light : COLORS.purple.dark },
-        { bg: isDark ? 'rgba(6,182,212,0.18)' : 'rgba(6,182,212,0.1)', color: isDark ? COLORS.cyan.light : COLORS.cyan.dark },
-    ];
-    return palettes[i % 2];
-};
-
-export default function SkillsSection({ id = 'skills', title = 'Skills', items }: SkillsSectionProps) {
-    const theme = useTheme();
-    const isDark = theme.palette.mode === 'dark';
-
+export default function SkillsSection({
+    id = 'skills',
+    title = 'Skills',
+    icon = 'build',
+    accent,
+    items,
+}: SkillsSectionProps) {
     // Group by category; carry a display label (the entry title is friendlier
-    // than the short category key, e.g. "Cloud & DevOps" vs "Cloud").
-    const groups = items.reduce<Record<string, { label: string; items: ContentItem[] }>>((acc, item) => {
-        const key = item.category ?? item.title ?? 'Other';
-        if (!acc[key]) acc[key] = { label: item.title ?? key, items: [] };
-        acc[key].items.push(item);
-        return acc;
-    }, {});
+    // than the short category key, e.g. "Cloud & DevOps" vs "Cloud") and the
+    // icon key the entry declares in its own frontmatter.
+    const groups = items.reduce<Record<string, { label: string; icon: string; items: ContentItem[] }>>(
+        (acc, item) => {
+            const key = item.category ?? item.title ?? 'Other';
+            if (!acc[key]) acc[key] = { label: item.title ?? key, icon: item.icon ?? icon, items: [] };
+            acc[key].items.push(item);
+            return acc;
+        },
+        {},
+    );
 
     return (
-        <Box
-            component="section"
-            id={id}
-            sx={{ py: 8, scrollMarginTop: 80 }}
-        >
-            <motion.div
-                initial={{ opacity: 0, y: 32 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.6 }}
+        <Box component="section" id={id} sx={{ py: { xs: 6, md: 10 } }}>
+            <SectionHeading icon={icon} title={title} accent={accent} />
+
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: 'repeat(3, 1fr)' },
+                    gap: { xs: 1.5, md: 2 },
+                }}
             >
-                <Typography
-                    variant="h4"
-                    fontWeight={800}
-                    sx={{
-                        mb: 4,
-                        background: `linear-gradient(135deg, ${COLORS.cyan.main} 0%, ${COLORS.purple.main} 100%)`,
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        display: 'inline-block',
-                    }}
-                >
-                    {title}
-                </Typography>
+                {Object.entries(groups).map(([category, group]) => {
+                    // Skills live in the `tags` frontmatter array; fall back to a
+                    // comma-separated `description` for older entries.
+                    const allSkills = group.items.flatMap((item) =>
+                        item.tags && item.tags.length
+                            ? item.tags
+                            : (item.description ?? '')
+                                  .split(',')
+                                  .map((s) => s.trim())
+                                  .filter(Boolean),
+                    );
 
-                <Box
-                    sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: 'repeat(3, 1fr)' },
-                        gap: { xs: 1.5, md: 2 },
-                    }}
-                >
-                    {Object.entries(groups).map(([category, group], groupIdx) => {
-                        // Skills live in the `tags` frontmatter array; fall back to a
-                        // comma-separated `description` for older entries.
-                        const allSkills = group.items.flatMap((item) =>
-                            item.tags && item.tags.length
-                                ? item.tags
-                                : (item.description ?? '')
-                                      .split(',')
-                                      .map((s) => s.trim())
-                                      .filter(Boolean),
-                        );
+                    // The authored one-liner: the panel's voice, above the index.
+                    const blurb = group.items.find((item) => item.contentHtml)?.contentHtml;
 
-                        return (
-                            <motion.div
-                                key={category}
-                                initial={{ opacity: 0, scale: 0.96 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.4, delay: groupIdx * 0.08 }}
+                    return (
+                        <Paper
+                            key={category}
+                            elevation={0}
+                            sx={{
+                                p: 2.5,
+                                height: '100%',
+                                borderRadius: RADIUS.card,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                bgcolor: 'background.paper',
+                                transition:
+                                    'transform 150ms cubic-bezier(0.2,0,0,1), box-shadow 150ms cubic-bezier(0.2,0,0,1), border-color 150ms linear',
+                                '&:hover': { borderColor: 'primary.main' },
+                            }}
+                        >
+                            <Typography
+                                variant="overline"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: 'text.secondary',
+                                    letterSpacing: '0.08em',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.75,
+                                    mb: 1.5,
+                                }}
                             >
-                                <Paper
-                                    elevation={0}
-                                    sx={{
-                                        p: 2.5,
-                                        height: '100%',
-                                        borderRadius: 3,
-                                        border: '1px solid',
-                                        borderColor: isDark ? 'rgba(6,182,212,0.2)' : 'rgba(6,182,212,0.15)',
-                                        background: isDark
-                                            ? 'rgba(6,182,212,0.04)'
-                                            : 'rgba(6,182,212,0.03)',
-                                        transition: 'border-color 0.2s, box-shadow 0.2s',
-                                        '&:hover': {
-                                            borderColor: COLORS.cyan.main,
-                                            boxShadow: `0 4px 20px ${isDark ? 'rgba(6,182,212,0.15)' : 'rgba(6,182,212,0.1)'}`,
-                                        },
-                                    }}
-                                >
-                                    <Typography
-                                        variant="overline"
-                                        fontWeight={700}
-                                        sx={{
-                                            color: COLORS.cyan.main,
-                                            letterSpacing: '0.08em',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 0.75,
-                                            mb: 1.5,
-                                        }}
-                                    >
-                                        <span>{CATEGORY_ICONS[category] ?? '◆'}</span>
-                                        {group.label}
-                                    </Typography>
+                                <SectionIcon name={group.icon} sx={{ fontSize: 18, color: 'primary.main' }} />
+                                {group.label}
+                            </Typography>
 
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                                        {allSkills.map((skill, i) => {
-                                            const palette = chipColorIndex(i, isDark);
-                                            return (
-                                                <Chip
-                                                    key={skill}
-                                                    label={skill}
-                                                    size="small"
-                                                    sx={{
-                                                        bgcolor: palette.bg,
-                                                        color: palette.color,
-                                                        fontWeight: 500,
-                                                        fontSize: '0.72rem',
-                                                        border: 'none',
-                                                        height: 24,
-                                                    }}
-                                                />
-                                            );
-                                        })}
-                                    </Box>
-                                </Paper>
-                            </motion.div>
-                        );
-                    })}
-                </Box>
-            </motion.div>
+                            {blurb && (
+                                <Box
+                                    className="prose-content"
+                                    dangerouslySetInnerHTML={{ __html: blurb }}
+                                    sx={{
+                                        color: 'text.secondary',
+                                        fontSize: '0.875rem',
+                                        lineHeight: 1.5,
+                                        mb: 1.5,
+                                        '& p': { m: 0 },
+                                    }}
+                                />
+                            )}
+
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                                {allSkills.map((skill) => (
+                                    <Chip
+                                        key={skill}
+                                        label={skill}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: 'action.hover',
+                                            color: 'text.primary',
+                                            fontWeight: 500,
+                                            fontSize: '0.8125rem',
+                                            borderRadius: RADIUS.chip,
+                                            border: 'none',
+                                            height: 28,
+                                            px: 1.25,
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+                        </Paper>
+                    );
+                })}
+            </Box>
         </Box>
     );
 }

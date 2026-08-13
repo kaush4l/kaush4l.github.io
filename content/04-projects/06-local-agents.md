@@ -2,8 +2,10 @@
 title: "LocalAgents"
 subtitle: "On-Device AI Automation"
 period: "2024"
-tools: ["Python", "Whisper", "Ollama", "MLX", "AppleScript", "macOS APIs"]
+tools: ["Ollama", "Apple MLX", "Whisper", "AppleScript", "macOS APIs", "Python"]
 link: "https://github.com/kaush4l/LocalAgents"
+description: "A privacy-first AI automation framework for macOS that orchestrates voice commands, local LLMs, and system APIs — completely offline, no cloud calls."
+featured: true
 ---
 
 A privacy-first AI automation framework for macOS that orchestrates voice commands, local LLMs, and system APIs — completely offline, no cloud calls.

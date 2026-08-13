@@ -1,8 +1,7 @@
 ---
 title: "Languages"
-category: "Languages"
+icon: terminal
 tags: ["Java", "TypeScript", "Python", "JavaScript", "Kotlin", "SQL", "HTML", "CSS", "Bash"]
-featured: true
 ---
 
 Fluent in systems languages through to scripting and web technologies.

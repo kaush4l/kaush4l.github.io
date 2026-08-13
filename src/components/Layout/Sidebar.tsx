@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useState } from 'react';
 import {
     Drawer,
     List,
@@ -8,7 +9,7 @@ import {
     ListItemText,
     Box,
     Divider,
-    Typography,
+    Toolbar,
     useTheme,
     useMediaQuery,
 } from '@mui/material';
@@ -16,9 +17,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { NavItem } from '@/lib/contentTypes';
 import { SectionIcon } from '@/components/icons';
+import { RADIUS } from '@/theme/ThemeProvider';
 
 const DRAWER_WIDTH = 260;
 const COLLAPSED_WIDTH = 72;
+
+const NAV_TRANSITION = 'background-color 150ms linear, color 150ms linear';
 
 interface SidebarProps {
     open: boolean;
@@ -26,23 +30,64 @@ interface SidebarProps {
     nav: NavItem[];
 }
 
+/**
+ * Scroll-spy over the rendered `section[id]` elements.
+ *
+ * The nav is a set of in-page hash links, so route matching can never report
+ * where the reader is (F1). An IntersectionObserver with a middle-band root
+ * margin makes "active" mean "the section occupying the middle of the viewport".
+ */
+function useActiveSection(sectionCount: number): string | null {
+    const [activeId, setActiveId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') return;
+
+        const sections = Array.from(document.querySelectorAll<HTMLElement>('section[id]'));
+        if (sections.length === 0) return;
+
+        const visible = new Set<string>();
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) visible.add(entry.target.id);
+                    else visible.delete(entry.target.id);
+                }
+                // First in document order wins, so the active item never flickers
+                // backwards while two sections straddle the band.
+                const next = sections.find((section) => visible.has(section.id))?.id ?? null;
+                setActiveId(next);
+            },
+            { rootMargin: '-40% 0px -55% 0px', threshold: 0 },
+        );
+
+        sections.forEach((section) => observer.observe(section));
+        return () => observer.disconnect();
+    }, [sectionCount]);
+
+    return activeId;
+}
+
 export default function Sidebar({ open, onClose, nav }: SidebarProps) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const pathname = usePathname();
+    const activeId = useActiveSection(nav.length);
+    const isDark = theme.palette.mode === 'dark';
 
     const isActive = (href: string) => {
-        if (href === '/') return pathname === '/';
-        const base = href.split('#')[0];
-        // In-page hash links (e.g. /#about) are anchors, not active routes.
-        return base !== '/' && pathname.startsWith(base);
+        // Home is "active" only at the top of the page, before any section
+        // has taken the middle band.
+        if (href === '/') return pathname === '/' && activeId === null;
+        const hash = href.split('#')[1];
+        return !!hash && hash === activeId;
     };
 
     const drawerContent = (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: 2, mt: 8 }}>
-                {/* Intentionally blank: no sidebar title */}
-            </Box>
+            {/* MUI's semantic AppBar spacer — stays correct at the xs 56px height (F4). */}
+            <Toolbar />
 
             <List sx={{ flexGrow: 1, px: 1 }}>
                 {/* Home + a divider, then one entry per content section (metadata-driven). */}
@@ -56,8 +101,18 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                                 <ListItemButton
                                     component={Link}
                                     href={menuItem.href}
-                                    aria-label={menuItem.text}
+                                    // E13: expanded, the label text is the button's own
+                                    // visible content — naming it again is a duplicate
+                                    // announcement. Collapsed to 72px only the icon
+                                    // remains, so the label becomes the only name.
+                                    aria-label={open ? undefined : menuItem.text}
+                                    aria-current={active ? 'page' : undefined}
                                     onClick={(e) => {
+                                        // D1: only the temporary (mobile) Drawer closes on
+                                        // select. On desktop the permanent Drawer stays put
+                                        // and focus stays on the item that was clicked.
+                                        if (!isMobile) return;
+
                                         // Prevent focus from remaining inside the temporary Drawer as it closes.
                                         if (e.currentTarget instanceof HTMLElement) {
                                             e.currentTarget.blur();
@@ -65,16 +120,16 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                                         onClose();
                                     }}
                                     sx={{
-                                        borderRadius: 2,
+                                        borderRadius: RADIUS.chip,
                                         minHeight: 48,
                                         justifyContent: open ? 'flex-start' : 'center',
                                         px: 2.5,
                                         backgroundColor: active ? 'primary.main' : 'transparent',
-                                        color: active ? 'white' : 'text.primary',
+                                        color: active ? 'primary.contrastText' : 'text.primary',
                                         '&:hover': {
-                                            backgroundColor: active ? 'primary.dark' : 'rgba(124, 58, 237, 0.08)',
+                                            backgroundColor: active ? 'primary.dark' : 'action.hover',
                                         },
-                                        transition: 'all 0.2s ease-in-out',
+                                        transition: NAV_TRANSITION,
                                     }}
                                 >
                                     <ListItemIcon
@@ -82,7 +137,7 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                                             minWidth: 0,
                                             mr: open ? 2 : 0,
                                             justifyContent: 'center',
-                                            color: active ? 'white' : 'primary.main',
+                                            color: active ? 'primary.contrastText' : 'primary.main',
                                         }}
                                     >
                                         <SectionIcon name={menuItem.icon} />
@@ -91,7 +146,7 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                                         <ListItemText
                                             primary={menuItem.text}
                                             primaryTypographyProps={{
-                                                fontWeight: active ? 600 : 500,
+                                                fontWeight: active ? 600 : 400,
                                                 fontSize: '0.9rem',
                                             }}
                                         />
@@ -102,19 +157,8 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                     );
                 })}
             </List>
-
-            {/* Footer in sidebar */}
-            {open && (
-                <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="caption" color="text.secondary">
-                        © 2025 Kaushal
-                    </Typography>
-                </Box>
-            )}
         </Box>
     );
-
-
 
     return (
         <>
@@ -124,6 +168,7 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                 open={isMobile && open}
                 onClose={onClose}
                 ModalProps={{ keepMounted: true }}
+                className="no-print"
                 sx={{
                     display: { xs: 'block', md: 'none' },
                     '& .MuiDrawer-paper': {
@@ -139,6 +184,7 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
             <Drawer
                 variant="permanent"
                 open={open}
+                className="no-print"
                 sx={{
                     display: { xs: 'none', md: 'block' },
                     width: open ? DRAWER_WIDTH : COLLAPSED_WIDTH,
@@ -152,8 +198,9 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                             easing: theme.transitions.easing.sharp,
                             duration: theme.transitions.duration.enteringScreen,
                         }),
-                        borderRight: 'none',
-                        boxShadow: '2px 0 8px rgba(0, 0, 0, 0.04)',
+                        borderRight: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: isDark ? 'none' : theme.shadows[1],
                     },
                 }}
             >

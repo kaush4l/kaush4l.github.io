@@ -2,8 +2,10 @@
 title: "Cognix"
 subtitle: "Self-Hosted Productivity Suite"
 period: "2024"
-tools: ["Next.js", "React", "TypeScript", "PostgreSQL", "Prisma", "NextAuth", "Docker"]
+tools: ["Prisma", "NextAuth v5", "PostgreSQL", "Docker", "Next.js", "React", "TypeScript"]
 link: "https://github.com/kaush4l/Cognix"
+description: "A self-hosted, privacy-first productivity suite that replaces fragmented SaaS tools with one owned application — notes, tasks, and knowledge in one place."
+featured: true
 ---
 
 A self-hosted, privacy-first productivity suite built to replace fragmented SaaS tools with a single, owned application — notes, tasks, and knowledge management in one place.

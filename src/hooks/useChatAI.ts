@@ -36,7 +36,8 @@ export interface UseChatAIReturn {
     // Actions
     sendText: (text: string) => Promise<void>;
     sendAudio: (audio: Float32Array) => Promise<void>;
-    sendMessage: (overrideContent?: string) => void;
+    /** Abort the in-flight generation and re-enable the composer (D6). */
+    stopGeneration: () => void;
     clearChat: () => void;
 
     // Scroll refs
@@ -212,11 +213,31 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
         });
     }, [autoLoadAll, busy, llm.ready, llmWorker, messages, systemPrompt]);
 
-    // ── sendMessage: convenience wrapper (reads local input) ─────
-    const sendMessage = useCallback((overrideContent?: string) => {
-        const content = overrideContent ?? input.trim();
-        if (content) void sendText(content);
-    }, [input, sendText]);
+    // ── Stop ──────────────────────────────────────────────────────────────────
+    /**
+     * Two independent halves, because the worker may be mid-token:
+     * 1. tell the worker to interrupt its decode loop, and
+     * 2. drop the active request id, so any token or `complete` that still
+     *    arrives is discarded by the guards above and the UI recovers even if
+     *    the worker never honours the interrupt.
+     */
+    const stopGeneration = useCallback(() => {
+        try {
+            llmWorker?.postMessage({ type: 'interrupt' });
+        } catch {
+            /* worker already gone — the guard below is what actually recovers the UI */
+        }
+        activeLlmRequestIdRef.current = null;
+        if (streamingFlushTimerRef.current) {
+            clearTimeout(streamingFlushTimerRef.current);
+            streamingFlushTimerRef.current = null;
+        }
+        const partial = streamingBufferRef.current.trim();
+        streamingBufferRef.current = '';
+        if (partial) setMessages((prev) => [...prev, { role: 'assistant', content: partial }]);
+        setStreamingContent('');
+        setBusy(false);
+    }, [llmWorker]);
 
     // ── Clear ─────────────────────────────────────────────────────────────────
     const clearChat = useCallback(() => {
@@ -235,7 +256,7 @@ export function useChatAI(opts: UseChatAIOptions = {}): UseChatAIReturn {
         setInput,
         sendText,
         sendAudio,
-        sendMessage,
+        stopGeneration,
         clearChat,
         scrollContainerRef,
         messagesEndRef,

@@ -3,7 +3,7 @@ import path from 'path';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
-import { ContentItem, Section, AMAContent, SiteSection, SectionLayout, NavItem } from './contentTypes';
+import { ContentItem, SiteSection, SectionLayout, SectionAccent, NavItem } from './contentTypes';
 
 const contentDirectory = path.join(process.cwd(), 'content');
 
@@ -23,16 +23,6 @@ function isEntryFile(fileName: string): boolean {
 function humanize(slug: string): string {
     return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
-
-/** Default icon registry key per known section id; falls back to a generic key. */
-const DEFAULT_SECTION_ICON: Record<string, string> = {
-    education: 'school',
-    experience: 'work',
-    projects: 'code',
-    about: 'person',
-    skills: 'build',
-    contact: 'contact',
-};
 
 /**
  * Strip HTML tags safely (handles edge cases better than a simple regex).
@@ -70,6 +60,9 @@ async function parseMarkdownFile(fullPath: string): Promise<ContentItem> {
         // Support both 'tags' and 'tools' frontmatter keys
         tags: matterResult.data.tags,
         tools: matterResult.data.tools,
+        // Education declares `coursework` instead of `tools`: classes taken are not
+        // production technologies and must not render in the same chip token.
+        coursework: matterResult.data.coursework,
         quote: matterResult.data.quote,
         link: matterResult.data.link,
         // Extended fields
@@ -77,7 +70,14 @@ async function parseMarkdownFile(fullPath: string): Promise<ContentItem> {
         icon: matterResult.data.icon,
         url: matterResult.data.url,
         location: matterResult.data.location,
+        // The agency an engagement was staffed through — rendered in the meta
+        // caption so the client, not the staffing firm, owns the dominant line.
+        via: matterResult.data.via,
         featured: matterResult.data.featured ?? false,
+        // Hero fields, authored on the about entry (F1).
+        headline: matterResult.data.headline,
+        proof: matterResult.data.proof,
+        highlights: matterResult.data.highlights,
     } as ContentItem;
 }
 
@@ -105,26 +105,29 @@ export async function getContent(section: string, ascending = false): Promise<Co
     );
 }
 
-/**
- * Convenience wrappers for each named section
- */
-export const getExperience = () => getContent('02-experience');
-export const getProjects   = () => getContent('03-projects');
-export const getEducation  = () => getContent('01-education', true);
-export const getAbout      = () => getContent('04-about', true);
-export const getSkills     = () => getContent('05-skills', true);
-export const getContact    = () => getContent('06-contact', true);
-
 // ─── Metadata-driven sections ─────────────────────────────────────────────────
 
 interface SectionMeta {
     title: string;
     layout: SectionLayout;
     icon: string;
+    accent: SectionAccent;
     sort: 'asc' | 'desc';
+    /** Optional authored copy: passed through untouched when declared. */
+    prompts?: string[];
+    statement?: string;
+    intro?: string;
+}
+
+/** Narrow an unknown frontmatter value to a non-empty string array. */
+function stringArray(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const strings = value.filter((v): v is string => typeof v === 'string');
+    return strings.length > 0 ? strings : undefined;
 }
 
 const VALID_LAYOUTS: SectionLayout[] = ['timeline', 'grid', 'skills', 'about', 'contact'];
+const VALID_ACCENTS: SectionAccent[] = ['primary', 'secondary'];
 
 /**
  * Read a section's `_section.md` frontmatter, falling back to defaults derived
@@ -135,7 +138,8 @@ function readSectionMeta(folderName: string, id: string): SectionMeta {
     const defaults: SectionMeta = {
         title: humanize(id),
         layout: 'timeline',
-        icon: DEFAULT_SECTION_ICON[id] ?? 'folder',
+        icon: 'folder',
+        accent: 'primary',
         sort: 'asc',
     };
 
@@ -147,7 +151,11 @@ function readSectionMeta(folderName: string, id: string): SectionMeta {
         title: typeof data.title === 'string' ? data.title : defaults.title,
         layout: VALID_LAYOUTS.includes(data.layout) ? (data.layout as SectionLayout) : defaults.layout,
         icon: typeof data.icon === 'string' ? data.icon : defaults.icon,
+        accent: VALID_ACCENTS.includes(data.accent) ? (data.accent as SectionAccent) : defaults.accent,
         sort: data.sort === 'desc' ? 'desc' : data.sort === 'asc' ? 'asc' : defaults.sort,
+        prompts: stringArray(data.prompts),
+        statement: typeof data.statement === 'string' ? data.statement : undefined,
+        intro: typeof data.intro === 'string' ? data.intro : undefined,
     };
 }
 
@@ -168,8 +176,26 @@ export async function getSiteSections(): Promise<SiteSection[]> {
             const id = dir.name.replace(/^\d+-/, '');
             const order = parseInt(dir.name.match(/^(\d+)-/)?.[1] ?? '0', 10);
             const meta = readSectionMeta(dir.name, id);
-            const items = await getContent(dir.name, meta.sort === 'asc');
-            return { id, order, title: meta.title, layout: meta.layout, icon: meta.icon, items };
+            const sorted = await getContent(dir.name, meta.sort === 'asc');
+            // `featured` outranks the section's own sort: serial position means the
+            // first slots are the only ones reliably read, so the strongest entries
+            // are pinned there regardless of filename order.
+            const items = [
+                ...sorted.filter((i) => i.featured),
+                ...sorted.filter((i) => !i.featured),
+            ];
+            return {
+                id,
+                order,
+                title: meta.title,
+                layout: meta.layout,
+                icon: meta.icon,
+                accent: meta.accent,
+                items,
+                prompts: meta.prompts,
+                statement: meta.statement,
+                intro: meta.intro,
+            };
         }),
     );
 }
@@ -180,70 +206,4 @@ export async function getNav(): Promise<NavItem[]> {
     return sections
         .filter((s) => s.items.length > 0)
         .map((s) => ({ id: s.id, title: s.title, icon: s.icon, href: `/#${s.id}` }));
-}
-
-/**
- * Get all sections with their content
- */
-export async function getAllSections(): Promise<Section[]> {
-    const dirs = fs.readdirSync(contentDirectory, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory() && /^\d+-/.test(dirent.name))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-    const sections = await Promise.all(
-        dirs.map(async (dir) => {
-            const items = await getContent(dir.name);
-            // Extract display name from folder (e.g., "01-education" -> "Education")
-            const name = dir.name
-                .replace(/^\d+-/, '')
-                .replace(/-/g, ' ')
-                .replace(/\b\w/g, char => char.toUpperCase());
-
-            return {
-                id: dir.name.replace(/^\d+-/, ''),
-                name,
-                items,
-            };
-        })
-    );
-
-    return sections;
-}
-
-/**
- * Get AMA knowledge base content
- */
-export async function getAMAContent(): Promise<AMAContent[]> {
-    const amaPath = path.join(contentDirectory, 'ama');
-
-    if (!fs.existsSync(amaPath)) {
-        return [];
-    }
-
-    const fileNames = fs.readdirSync(amaPath).filter(f => f.endsWith('.md') && f !== 'README.md');
-
-    const allContent = await Promise.all(
-        fileNames.map(async (fileName) => {
-            const slug = fileName.replace(/\.md$/, '');
-            const fullPath = path.join(amaPath, fileName);
-            const fileContents = fs.readFileSync(fullPath, 'utf8');
-            const matterResult = matter(fileContents);
-
-            const processedContent = await remark()
-                .use(html)
-                .process(matterResult.content);
-            const contentHtml = processedContent.toString();
-
-            return {
-                slug,
-                title: matterResult.data.title || slug,
-                category: matterResult.data.category || 'personal',
-                topics: matterResult.data.topics || [],
-                dateRange: matterResult.data.dateRange,
-                contentHtml,
-            } as AMAContent;
-        })
-    );
-
-    return allContent.sort((a, b) => a.slug.localeCompare(b.slug));
 }

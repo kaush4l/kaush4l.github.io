@@ -1,6 +1,13 @@
 'use client';
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useRef } from 'react';
 import { MODELS } from '@/lib/capability';
+
+/**
+ * Loading is *never* started here. Model weights are gigabytes of the visitor's
+ * bandwidth, so the download begins only on an explicit act of intent —
+ * `ChatWidget.handleOpen` → `ensureLoading()` (A2). There is deliberately no
+ * startup prefetch, idle-callback warm-up or speculative fetch in this file.
+ */
 
 interface ModelState {
     ready: boolean;
@@ -56,7 +63,6 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
             const cleanup = () => {
                 worker.removeEventListener('message', handler);
                 worker.removeEventListener('error', errorHandler);
-                // @ts-ignore
                 worker.removeEventListener('messageerror', messageErrorHandler);
             };
 
@@ -94,14 +100,14 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
                 fail(parts.join(' | '));
             };
 
-            // @ts-ignore
-            const messageErrorHandler = () => {
+            // `messageerror` is a typed member of WorkerEventMap; typing the
+            // listener is what makes the suppression unnecessary (G6).
+            const messageErrorHandler = (_e: MessageEvent) => {
                 fail(`Worker message error while loading ${type}`);
             };
 
             worker.addEventListener('message', handler);
             worker.addEventListener('error', errorHandler);
-            // @ts-ignore
             worker.addEventListener('messageerror', messageErrorHandler);
             worker.postMessage({ type: 'load', data: { model: modelId } });
         });
@@ -112,8 +118,6 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
         if (autoLoadPromiseRef.current) return autoLoadPromiseRef.current;
 
         autoLoadPromiseRef.current = (async () => {
-            console.log('Auto-loading LLM model...');
-
             // If we already have workers and the model is ready, no-op.
             if (workers.llm && llm.ready) {
                 return;
@@ -145,40 +149,6 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
         terminateWorkers,
         workers.llm,
     ]);
-
-    // Always keep a ref to the latest autoLoadAll so the startup effect (with
-    // empty deps) never calls a stale closure without needing autoLoadAll in
-    // its dependency array.
-    const autoLoadAllRef = useRef(autoLoadAll);
-    useEffect(() => { autoLoadAllRef.current = autoLoadAll; });
-
-    // Auto-initialize models on startup without blocking first paint.
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        let cancelled = false;
-
-        const start = () => {
-            if (cancelled) return;
-            void autoLoadAllRef.current().catch(() => {
-                // Errors are reflected in context state.
-            });
-        };
-
-        const anyGlobal = globalThis as any;
-        if (typeof anyGlobal.requestIdleCallback === 'function') {
-            const id = anyGlobal.requestIdleCallback(start, { timeout: 2000 });
-            return () => {
-                cancelled = true;
-                try { anyGlobal.cancelIdleCallback?.(id); } catch { /* ignore */ }
-            };
-        }
-
-        const t = setTimeout(start, 500);
-        return () => {
-            cancelled = true;
-            clearTimeout(t);
-        };
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <ModelContext.Provider value={{
