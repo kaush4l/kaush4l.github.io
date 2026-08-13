@@ -57,14 +57,17 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
-// `display: 'optional'` — Amarante renders exactly two words (the hero
-// surname). A decorative face must never block or swap the LCP heading: if it
-// is not in cache within the ~100ms block period the fallback stands for this
-// page view and the face arrives silently on the next one.
+// `display: 'swap'` — Amarante renders exactly two words (the hero surname) and
+// is the only piece of brand identity on the page. `optional` was tried first to
+// protect the LCP heading, but it gives the face a ~100ms block period and then
+// *never* swaps for that page view — so a first-time visitor, precisely the
+// audience this page exists for, simply never saw it. A brand face nobody sees is
+// not a brand face. `swap` guarantees it renders; the preload plus next/font's
+// automatic fallback-metric adjustment keep the reflow negligible.
 const amarante = Amarante({
   subsets: ["latin"],
   weight: ["400"],
-  display: "optional",
+  display: "swap",
   variable: "--font-display",
 });
 
