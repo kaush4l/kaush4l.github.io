@@ -118,7 +118,10 @@ export default function ContentCard({ item, variant = 'card' }: ContentCardProps
                     sx={{
                         color: 'text.primary',
                         maxWidth: '68ch',
-                        '& strong': { fontWeight: 600, color: 'text.primary' },
+                        // Amarante is single-weight and font synthesis is off, so
+                        // emphasis is carried by colour, not weight (globals.css).
+                        // These spans hold the metrics — they must still lead the eye.
+                        '& strong': { color: 'primary.main' },
                     }}
                     dangerouslySetInnerHTML={{ __html: item.contentHtml }}
                 />

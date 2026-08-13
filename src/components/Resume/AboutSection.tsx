@@ -99,7 +99,9 @@ export default function AboutSection({
                         sx={{
                             color: 'text.primary',
                             maxWidth: '68ch',
-                            '& strong': { fontWeight: 600, color: 'text.primary' },
+                            // Colour, not weight — Amarante is single-weight and font
+                            // synthesis is off, so this must match the timeline (globals.css).
+                            '& strong': { color: 'primary.main' },
                         }}
                     />
                 </Box>

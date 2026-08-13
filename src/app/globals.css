@@ -44,10 +44,23 @@ html {
 }
 
 body {
-  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Amarante is the default face by explicit choice — it is the brand. Inter
+     stays in the stack as the metric fallback. See the FONT_DISPLAY comment in
+     ThemeProvider for why hierarchy here is size/tracking rather than weight. */
+  font-family: var(--font-display), var(--font-sans), Georgia, serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Amarante ships one weight and no italic. Without this, any `fontWeight: 600`
+   or `fontStyle: italic` left in a component would be synthesised by the browser
+   — a smeared, sheared approximation that reads as a broken render on a
+   decorative face. Forbidding synthesis makes those declarations inert rather
+   than ugly, which is why emphasis below is carried by colour. */
+*, *::before, *::after {
+  font-synthesis: none;
+  -webkit-font-synthesis: none;
 }
 
 /* ─── Focus visibility ────────────────────────────────────────────────────── */
@@ -89,7 +102,12 @@ section[id] {
 .prose-content ul:last-child,
 .prose-content ol:last-child,
 .prose-content li:last-child { margin-bottom: 0; }
-.prose-content strong     { font-weight: 600; }
+/* Emphasis without weight. Amarante has one weight, so `<strong>` cannot get
+   heavier — and these spans carry the resume's evidence ("10M+ events per hour",
+   "85% code coverage"). Colour is the remaining preattentive channel, so the
+   metrics stay the first thing the eye lands on in a bullet. `--link` is the
+   tonal, text-safe primary channel, so this passes contrast in both modes. */
+.prose-content strong     { color: var(--link); }
 .prose-content a          { color: var(--link); text-decoration: underline; }
 .prose-content code       { font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace; font-size: 0.875em; }
 

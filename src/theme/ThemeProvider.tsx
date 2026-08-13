@@ -24,6 +24,18 @@ const FONT_SANS = 'var(--font-sans), system-ui, -apple-system, sans-serif';
 const FONT_MONO = 'var(--font-mono), ui-monospace, monospace';
 
 /**
+ * Amarante is the site's default face, by explicit choice — it is the brand.
+ *
+ * It ships **one weight (400) and no italic**, so weight-based hierarchy is not
+ * available: asking for 600 would make the browser synthesise a smeared faux
+ * bold. `font-synthesis: none` in `globals.css` forbids that, so every heading
+ * below renders at 400 and hierarchy is carried by **size, letter-spacing and
+ * colour** instead. Inter stays in the stack as the metric fallback so the page
+ * is still well-set if Amarante fails to load.
+ */
+const FONT_DISPLAY = 'var(--font-display), var(--font-sans), Georgia, serif';
+
+/**
  * Corner-radius scale — the single source of corner geometry.
  * `shape.borderRadius` stays at MUI's default base of 4 — every
  * `sx={{ borderRadius: n }}` in the codebase was written against that
@@ -256,18 +268,24 @@ function createThemeForVariant(variant: ThemeVariant, mode: PaletteMode) {
             },
         },
         typography: {
-            fontFamily: FONT_SANS,
+            fontFamily: FONT_DISPLAY,
             fontFamilyMono: FONT_MONO,
-            // Weight scale is exactly three steps: 400 body / 500 emphasis / 600 headings.
-            h1: { fontWeight: 600, letterSpacing: '-0.02em' },
-            h2: { fontWeight: 600, letterSpacing: '-0.01em' },
-            h3: { fontWeight: 600 },
-            h4: { fontWeight: 600 },
-            h5: { fontWeight: 600 },
-            h6: { fontWeight: 600 },
-            subtitle1: { fontWeight: 500 },
-            subtitle2: { fontWeight: 500 },
-            button: { textTransform: 'none', fontWeight: 500 },
+            // Amarante has a single weight, so there is no weight scale to spend.
+            // Hierarchy is carried by size and letter-spacing: headings tighten as
+            // they grow (large display type needs negative tracking to look set
+            // rather than spaced out), and the small labels open up so a
+            // decorative face stays legible at caption sizes.
+            h1: { fontWeight: 400, letterSpacing: '-0.02em' },
+            h2: { fontWeight: 400, letterSpacing: '-0.015em' },
+            h3: { fontWeight: 400, letterSpacing: '-0.01em' },
+            h4: { fontWeight: 400, letterSpacing: '-0.01em' },
+            h5: { fontWeight: 400, letterSpacing: '-0.005em' },
+            h6: { fontWeight: 400 },
+            subtitle1: { fontWeight: 400 },
+            subtitle2: { fontWeight: 400 },
+            overline: { letterSpacing: '0.1em' },
+            caption: { letterSpacing: '0.01em' },
+            button: { textTransform: 'none', fontWeight: 400, letterSpacing: '0.01em' },
         },
         shape: { borderRadius: 4 },
         components: {
