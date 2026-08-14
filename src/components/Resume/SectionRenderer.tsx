@@ -26,9 +26,9 @@ export default function SectionRenderer({ section }: { section: SiteSection }) {
         case 'contact':
             return <ContactSection {...common} intro={intro} />;
         case 'grid':
-            return <Section {...common} variant="grid" />;
+            return <Section {...common} variant="grid" intro={intro} />;
         case 'timeline':
         default:
-            return <Section {...common} variant="timeline" />;
+            return <Section {...common} variant="timeline" intro={intro} />;
     }
 }

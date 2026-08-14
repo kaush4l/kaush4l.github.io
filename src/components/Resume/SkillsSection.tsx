@@ -70,6 +70,8 @@ export default function SkillsSection({
                         <Paper
                             key={category}
                             elevation={0}
+                            // Lit by the cursor, like the project cards.
+                            data-glow
                             sx={{
                                 p: 2.5,
                                 height: '100%',

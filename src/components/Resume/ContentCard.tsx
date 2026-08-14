@@ -292,6 +292,9 @@ export default function ContentCard({ item, variant = 'card' }: ContentCardProps
 
     return (
         <Card
+            // The cursor lights this surface — see `PointerGlow` (which writes
+            // the position) and `cinema.css` (which draws the pool and the rim).
+            data-glow
             sx={{
                 height: '100%',
                 display: 'flex',

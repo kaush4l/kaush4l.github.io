@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { SectionRenderer } from '@/components/Resume';
 import { HeroSwitcher } from '@/components/Hero';
 import Reveal from '@/components/Motion/Reveal';
+import PointerGlow from '@/components/Motion/PointerGlow';
 import { getSiteSections } from '@/lib/content';
 import type { SiteSection } from '@/lib/contentTypes';
 
@@ -69,6 +70,10 @@ export default async function Home() {
           __html: JSON.stringify(buildPersonJsonLd(sections)),
         }}
       />
+      {/* One delegated pointer listener for every `data-glow` surface on the
+          page. Renders nothing; see PointerGlow for why it is not per-card. */}
+      <PointerGlow />
+
       {/* Hero — full-width visual lead-in, outside the constrained content box */}
       <HeroSwitcher about={about} />
 

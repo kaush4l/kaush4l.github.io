@@ -329,6 +329,107 @@ body::before {
   }
 }
 
+/* ─── Pointer glow ────────────────────────────────────────────────────────── */
+
+/**
+ * A surface the light falls on. `PointerGlow` writes `--gx`/`--gy`; everything
+ * else is here.
+ *
+ * Two layers, because a real lit edge is two things: a soft pool of light on
+ * the surface, and a brighter line where the light catches the border. The pool
+ * is drawn under the content (`::before`, no blend mode) so it can never sit on
+ * top of text and reduce its contrast; the rim is a masked border ring
+ * (`::after`) that paints only the 1px edge.
+ *
+ * Both fade in on hover rather than being always-on, so a page at rest is still
+ * a page at rest.
+ */
+[data-glow] {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-glow]::before,
+[data-glow]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The pool. Behind the content; tinted with the page's own fill light. */
+[data-glow]::before {
+  z-index: -1;
+  background: radial-gradient(
+    260px circle at var(--gx, 50%) var(--gy, 50%),
+    rgba(var(--hc-fill, 6, 182, 212), var(--glow-pool-a, 0.1)),
+    transparent 68%
+  );
+}
+
+/**
+ * The rim. A full-bleed gradient masked down to the border ring — this is what
+ * makes an edge look *lit* rather than merely outlined, and it is the detail a
+ * flat 1px hairline is missing.
+ */
+[data-glow]::after {
+  padding: 1px;
+  background: radial-gradient(
+    240px circle at var(--gx, 50%) var(--gy, 50%),
+    rgba(var(--hc-fill, 6, 182, 212), var(--glow-rim-a, 0.55)),
+    transparent 60%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+[data-glow]:hover::before,
+[data-glow]:hover::after,
+[data-glow]:focus-within::before,
+[data-glow]:focus-within::after {
+  opacity: 1;
+}
+
+/* Light mode keeps the pool weak — a coloured wash on white greys a card
+   instead of lighting it — while the rim stays crisp. */
+:root {
+  --glow-pool-a: 0.07;
+  --glow-rim-a: 0.5;
+}
+
+:root[data-theme='dark'] {
+  --glow-pool-a: 0.12;
+  --glow-rim-a: 0.6;
+}
+
+html[data-effects='coder'] {
+  --glow-pool-a: 0.16;
+  --glow-rim-a: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-glow]::before,
+  [data-glow]::after {
+    transition: none;
+  }
+}
+
+@media print {
+  [data-glow]::before,
+  [data-glow]::after {
+    display: none;
+  }
+}
+
 /* ─── Scroll reveal ───────────────────────────────────────────────────────── */
 
 /**

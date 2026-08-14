@@ -46,7 +46,10 @@ import { OPEN_CHAT_EVENT } from '@/lib/chatBridge';
 // Voice: the panel speaks in the *third* person throughout, because what
 // answers is a local model reading a résumé — not the person it describes (F2).
 const FEATURE_NAME = 'Ask this résumé';
-const MODEL_SUBTITLE = 'Gemma 4 · running in your browser';
+// E2B is the multimodal variant — it takes text and audio, which is what makes
+// the voice button on this panel a capability of the model rather than a
+// separate transcription service bolted next to it.
+const MODEL_SUBTITLE = 'Gemma 4 E2B · multimodal, in your browser';
 
 /**
  * The window event the hero's control dispatches to open this panel (B1).
@@ -468,7 +471,7 @@ export default function ChatWidget({ suggestedPrompts }: ChatWidgetProps = {}) {
                                 {!llm.ready && !llm.error && (
                                     <Paper elevation={0} sx={{ p: 1.5, borderRadius: RADIUS.card, bgcolor: 'action.hover' }}>
                                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                            Loading Gemma 4 into your browser
+                                            Loading Gemma 4 E2B into your browser
                                         </Typography>
                                         <Typography variant="caption" component="p" color="text.secondary" sx={{ mt: 0.5 }}>
                                             {MODEL_DOWNLOAD_SIZE

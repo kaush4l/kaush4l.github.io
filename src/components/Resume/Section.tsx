@@ -1,5 +1,5 @@
 'use client';
-import { Box, Grid } from '@mui/material';
+import { Box, Grid, Typography } from '@mui/material';
 import { ContentItem } from '@/lib/contentTypes';
 import ContentCard from './ContentCard';
 import SectionHeading from './SectionHeading';
@@ -13,6 +13,14 @@ interface SectionProps {
     icon: string;
     /** Palette channel from `_section.md`; resolved inside SectionHeading. */
     accent?: 'primary' | 'secondary';
+    /**
+     * One sentence between the heading and the entries, authored in the
+     * section's own `_section.md`. `content.ts` already parsed this for every
+     * section and only the contact layout read it — so the only way to frame a
+     * section (e.g. that everything after a certain date was contract work) was
+     * to hardcode a string in a component. Now it is content.
+     */
+    intro?: string;
 }
 
 /**
@@ -30,7 +38,7 @@ function featuredSpan(indexAmongFeatured: number, featuredCount: number, regular
     return indexAmongFeatured === 0 ? 12 : 6;
 }
 
-export default function Section({ id, title, items, variant = 'timeline', icon, accent }: SectionProps) {
+export default function Section({ id, title, items, variant = 'timeline', icon, accent, intro }: SectionProps) {
     const featuredCount = items.filter((item) => item.featured).length;
     const regularCount = items.length - featuredCount;
     const mdSpans = new Map<string, number>();
@@ -53,6 +61,21 @@ export default function Section({ id, title, items, variant = 'timeline', icon, 
             }}
         >
             <SectionHeading icon={icon} title={title} accent={accent} />
+
+            {intro && (
+                <Typography
+                    component="p"
+                    sx={{
+                        color: 'text.secondary',
+                        fontSize: '0.95rem',
+                        maxWidth: '62ch',
+                        mt: -1,
+                        mb: { xs: 3, md: 4 },
+                    }}
+                >
+                    {intro}
+                </Typography>
+            )}
 
             {/* Content */}
             {variant === 'grid' ? (
