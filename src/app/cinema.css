@@ -1,0 +1,415 @@
+/**
+ * The cinematic effects layer.
+ *
+ * Everything here is scoped under `.hc` (the cinematic hero) or `.reveal`
+ * (the scroll-entrance wrapper). Deleting this file must leave a correct,
+ * readable, fully-legible page — every rule below is decoration on top of a
+ * layout that already works, never the thing that makes it work.
+ *
+ * ── The colour idea ─────────────────────────────────────────────────────────
+ * Cinema grades a frame with two opposed lights: a warm KEY on one side and a
+ * cool FILL on the other, with the corners falling into a vignette so the eye
+ * is pushed to the centre. The site already ships exactly that pair — the
+ * theme's `primary` and `secondary` are complementary by construction — so the
+ * grade is not a new palette. It is the existing hue table, aimed.
+ *
+ *   --hc-key   primary channels   → the light source, upper right
+ *   --hc-fill  secondary channels → the bounce, lower left
+ *
+ * ── The contrast rule (M13) ─────────────────────────────────────────────────
+ * No light layer exceeds 0.30 alpha at rest, and none of them is painted
+ * *behind* the text column: the key sits upper-right, the fill lower-left, and
+ * the copy runs down the left-centre where both are already falling off. The
+ * grain and vignette are neutral (they only darken) so they can never lift a
+ * text/background pair out of AA.
+ */
+
+/* ─── The hero shell ──────────────────────────────────────────────────────── */
+
+.hc {
+  position: relative;
+  isolation: isolate; /* keeps blend modes off the rest of the page */
+  overflow: hidden;
+}
+
+/* Every decoration layer is a sibling of the content, absolutely positioned,
+   pointer-transparent and hidden from assistive tech. */
+.hc-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Key light — the source. Sits upper-right, away from the copy. */
+.hc-key {
+  background: radial-gradient(
+    52% 46% at 82% 12%,
+    rgba(var(--hc-key), var(--hc-key-a)) 0%,
+    rgba(var(--hc-key), calc(var(--hc-key-a) * 0.42)) 38%,
+    transparent 72%
+  );
+  will-change: transform;
+}
+
+/* Fill / bounce light — the cool opposite, lower left. */
+/* Anchored at 26%/88% rather than the corner: a bounce light that falls off
+   canvas is a light nobody sees. This one lands under the CTA row. */
+.hc-fill {
+  background: radial-gradient(
+    46% 44% at 26% 88%,
+    rgba(var(--hc-fill), var(--hc-fill-a)) 0%,
+    rgba(var(--hc-fill), calc(var(--hc-fill-a) * 0.4)) 40%,
+    transparent 74%
+  );
+  will-change: transform;
+}
+
+/**
+ * Anamorphic streak — the horizontal flare a wide lens throws. It is the one
+ * element that reads as "shot" rather than "designed", so it is deliberately
+ * thin, low-alpha and never crosses the headline's baseline.
+ */
+.hc-streak {
+  top: 16%;
+  bottom: auto;
+  height: 2px;
+  left: -10%;
+  right: -10%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--hc-fill), 0) 18%,
+    rgba(var(--hc-fill), var(--hc-streak-a)) 50%,
+    rgba(var(--hc-fill), 0) 82%,
+    transparent 100%
+  );
+  filter: blur(1.5px);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* The soft bloom the streak sits inside. */
+.hc-streak::after {
+  content: '';
+  position: absolute;
+  inset: -14px 0;
+  background: inherit;
+  filter: blur(16px);
+  opacity: 0.55;
+}
+
+/* Particulate: dust in the beam. Drawn on canvas so 40 motes cost one layer. */
+.hc-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/**
+ * Film grain. A single tiled SVG turbulence, animated by stepping the tile
+ * offset — no per-frame JS, no second image decode. `steps()` is what makes it
+ * read as film (discrete frames) instead of a sliding texture.
+ */
+.hc-grain {
+  background-image: var(--hc-grain-src);
+  background-size: 180px 180px;
+  opacity: var(--hc-grain-a);
+  mix-blend-mode: overlay;
+  animation: hc-grain-shift 0.9s steps(6, end) infinite;
+}
+
+@keyframes hc-grain-shift {
+  0%   { transform: translate3d(0, 0, 0); }
+  16%  { transform: translate3d(-3%, 2%, 0); }
+  33%  { transform: translate3d(2%, -3%, 0); }
+  50%  { transform: translate3d(-2%, -2%, 0); }
+  66%  { transform: translate3d(3%, 1%, 0); }
+  83%  { transform: translate3d(-1%, 3%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/**
+ * Vignette — it only ever darkens, so it can never lift a text/background pair
+ * out of AA. The tone is a warm near-black rather than pure black: on a light
+ * ground, pure black corners grey the page instead of framing it.
+ */
+.hc-vignette {
+  background: radial-gradient(
+    120% 100% at 50% 42%,
+    transparent 42%,
+    rgba(28, 22, 18, calc(var(--hc-vignette-a) * 0.45)) 76%,
+    rgba(28, 22, 18, var(--hc-vignette-a)) 100%
+  );
+}
+
+/**
+ * Contact shadow. A lit subject with no shadow under it is the reason a bright
+ * hero reads flat — the light is described but nothing receives it. Kept
+ * neutral and very low so it darkens the ground beneath the copy without
+ * touching the copy's own contrast.
+ */
+.hc-contact {
+  background: radial-gradient(
+    58% 40% at 30% 76%,
+    rgba(0, 0, 0, var(--hc-contact-a)) 0%,
+    transparent 70%
+  );
+}
+
+/* The seam into the page below: the frame fades to the page ground, so the
+   hero ends like a dissolve rather than a hard cut. */
+.hc-fade-out {
+  top: auto;
+  height: 26%;
+  background: linear-gradient(to bottom, transparent, var(--bg) 92%);
+}
+
+.hc-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Headline type ───────────────────────────────────────────────────────── */
+
+/**
+ * Per-character wrappers. `.hc-char` is the animated element; the outer
+ * `.hc-line` clips, so characters rise out of nothing instead of sliding over
+ * the layer above. The accessible name lives on the `<h1>`'s `aria-label` and
+ * every span is `aria-hidden`, so a screen reader reads one clean name.
+ */
+.hc-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em; /* room for descenders inside the clip */
+}
+
+.hc-char {
+  display: inline-block;
+  white-space: pre;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/**
+ * The gradient wordmark.
+ *
+ * Each character paints the ramp itself. `background-clip: text` on the LINE
+ * cannot clip to the glyphs of `inline-block` descendants — it renders
+ * transparent text over nothing, i.e. the name disappears. `background-size`
+ * and `background-position` are written per character by `HeroCinematic`, so
+ * the ramp still runs once across the whole word instead of restarting inside
+ * every letter.
+ *
+ * The fallback below matters: until those two properties are measured, each
+ * character shows the full ramp rather than nothing at all.
+ */
+.hc-line--grad .hc-char {
+  background-image: var(--hc-hero-grad);
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ─── Pre-paint hidden state ──────────────────────────────────────────────── */
+
+/**
+ * `data-motion` is stamped by the blocking script in `layout.tsx`, before the
+ * first paint, and removed by the hero the moment its timeline takes ownership
+ * (or immediately, under reduced motion). Hiding here rather than in a layout
+ * effect is what removes the flash: hydration lands well after first paint, so
+ * JS-applied "pre-paint" state is nothing of the sort — the visitor sees a
+ * finished hero, then sees it vanish, then sees it animate in.
+ *
+ * The script only stamps when motion is allowed, and it removes the attribute
+ * itself after 4s, so a bundle that never executes cannot strand the content.
+ */
+html[data-motion='on'] .hc-char {
+  opacity: 0;
+  transform: translateY(110%);
+}
+
+html[data-motion='on'] [data-hc-rise] {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+html[data-motion='on'] .hc-key,
+html[data-motion='on'] .hc-fill {
+  opacity: 0;
+}
+
+/* ─── Scroll cue ──────────────────────────────────────────────────────────── */
+
+.hc-cue-track {
+  position: relative;
+  width: 1px;
+  height: 34px;
+  flex: none;
+  overflow: hidden;
+  background: var(--border);
+}
+
+.hc-cue-track::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: -60%;
+  height: 60%;
+  background: linear-gradient(to bottom, transparent, rgba(var(--hc-fill), 0.9));
+  animation: hc-cue 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes hc-cue {
+  0%   { transform: translateY(0); opacity: 0; }
+  22%  { opacity: 1; }
+  78%  { opacity: 1; }
+  100% { transform: translateY(266%); opacity: 0; }
+}
+
+/* ─── Focus ───────────────────────────────────────────────────────────────── */
+
+/**
+ * One visible ring, everywhere, keyboard-only.
+ *
+ * `--focus-ring` was already a per-mode token in `ThemeProvider` (chosen so it
+ * clears 3:1 against a `primary` fill as well as against the ground) — it just
+ * had no rule consuming it, so every control fell back to the UA outline, which
+ * is invisible on a saturated fill. The second, `--bg`-coloured ring separates
+ * the outline from whatever it sits on.
+ */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--bg);
+}
+
+/* ─── Carrying the grade past the fold ────────────────────────────────────── */
+
+/**
+ * The single most common failure of a "cinematic" page is that the cinema stops
+ * at the fold and the rest is a white document. Each section gets one very low
+ * radial from the same key/fill pair as the hero, alternating side down the
+ * page, so the whole document reads as one continuously-lit frame.
+ *
+ * Alphas here are a third of the hero's and the layer sits BEHIND the content
+ * with no blend mode, so it can tint the ground and never the type.
+ */
+.reveal {
+  position: relative;
+}
+
+.reveal::before {
+  content: '';
+  position: absolute;
+  inset: -6% -14%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    42% 60% at 88% 12%,
+    rgba(var(--hc-key, 124, 58, 237), var(--hc-page-a)) 0%,
+    transparent 70%
+  );
+}
+
+/* Alternate the source side so the eye is walked down the page. */
+.reveal:nth-child(even)::before {
+  background: radial-gradient(
+    42% 60% at 10% 84%,
+    rgba(var(--hc-fill, 6, 182, 212), var(--hc-page-a)) 0%,
+    transparent 70%
+  );
+}
+
+/* ─── Scroll reveal ───────────────────────────────────────────────────────── */
+
+/**
+ * `.reveal` is applied by JS *after* mount (`Reveal.tsx` adds `is-armed`), so a
+ * visitor with JS off, or a crawler, sees fully-opaque content. Never author
+ * the hidden state as the document default.
+ */
+.reveal.is-armed {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  will-change: transform, opacity;
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 560ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/**
+ * A section is not one object arriving — it is a heading and then its entries.
+ * The children carry their own short offset, so six identical fades become six
+ * cascades. `--i` is written by `Reveal` on mount; without it every child
+ * simply lands with the section, which is the old behaviour.
+ */
+.reveal.is-armed > * > * {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+}
+
+.reveal.is-in > * > * {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 520ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 55ms),
+    transform 520ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 55ms);
+}
+
+/* Once it has played, drop the compositor hint. */
+.reveal.is-done {
+  will-change: auto;
+}
+
+/* ─── Opt-outs ────────────────────────────────────────────────────────────── */
+
+/**
+ * Reduced motion. The JS gate in `lib/motion.ts` already refuses to start any
+ * loop, but the CSS-only animations (grain, cue) have no JS to gate, so they
+ * are stopped here too. Nothing is hidden — only stilled.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .hc-grain,
+  .hc-cue-track::after {
+    animation: none !important;
+  }
+
+  .reveal.is-armed {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal.is-in {
+    transition: none;
+  }
+}
+
+/* Print: the frame is ink the reader did not ask for. */
+@media print {
+  .hc-layer,
+  .hc-canvas,
+  .hc-cue-track {
+    display: none !important;
+  }
+
+  .hc-char {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

@@ -6,35 +6,39 @@ import { Box, ButtonGroup, Button, Tooltip } from '@mui/material';
 import TuneIcon from '@mui/icons-material/Tune';
 import { RADIUS } from '@/theme/ThemeProvider';
 
-// E1: HeroA is imported STATICALLY so it is present in the static export's HTML.
-// `dynamic(..., { ssr: false })` shipped a hero-less document, and the hero then
-// mounted after hydration and shoved the whole page down ~85vh.
-import HeroA from './HeroA';
+// E1: the SHIPPED hero is imported STATICALLY so it is present in the static
+// export's HTML. `dynamic(..., { ssr: false })` shipped a hero-less document,
+// and the hero then mounted after hydration and shoved the whole page down ~85vh.
+import HeroCinematic from './HeroCinematic';
 import type { HeroProps } from './HeroA';
 
-// B/C/D exist only for the dev-only variant picker, so they stay lazy.
+// A–D exist only for the dev-only variant picker, so they stay lazy.
 // E4: this is only true because `./index.ts` does not re-export them — a barrel
 // re-export puts them back in the page's module graph and defeats the split.
+const HeroA = dynamic(() => import('./HeroA'), { ssr: false });
 const HeroB = dynamic(() => import('./HeroB'), { ssr: false });
 const HeroC = dynamic(() => import('./HeroC'), { ssr: false });
 const HeroD = dynamic(() => import('./HeroD'), { ssr: false });
 
-export type HeroVariant = 'A' | 'B' | 'C' | 'D';
+export type HeroVariant = 'A' | 'B' | 'C' | 'D' | 'E';
+
+const VARIANTS: HeroVariant[] = ['A', 'B', 'C', 'D', 'E'];
 
 const HEROES: Record<HeroVariant, React.ComponentType<HeroProps>> = {
-    A: HeroA, B: HeroB, C: HeroC, D: HeroD,
+    A: HeroA, B: HeroB, C: HeroC, D: HeroD, E: HeroCinematic,
 };
 const HERO_LABELS: Record<HeroVariant, string> = {
     A: 'Gradient Hero',
     B: 'Terminal',
     C: 'Minimalist',
     D: 'Particle Canvas',
+    E: 'Cinematic (shipped)',
 };
 
 function getInitialVariant(): HeroVariant {
     const envVariant = process.env.NEXT_PUBLIC_HERO_VARIANT as HeroVariant | undefined;
-    if (envVariant && ['A', 'B', 'C', 'D'].includes(envVariant)) return envVariant;
-    return 'A';
+    if (envVariant && VARIANTS.includes(envVariant)) return envVariant;
+    return 'E';
 }
 
 /**
@@ -78,7 +82,7 @@ export default function HeroSwitcher({ about }: HeroProps) {
                         <TuneIcon sx={{ fontSize: 18, color: 'text.secondary', ml: 0.5 }} />
                     </Tooltip>
                     <ButtonGroup size="small" variant="outlined">
-                        {(['A', 'B', 'C', 'D'] as HeroVariant[]).map((v) => (
+                        {VARIANTS.map((v) => (
                             <Tooltip key={v} title={HERO_LABELS[v]} placement="top">
                                 <Button
                                     onClick={() => setVariant(v)}

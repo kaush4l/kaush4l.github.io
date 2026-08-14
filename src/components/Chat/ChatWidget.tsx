@@ -39,6 +39,7 @@ import { RADIUS } from '@/theme/ThemeProvider';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useChatAI } from '@/hooks/useChatAI';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { OPEN_CHAT_EVENT } from '@/lib/chatBridge';
 
 // ── One name for the feature, everywhere (M5) ────────────────────────────────
 //
@@ -47,8 +48,12 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 const FEATURE_NAME = 'Ask this résumé';
 const MODEL_SUBTITLE = 'Gemma 4 · running in your browser';
 
-/** The window event the hero's control dispatches to open this panel (B1). */
-export const OPEN_CHAT_EVENT = 'kk:open-chat';
+/**
+ * The window event the hero's control dispatches to open this panel (B1).
+ * Owned by `lib/chatBridge` — this end and the dispatching end must never be
+ * two separately-authored copies of the same string.
+ */
+export { OPEN_CHAT_EVENT };
 
 /**
  * Formatted from the `bytes` the download script sourced for the exact model id

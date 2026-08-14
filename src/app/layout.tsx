@@ -6,6 +6,11 @@ import "./globals.css";
 // chosen Coder — so this import is inert in light and dark. Deleting the file
 // must leave a correct, complete dark theme (see the INVARIANT in ThemeProvider).
 import "./coder.css";
+// The cinematic effects layer — the hero's lighting rig, film grain, vignette
+// and the scroll-reveal transitions. Every rule is scoped to `.hc*` / `.reveal`,
+// and deleting the file must leave a complete, readable page (see the header
+// comment in cinema.css).
+import "./cinema.css";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
@@ -119,11 +124,18 @@ const fontVariables = `${inter.variable} ${amarante.variable} ${jetbrainsMono.va
 //   • `data-effects` is PRESENT or ABSENT. It is never set to "none": the
 //     effects stylesheet keys every rule off the attribute's presence.
 //
+// It also stamps `data-motion="on"` when the visitor has NOT asked for reduced
+// motion. That attribute is what hides the hero's entrance elements before the
+// first paint (see `cinema.css`); the hero removes it as soon as its timeline
+// owns those elements. The 4s self-clearing timeout is the safety net: if the
+// application bundle never executes, the attribute drops itself and the hero is
+// simply visible, rather than permanently blank.
+//
 // The three ground literals below must stay identical to `MODE_SURFACES` in
 // `ThemeProvider.tsx` and to the token blocks in `globals.css` (M28). They are
 // the only colours this script needs, because it sets `theme-color` — the
 // document's own ground comes from the stylesheet.
-const THEME_INIT_SCRIPT = `(function(){try{var el=document.documentElement;var s=null;try{s=localStorage.getItem('kk-appearance');}catch(e){}if(s!=='light'&&s!=='dark'&&s!=='coder'){var g=null;try{g=localStorage.getItem('kk-color-mode');}catch(e){}s=(g==='light'||g==='dark')?g:null;}if(s===null){s=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var dark=s!=='light';el.dataset.theme=dark?'dark':'light';if(s==='coder'){el.dataset.effects='coder';}else{delete el.dataset.effects;}el.style.colorScheme=dark?'dark':'light';var bg=s==='coder'?'#0A0A0F':(dark?'#12151C':'#FAFAFA');var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',bg);}catch(err){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var el=document.documentElement;var s=null;try{s=localStorage.getItem('kk-appearance');}catch(e){}if(s!=='light'&&s!=='dark'&&s!=='coder'){var g=null;try{g=localStorage.getItem('kk-color-mode');}catch(e){}s=(g==='light'||g==='dark')?g:null;}if(s===null){s=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var dark=s!=='light';el.dataset.theme=dark?'dark':'light';if(s==='coder'){el.dataset.effects='coder';}else{delete el.dataset.effects;}el.style.colorScheme=dark?'dark':'light';var bg=s==='coder'?'#0A0A0F':(dark?'#12151C':'#FAFAFA');var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',bg);try{if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){el.dataset.motion='on';setTimeout(function(){if(el.dataset.motion==='on'){delete el.dataset.motion;}},4000);}}catch(e){}}catch(err){}})();`;
 
 export default function RootLayout({
   children,

@@ -5,6 +5,7 @@ import type { PaletteMode } from '@mui/material';
 import { createTheme, alpha } from '@mui/material/styles';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { rgbChannels } from '@/lib/motion';
 
 // Expose a first-class mono family on the theme so components never hardcode a
 // monospace stack. Populated below from the `--font-mono` next/font variable.
@@ -714,7 +715,27 @@ function applyTokens(appearance: Appearance, p: ThemePalette) {
     s.setProperty('--focus-ring', m.focusRing);
     s.setProperty('--scrollbar-thumb', alpha(chrome, m.alphas.scrollbarThumb));
     s.setProperty('--scrollbar-hover', alpha(chrome, m.alphas.scrollbarHover));
+
+    // ── The cinematic grade's two lights, published document-wide ────────────
+    // The hero sets these on itself, but the sections below it need the same
+    // pair to carry the grade past the fold (`cinema.css`). They are raw `r, g,
+    // b` channels rather than colours so a rule can pick its own alpha.
+    // `primary` is the key, `secondary` is the fill — the complementary pair the
+    // hue table already guarantees, in every variant.
+    s.setProperty('--hc-key', rgbChannels(p.primary));
+    s.setProperty('--hc-fill', rgbChannels(p.secondary));
+    // How strongly that pair tints the page BELOW the hero. Deliberately about
+    // a third of the hero's own alphas: enough that the document reads as one
+    // lit frame, far too little to touch any text/background contrast pair.
+    s.setProperty('--hc-page-a', PAGE_GRADE_ALPHA[appearance]);
 }
+
+/** Per-mode strength of the page-level grade consumed by `cinema.css`. */
+const PAGE_GRADE_ALPHA: Record<Appearance, string> = {
+    light: '0.05',
+    dark: '0.07',
+    coder: '0.09',
+};
 
 /**
  * M7 — mobile browser chrome follows the *user's choice*, not the OS.
@@ -767,7 +788,30 @@ function commitAppearance(appearance: Appearance, p: ThemePalette, persist: bool
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [variant, setVariantState] = useState<ThemeVariant>('a');
-    const [appearance, setAppearanceState] = useState<Appearance>(readStampedAppearance);
+    /**
+     * M41 — this MUST start at the value the server rendered (`light`), not at
+     * `readStampedAppearance()`.
+     *
+     * Reading the stamp in the initializer looks like the careful thing to do,
+     * and it was a silent, permanent bug. The initializer runs on the client
+     * during *hydration*, so React's first client render produced coder/dark
+     * markup against a server tree rendered light. React does not repair
+     * attribute mismatches while hydrating — it warns and keeps the SERVER
+     * attribute. Emotion had already inlined the light `mui-…` class into the
+     * static HTML, so the AppBar, Drawer, Paper and Chip kept their light
+     * classes **forever**, over a correctly-dark ground: a white header and
+     * white cards on a near-black page, for every returning dark/coder visitor.
+     * Only opening the appearance menu (a real, post-hydration re-render)
+     * cleared it.
+     *
+     * Starting from the server's value makes hydration agree, and the effect
+     * below is then an ordinary update — which does re-render and does re-emit
+     * every themed class. The visitor's ground is already correct pre-paint
+     * (the blocking script in `layout.tsx` stamps `data-theme`/`data-effects`
+     * and `globals.css` colours the document off those), so what this costs is
+     * one frame of light *chrome*, not a light page.
+     */
+    const [appearance, setAppearanceState] = useState<Appearance>('light');
 
     // Load persisted state. The blocking script has already resolved storage +
     // media query and painted; adopt what it stamped so the static markup and

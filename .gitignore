@@ -55,3 +55,4 @@ node_modules
 # public repo deliberately. Not build output; do not delete.
 /progress.md
 /docs/
+.gstack/

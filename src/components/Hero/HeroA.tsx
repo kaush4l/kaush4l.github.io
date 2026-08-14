@@ -4,6 +4,7 @@ import { Box, Typography, Button, Stack, Chip, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { RADIUS } from '@/theme/ThemeProvider';
+import { OPEN_CHAT_EVENT, openChat } from '@/lib/chatBridge';
 import type { ContentItem } from '@/lib/contentTypes';
 
 /**
@@ -50,18 +51,18 @@ const ORBS = [
 
 const EASE = 'cubic-bezier(0.2, 0, 0, 1)';
 
-/** B1 cross-component contract: the chat widget listens for this on `window`. */
-export const OPEN_CHAT_EVENT = 'kk:open-chat';
+/**
+ * B1 cross-component contract: the chat widget listens for this on `window`.
+ * Re-exported for the call sites that already reach for it here; the single
+ * definition lives in `lib/chatBridge`.
+ */
+export { OPEN_CHAT_EVENT };
 
 function scrollTo(id: string) {
     const reduced =
         typeof window !== 'undefined' &&
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.getElementById(id)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
-}
-
-function openChat() {
-    window.dispatchEvent(new CustomEvent(OPEN_CHAT_EVENT));
 }
 
 export default function HeroA({ about }: HeroProps) {

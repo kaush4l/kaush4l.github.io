@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { Layout } from '@/components/Layout';
 import { SectionRenderer } from '@/components/Resume';
 import { HeroSwitcher } from '@/components/Hero';
+import Reveal from '@/components/Motion/Reveal';
 import { getSiteSections } from '@/lib/content';
 import type { SiteSection } from '@/lib/contentTypes';
 
@@ -71,9 +72,15 @@ export default async function Home() {
       {/* Hero — full-width visual lead-in, outside the constrained content box */}
       <HeroSwitcher about={about} />
 
+      {/* Each section arrives on its own as it enters the frame. `Reveal` is a
+          no-op under reduced motion and for anything already on screen at mount,
+          and the hidden state is applied post-mount — so this HTML is complete
+          and opaque for crawlers and for a visitor whose JS never runs. */}
       <Box sx={{ maxWidth: 1000, mx: 'auto', px: { xs: 2, md: 3 } }}>
         {sections.map((section) => (
-          <SectionRenderer key={section.id} section={section} />
+          <Reveal key={section.id}>
+            <SectionRenderer section={section} />
+          </Reveal>
         ))}
       </Box>
     </Layout>
