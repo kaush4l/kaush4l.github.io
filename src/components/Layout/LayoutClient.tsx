@@ -8,17 +8,22 @@ import Footer, { type FooterProps } from './Footer';
 import ChatWidget from '@/components/Chat/ChatWidget';
 import { ModelProvider } from '@/context/ModelContext';
 import type { NavItem } from '@/lib/contentTypes';
+import type { ResumeCorpus } from '@/lib/resumeContext';
 
 interface LayoutClientProps {
     children: ReactNode;
-    systemPrompt: string;
+    /**
+     * The whole résumé, entry by entry, un-truncated. Retrieval and prompt
+     * assembly happen per question on the client — see `src/lib/resumeContext.ts`.
+     */
+    resumeCorpus: ResumeCorpus;
     /** Chat entry-point prompts, authored in content and threaded through (F2). */
     suggestedPrompts?: string[];
     nav: NavItem[];
     footer?: FooterProps;
 }
 
-export default function LayoutClient({ children, systemPrompt, suggestedPrompts, nav, footer }: LayoutClientProps) {
+export default function LayoutClient({ children, resumeCorpus, suggestedPrompts, nav, footer }: LayoutClientProps) {
     const theme = useTheme();
     // Same breakpoint the Drawer variant itself switches on (`md`): below it the
     // Drawer is `temporary`, at and above it `permanent`.
@@ -55,7 +60,7 @@ export default function LayoutClient({ children, systemPrompt, suggestedPrompts,
     };
 
     return (
-        <ModelProvider initialSystemPrompt={systemPrompt}>
+        <ModelProvider resumeCorpus={resumeCorpus}>
             <Box sx={{ display: 'flex', minHeight: '100vh' }}>
                 <Header onMenuToggle={toggleSidebar} menuButtonRef={menuButtonRef} />
                 <Sidebar open={sidebarOpen} onClose={closeSidebar} nav={nav} />

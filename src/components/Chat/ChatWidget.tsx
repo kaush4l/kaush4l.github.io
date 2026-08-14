@@ -106,6 +106,8 @@ export default function ChatWidget({ suggestedPrompts }: ChatWidgetProps = {}) {
     const {
         messages,
         streamingContent,
+        streamingReasoning,
+        thinking,
         busy,
         input,
         setInput,
@@ -251,6 +253,29 @@ export default function ChatWidget({ suggestedPrompts }: ChatWidgetProps = {}) {
      * D7 — one stable, complete string at a time. While tokens are streaming the
      * region is deliberately empty; the finished message lands in it once.
      */
+    /**
+     * M14 — the one thing coder mode has that a template does not: a 4B
+     * multimodal model actually running in the visitor's own GPU. This is that
+     * state, published to the stylesheet as a plain attribute so `coder.css` can
+     * bind the FAB's halo to it. Glow that encodes machine state reads as an
+     * instrument; glow that encodes nothing reads as compensation.
+     *
+     * Deliberately an attribute rather than a colour prop: no coder-mode value
+     * enters this component, so light and dark are unaffected and deleting
+     * `coder.css` leaves nothing behind but a dormant `data-` attribute.
+     *
+     * `generating` outranks `loading` — while tokens are streaming that is what
+     * the machine is doing, whatever else is warming in the background. The
+     * `CircularProgress` below is the redundant visual channel and the panel's
+     * `aria-live` region the redundant textual one; the glow is never the only
+     * encoding of any of these three states.
+     */
+    const modelState: 'idle' | 'loading' | 'generating' = busy
+        ? 'generating'
+        : llm.loading
+            ? 'loading'
+            : 'idle';
+
     const lastMessage = messages[messages.length - 1];
     const announcement = queued
         ? STATUS_QUEUED
@@ -278,6 +303,7 @@ export default function ChatWidget({ suggestedPrompts }: ChatWidgetProps = {}) {
                                 <IconButton
                                     ref={fabRef}
                                     data-testid="chat-open"
+                                    data-model-state={modelState}
                                     aria-label={FEATURE_NAME}
                                     aria-haspopup="dialog"
                                     onClick={handleOpen}
@@ -500,6 +526,35 @@ export default function ChatWidget({ suggestedPrompts }: ChatWidgetProps = {}) {
                                             }}
                                         >
                                             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{msg.content}</Typography>
+                                            {/* The model's deliberation, already separated from the
+                                                answer by the hook's parser. Disclosed, never shown by
+                                                default: the answer is what was asked for, and reasoning
+                                                shown inline would read as the assistant thinking out
+                                                loud at a reader who wanted a fact. `<details>` is used
+                                                natively so it is keyboard- and screen-reader-operable
+                                                without any state of our own. */}
+                                            {msg.reasoning && (
+                                                <Box component="details" sx={{ mt: 1 }}>
+                                                    <Box
+                                                        component="summary"
+                                                        sx={{
+                                                            cursor: 'pointer',
+                                                            typography: 'caption',
+                                                            color: 'text.secondary',
+                                                        }}
+                                                    >
+                                                        Reasoning
+                                                    </Box>
+                                                    <Typography
+                                                        variant="caption"
+                                                        component="p"
+                                                        color="text.secondary"
+                                                        sx={{ whiteSpace: 'pre-wrap', mt: 0.5 }}
+                                                    >
+                                                        {msg.reasoning}
+                                                    </Typography>
+                                                </Box>
+                                            )}
                                         </Paper>
                                     </Box>
                                 ))}
@@ -539,7 +594,18 @@ export default function ChatWidget({ suggestedPrompts }: ChatWidgetProps = {}) {
                                             {streamingContent ? (
                                                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Typography>
                                             ) : (
-                                                <Typography variant="body2" color="text.secondary">{STATUS_THINKING}</Typography>
+                                                /* A reasoning pass emits no answer tokens, so without
+                                                   this the panel shows a motionless "Thinking…" for the
+                                                   whole deliberation and reads as a hung model. Showing
+                                                   the tail of the live reasoning proves work is
+                                                   happening; it is `aria-hidden` with the rest of this
+                                                   placeholder, so the live region still announces only
+                                                   the finished answer (D7). */
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {thinking && streamingReasoning
+                                                        ? `Reasoning… ${streamingReasoning.slice(-140)}`
+                                                        : STATUS_THINKING}
+                                                </Typography>
                                             )}
                                         </Paper>
                                     </Box>

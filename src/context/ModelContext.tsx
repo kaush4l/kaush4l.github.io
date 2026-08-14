@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useContext, useState, ReactNode, useCallback, useRef } from 'react';
 import { MODELS } from '@/lib/capability';
+import type { ResumeCorpus } from '@/lib/resumeContext';
 
 /**
  * Loading is *never* started here. Model weights are gigabytes of the visitor's
@@ -19,7 +20,13 @@ interface ModelState {
 interface ModelContextType {
     llm: ModelState;
     modelName: string;
-    systemPrompt: string;
+    /**
+     * The full résumé corpus, un-truncated. There is deliberately no prebuilt
+     * `systemPrompt` string any more: the prompt is assembled per question from
+     * the entries that question actually needs, because prefill is paid for out
+     * of the visitor's own GPU.
+     */
+    resumeCorpus: ResumeCorpus | null;
     autoLoadAll: () => Promise<void>;
 
     // Worker exposed for consumption by Chat Widget
@@ -34,9 +41,8 @@ export function useModelContext() {
     return ctx;
 }
 
-export function ModelProvider({ children, initialSystemPrompt = '' }: { children: ReactNode, initialSystemPrompt?: string }) {
+export function ModelProvider({ children, resumeCorpus = null }: { children: ReactNode, resumeCorpus?: ResumeCorpus | null }) {
     const [llm, setLlm] = useState<ModelState>({ ready: false, loading: false, progress: 0 });
-    const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
 
     const [workers, setWorkers] = useState<{
         llm: Worker | null;
@@ -152,7 +158,7 @@ export function ModelProvider({ children, initialSystemPrompt = '' }: { children
 
     return (
         <ModelContext.Provider value={{
-            llm, systemPrompt,
+            llm, resumeCorpus,
             modelName: MODELS.llm.default.split('/').pop() || 'Unknown',
             autoLoadAll,
             llmWorker: workers.llm

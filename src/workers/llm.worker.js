@@ -24,7 +24,14 @@ import { configureTransformersEnv } from './transformersEnv';
 
 const { localModelPath } = configureTransformersEnv();
 
-const MAX_NEW_TOKENS = 512;
+/**
+ * Headroom for a reasoning pass plus the answer it feeds. Synthesis turns emit
+ * a `[[think]]…[[/think]]` block the reader never sees (parsed out in
+ * `useChatAI`), so the visible answer starts a few hundred tokens in; at 512 a
+ * deliberated answer was being truncated before it began. Lookup turns skip the
+ * block entirely and never approach this ceiling.
+ */
+const MAX_NEW_TOKENS = 768;
 
 let model = null;
 let processor = null;
