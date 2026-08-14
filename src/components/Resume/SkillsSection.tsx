@@ -41,7 +41,13 @@ export default function SkillsSection({
             <Box
                 sx={{
                     display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: 'repeat(3, 1fr)' },
+                    // Two columns, not three. Five categories in a 3-up grid
+                    // leaves a 325x379 hole in the bottom-right corner, and
+                    // stretched rows padded the shortest cards with up to 144px
+                    // of empty space below their last chip. `start` lets every
+                    // card be exactly as tall as its own content.
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                    alignItems: 'start',
                     gap: { xs: 1.5, md: 2 },
                 }}
             >

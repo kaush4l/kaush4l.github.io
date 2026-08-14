@@ -32,15 +32,44 @@ import { onFirstVisible, prefersReducedMotion } from '@/lib/motion';
  * path. Breadth-first means the outermost qualifying group wins — the cards
  * themselves, not the rows inside one card.
  */
-function findRepeatingGroup(root: Element, min = 3, maxDepth = 4): Element | null {
+function findRepeatingGroup(root: Element, min = 3, maxDepth = 5): Element | null {
+    // SHALLOWEST qualifying group wins, and `min` is 3.
+    //
+    // Both alternatives were tried and both pick the wrong node. Taking the
+    // biggest group anywhere descends past the five skill CARDS into the twelve
+    // chips inside one of them. Dropping `min` to 2 stops at an anonymous
+    // two-element layout wrapper before reaching any list at all. The entries a
+    // reader perceives are the outermost run of three-or-more matching
+    // siblings — which is exactly this walk.
     let frontier: Element[] = [root];
+
     for (let depth = 0; depth < maxDepth && frontier.length; depth += 1) {
         for (const node of frontier) {
-            if (node !== root && node.childElementCount >= min) return node;
+            if (node.childElementCount >= min && isHomogeneous(node)) return node;
         }
         frontier = frontier.flatMap((n) => Array.from(n.children));
     }
     return null;
+}
+
+/**
+ * A "repeating group" means siblings that are the same KIND of thing.
+ *
+ * Counting children alone picked the wrong node twice: the Contact section has
+ * three children — a heading, an intro paragraph and the card row — so the
+ * stagger animated `heading → paragraph → all three cards at once`, and the
+ * three cards, the actual list, never cascaded. Requiring the children to
+ * agree on tag and class finds the list rather than the section.
+ */
+function isHomogeneous(node: Element): boolean {
+    const kids = Array.from(node.children);
+    // Tag plus the FIRST class only. Comparing the whole class string was too
+    // strict for the one grid that most wanted a cascade: the project cards are
+    // siblings that differ by a span modifier (`MuiGrid-grid-md-8` vs `-4`), so
+    // a full-string match rejected them and four cards arrived as one block.
+    const signature = (el: Element) => `${el.tagName}:${el.classList[0] ?? ''}`;
+    const first = signature(kids[0]);
+    return kids.every((k) => signature(k) === first);
 }
 
 export default function Reveal({

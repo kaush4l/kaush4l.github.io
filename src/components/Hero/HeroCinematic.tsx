@@ -97,7 +97,10 @@ const GRADE = {
     // cyan on #FAFAFA is mint at any alpha you can actually see.)
     light: { key: 0.24, fill: 0.11, streak: 0.16, grain: 0.03, vignette: 0.14, contact: 0.05, dust: 0.55 },
     dark: { key: 0.26, fill: 0.20, streak: 0.28, grain: 0.05, vignette: 0.34, contact: 0.16, dust: 1 },
-    coder: { key: 0.22, fill: 0.28, streak: 0.30, grain: 0.06, vignette: 0.46, contact: 0.22, dust: 1.15 },
+    // Coder had `fill` above `key`, which contradicted the rule two lines up and
+    // lit the frame from the lower left — the reason it read bluer than the
+    // other two modes rather than deeper.
+    coder: { key: 0.28, fill: 0.15, streak: 0.30, grain: 0.06, vignette: 0.46, contact: 0.22, dust: 1.15 },
 } as const;
 
 /**

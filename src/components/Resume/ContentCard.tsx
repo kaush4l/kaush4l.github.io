@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import {
     Box,
     Typography,
@@ -26,6 +27,15 @@ const VISIBLE_TAGS = 4;
 export default function ContentCard({ item, variant = 'card' }: ContentCardProps) {
     const theme = useTheme();
     const tags = item.tags || item.tools || [];
+
+    // Declared before the `timeline` early-return below — a hook after a
+    // conditional return is a hook that runs in a different order per variant.
+    //
+    // `+N more` used to be a Tooltip trigger with `role="button"`, `tabIndex=0`
+    // and a click handler that only called `preventDefault` — a control that
+    // announces itself as actionable, takes a focus ring, and then does nothing
+    // (WCAG 4.1.2). It is a real disclosure now.
+    const [tagsExpanded, setTagsExpanded] = useState(false);
 
     if (variant === 'timeline') {
         // Metadata: "April 2025 - Present · Remote / Durham, NC · via DataForce Inc".
@@ -172,8 +182,8 @@ export default function ContentCard({ item, variant = 'card' }: ContentCardProps
     const restingShadow = (
         theme.components?.MuiCard?.styleOverrides?.root as { boxShadow?: string } | undefined
     )?.boxShadow;
-    const visibleTags = tags.slice(0, VISIBLE_TAGS);
-    const hiddenTags = tags.slice(VISIBLE_TAGS);
+    const visibleTags = tagsExpanded ? tags : tags.slice(0, VISIBLE_TAGS);
+    const hiddenTags = tagsExpanded ? [] : tags.slice(VISIBLE_TAGS);
 
     const body = item.description ? (
         <Typography variant="body2" sx={{ color: 'text.primary' }}>
@@ -246,23 +256,27 @@ export default function ContentCard({ item, variant = 'card' }: ContentCardProps
                     ))}
                     {hiddenTags.length > 0 && (
                         <Tooltip title={hiddenTags.join(', ')} enterTouchDelay={0} leaveTouchDelay={4000}>
-                            {/* Focusable so the tooltip is reachable by keyboard, and it
-                                swallows the pointer/enter so a tap or Enter reveals the
-                                hidden tags instead of navigating the enclosing card. */}
+                            {/* The click/keydown handlers still swallow the event so
+                                expanding never navigates the enclosing card — but now
+                                they also do the thing the control promises. */}
                             <Chip
                                 label={`+${hiddenTags.length} more`}
                                 size="small"
+                                clickable
                                 tabIndex={0}
-                                aria-label={`${hiddenTags.length} more: ${hiddenTags.join(', ')}`}
+                                aria-expanded={false}
+                                aria-label={`Show ${hiddenTags.length} more: ${hiddenTags.join(', ')}`}
                                 onClick={(event) => {
                                     event.preventDefault();
                                     event.stopPropagation();
+                                    setTagsExpanded(true);
                                 }}
                                 onMouseDown={(event) => event.stopPropagation()}
                                 onKeyDown={(event) => {
                                     if (event.key === 'Enter' || event.key === ' ') {
                                         event.preventDefault();
                                         event.stopPropagation();
+                                        setTagsExpanded(true);
                                     }
                                 }}
                                 sx={{ borderRadius: RADIUS.chip, fontSize: '0.75rem' }}

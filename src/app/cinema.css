@@ -312,6 +312,14 @@ body::before {
       760px 560px at 4% 96%,
       rgba(var(--hc-fill, 6, 182, 212), var(--hc-page-fill-a, 0.08)) 0%,
       transparent 70%
+    ),
+    /* Ambient. Two corner lamps leave the middle of the frame — where the
+       reader actually is — completely unlit. This is one very large, very
+       faint wash that keeps the centre from going dead. */
+    radial-gradient(
+      140vmax 120vmax at 50% 45%,
+      rgba(var(--hc-key, 124, 58, 237), var(--hc-page-amb-a, 0.05)) 0%,
+      transparent 72%
     );
 }
 

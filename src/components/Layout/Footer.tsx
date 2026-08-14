@@ -26,7 +26,11 @@ export default function Footer({ statement, emailUrl, owner }: FooterProps) {
                 mt: 'auto',
                 borderTop: '1px solid',
                 borderColor: 'divider',
-                backgroundColor: 'background.paper',
+                // Transparent, like `<main>` and the drawer: an opaque panel
+                // here put a white slab across the last 200px of a graded page,
+                // with a visible seam where the sidebar column ended. The top
+                // border below is what separates the footer, not a fill.
+                backgroundColor: 'transparent',
             }}
         >
             <Stack

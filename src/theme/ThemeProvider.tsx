@@ -766,13 +766,21 @@ function applyTokens(appearance: Appearance, p: ThemePalette) {
     // the corner instead of the light on the subject.
     s.setProperty('--hc-page-key-a', PAGE_GRADE[appearance].key);
     s.setProperty('--hc-page-fill-a', PAGE_GRADE[appearance].fill);
+    // A third, very large, very faint wash centred on the viewport. Without it
+    // the two corner lamps leave the whole middle of the frame unlit, which is
+    // exactly where the reader is looking.
+    s.setProperty('--hc-page-amb-a', PAGE_GRADE[appearance].amb);
 }
 
 /** Per-mode strength of the page-wide grade consumed by `cinema.css`. */
-const PAGE_GRADE: Record<Appearance, { key: string; fill: string }> = {
-    light: { key: '0.11', fill: '0.09' },
-    dark: { key: '0.15', fill: '0.09' },
-    coder: { key: '0.14', fill: '0.12' },
+const PAGE_GRADE: Record<Appearance, { key: string; fill: string; amb: string }> = {
+    // Roughly half the hero's own alphas, key-dominant like the hero. The first
+    // pass sat at 0.09–0.11, which is below the perceptual floor on both #FAFAFA
+    // and #12151C — architecturally correct and visually absent, so the page
+    // still went flat below the fold.
+    light: { key: '0.17', fill: '0.09', amb: '0.05' },
+    dark: { key: '0.24', fill: '0.13', amb: '0.07' },
+    coder: { key: '0.26', fill: '0.14', amb: '0.08' },
 };
 
 /**

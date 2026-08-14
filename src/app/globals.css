@@ -138,10 +138,16 @@ body {
    whatever it sits on — the standard technique that survives any background.
    The ring appears instantly by design: a focus indicator that fades in is a
    focus indicator that is absent when the user needs it. */
+/* ONE ring geometry for the whole page. This rule serves non-MUI elements
+   (links, the skip link, native controls); MUI controls get the identical
+   values from the theme's `MuiButtonBase` override, which has to be authored
+   there to outrank emotion's runtime classes. The two must not drift — tabbing
+   from a link to a button previously changed the ring's size, which reads as
+   two different focus systems rather than one. */
 :focus-visible {
   outline: 2px solid var(--focus-ring);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 3px var(--bg);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--bg);
   border-radius: inherit;
 }
 :focus:not(:focus-visible) {
