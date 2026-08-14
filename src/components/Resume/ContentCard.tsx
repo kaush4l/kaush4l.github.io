@@ -118,10 +118,16 @@ export default function ContentCard({ item, variant = 'card' }: ContentCardProps
                     sx={{
                         color: 'text.primary',
                         maxWidth: '68ch',
+                        // M11/M33 — NO `& strong` override here, deliberately.
                         // Amarante is single-weight and font synthesis is off, so
-                        // emphasis is carried by colour, not weight (globals.css).
-                        // These spans hold the metrics — they must still lead the eye.
-                        '& strong': { color: 'primary.main' },
+                        // colour is the only emphasis channel these metric spans
+                        // have. `.prose-content strong { color: var(--link) }` in
+                        // globals.css is the single source of that colour and is
+                        // mode-aware (8.61:1 light / 6.71:1 dark / 7.26:1 coder).
+                        // An `sx` rule here is an Emotion class and beats the
+                        // stylesheet, which is what made the timeline emphasise in
+                        // `primary.main` — a different colour from About, and only
+                        // 3.21:1 on the dark ground. Do not reintroduce it.
                     }}
                     dangerouslySetInnerHTML={{ __html: item.contentHtml }}
                 />

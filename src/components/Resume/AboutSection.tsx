@@ -99,9 +99,10 @@ export default function AboutSection({
                         sx={{
                             color: 'text.primary',
                             maxWidth: '68ch',
-                            // Colour, not weight — Amarante is single-weight and font
-                            // synthesis is off, so this must match the timeline (globals.css).
-                            '& strong': { color: 'primary.main' },
+                            // M33 — no `& strong` override, matching ContentCard.
+                            // Emphasis colour is owned by
+                            // `.prose-content strong { color: var(--link) }` in
+                            // globals.css, which is the only mode-aware source.
                         }}
                     />
                 </Box>

@@ -1,6 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Amarante, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+// The coder-mode effects layer. Every rule inside is scoped under
+// `[data-effects="coder"]`, which is present only when the user has explicitly
+// chosen Coder — so this import is inert in light and dark. Deleting the file
+// must leave a correct, complete dark theme (see the INVARIANT in ThemeProvider).
+import "./coder.css";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
@@ -38,12 +43,25 @@ export const metadata: Metadata = {
   },
 };
 
+// M7 — `themeColor` was declared as a `prefers-color-scheme` pair, i.e. keyed to
+// the **OS** rather than to the user's in-page choice, so an OS-light visitor
+// who picked dark kept a white mobile chrome band above a black page,
+// permanently. A static export cannot resolve a stored choice at build time, so
+// what stays here is one honest default — the light ground, which is also the
+// no-JS rendering (M40). The pre-paint script below rewrites this same tag from
+// the resolved appearance before first paint, and `ThemeProvider` rewrites it
+// again on every change. One tag, one owner chain, never a media query.
+//
+// M40 — `colorScheme` is `light`, not the pair `light dark`, for the same
+// reason: with JS disabled the init script never runs, `data-theme` is never
+// stamped, and the page renders `globals.css`'s `:root` light literals. Saying
+// "light dark" there let the browser paint dark native controls over a light
+// page. The pre-paint script and `ThemeProvider` both set
+// `documentElement.style.colorScheme`, which overrides this meta the moment JS
+// is available, so nothing is lost for the 99% path.
 export const viewport: Viewport = {
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FAFAFA" },
-    { media: "(prefers-color-scheme: dark)", color: "#0F0F14" },
-  ],
+  colorScheme: "light",
+  themeColor: "#FAFAFA",
 };
 
 // ─── Fonts ───────────────────────────────────────────────────────────────────
@@ -83,9 +101,29 @@ const jetbrainsMono = JetBrains_Mono({
 
 const fontVariables = `${inter.variable} ${amarante.variable} ${jetbrainsMono.variable}`;
 
-// Blocking, pre-paint theme stamp. This is a static export — there is no server
-// to resolve the color mode, so the very first frame would otherwise be light.
-const THEME_INIT_SCRIPT = `(function(){try{var k='kk-color-mode';var s=window.localStorage.getItem(k);var dark=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;el.dataset.theme=dark?'dark':'light';el.style.colorScheme=dark?'dark':'light';}catch(err){}})();`;
+// Blocking, pre-paint appearance stamp. This is a static export — there is no
+// server to resolve the appearance, so the very first frame would otherwise be
+// light.
+//
+// M22 — the previous version computed a *boolean*: `s==='dark' || (s!=='light'
+// && matchMedia(...).matches)`. A stored `'coder'` satisfies neither test, so it
+// fell through to the media query and an OS-light coder user got a full-screen
+// **white** first paint that then repainted to near-black after hydration —
+// round 1's C1 defect, reintroduced by the new value. This version parses all
+// three states and stamps both attributes before anything paints.
+//
+// Two invariants encoded here:
+//   • `coder` is reachable ONLY from storage (M18). `prefers-color-scheme`
+//     resolves to light or dark and nothing else — no visitor is ever placed in
+//     the most opinionated design on the site by inference.
+//   • `data-effects` is PRESENT or ABSENT. It is never set to "none": the
+//     effects stylesheet keys every rule off the attribute's presence.
+//
+// The three ground literals below must stay identical to `MODE_SURFACES` in
+// `ThemeProvider.tsx` and to the token blocks in `globals.css` (M28). They are
+// the only colours this script needs, because it sets `theme-color` — the
+// document's own ground comes from the stylesheet.
+const THEME_INIT_SCRIPT = `(function(){try{var el=document.documentElement;var s=null;try{s=localStorage.getItem('kk-appearance');}catch(e){}if(s!=='light'&&s!=='dark'&&s!=='coder'){var g=null;try{g=localStorage.getItem('kk-color-mode');}catch(e){}s=(g==='light'||g==='dark')?g:null;}if(s===null){s=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var dark=s!=='light';el.dataset.theme=dark?'dark':'light';if(s==='coder'){el.dataset.effects='coder';}else{delete el.dataset.effects;}el.style.colorScheme=dark?'dark':'light';var bg=s==='coder'?'#0A0A0F':(dark?'#12151C':'#FAFAFA');var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',bg);}catch(err){}})();`;
 
 export default function RootLayout({
   children,

@@ -2,6 +2,7 @@
 
 import { Box, Typography, Button, Stack, Chip, Divider } from '@mui/material';
 import { motion } from 'framer-motion';
+import { RADIUS } from '@/theme/ThemeProvider';
 import { useState, useEffect } from 'react';
 import type { HeroProps } from './HeroA';
 
@@ -60,7 +61,7 @@ export default function HeroC({ about }: HeroProps) {
                             mx: 'auto',
                             p: { xs: 3, sm: 4, md: 5 },
                             bgcolor: 'background.paper',
-                            borderRadius: '16px',
+                            borderRadius: RADIUS.card,
                             border: '1px solid',
                             borderColor: 'divider',
                         }}
@@ -71,7 +72,7 @@ export default function HeroC({ about }: HeroProps) {
                                 sx={{
                                     width: 44,
                                     height: 44,
-                                    borderRadius: '999px',
+                                    borderRadius: RADIUS.pill,
                                     border: '2px solid',
                                     borderColor: 'divider',
                                     display: 'flex',
@@ -153,7 +154,7 @@ export default function HeroC({ about }: HeroProps) {
                                     sx={{
                                         fontSize: '0.8125rem',
                                         fontWeight: 500,
-                                        borderRadius: '8px',
+                                        borderRadius: RADIUS.chip,
                                         bgcolor: 'action.hover',
                                         color: 'text.primary',
                                     }}
@@ -171,7 +172,7 @@ export default function HeroC({ about }: HeroProps) {
                                 size="large"
                                 onClick={() => scrollTo('experience')}
                                 fullWidth
-                                sx={{ fontWeight: 600, borderRadius: '999px' }}
+                                sx={{ fontWeight: 600, borderRadius: RADIUS.pill }}
                             >
                                 View Experience
                             </Button>
@@ -180,7 +181,7 @@ export default function HeroC({ about }: HeroProps) {
                                 size="large"
                                 onClick={() => scrollTo('projects')}
                                 fullWidth
-                                sx={{ fontWeight: 500, borderRadius: '999px' }}
+                                sx={{ fontWeight: 500, borderRadius: RADIUS.pill }}
                             >
                                 See Projects
                             </Button>

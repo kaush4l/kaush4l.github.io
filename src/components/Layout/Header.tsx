@@ -7,16 +7,14 @@ import {
     IconButton,
     Button,
     Box,
-    Tooltip,
     useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
 import DownloadIcon from '@mui/icons-material/Download';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
 import Link from 'next/link';
-import { useThemeContext, ThemeVariantSwitcher, RADIUS } from '@/theme/ThemeProvider';
+import { ThemeVariantSwitcher, RADIUS } from '@/theme/ThemeProvider';
+import AppearanceMenu from './AppearanceMenu';
 
 /**
  * The résumé PDF lives in `public/`. Exported so the Footer links to the same
@@ -35,13 +33,16 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle, menuButtonRef }: HeaderProps) {
     const theme = useTheme();
-    const { mode, toggleColorMode } = useThemeContext();
 
     return (
         <AppBar
             position="fixed"
             elevation={0}
-            className="no-print"
+            // `coder-header` is the hook `coder.css` uses for the 1px lit hairline
+            // (M13). It is a no-op in light and dark; the `borderBottom` below
+            // remains the boundary in every mode, so deleting `coder.css` costs
+            // decoration, never structure.
+            className="no-print coder-header"
             sx={{
                 zIndex: (t) => t.zIndex.drawer + 1,
                 backgroundColor: alpha(theme.palette.background.default, 0.85),
@@ -106,11 +107,10 @@ export default function Header({ onMenuToggle, menuButtonRef }: HeaderProps) {
                         </Box>
                     )}
 
-                    <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
-                        <IconButton onClick={toggleColorMode} color="primary" aria-label="toggle color mode">
-                            {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
-                        </IconButton>
-                    </Tooltip>
+                    {/* M2/M6 — one trigger, three named peer states, current state
+                        checked. Replaces the two-state moon/sun toggle, which both
+                        lied about the resolved mode and had no room for a third. */}
+                    <AppearanceMenu />
 
                     {/* The highest-value header slot: the recruiter's most common action. */}
                     <Button

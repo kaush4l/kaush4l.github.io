@@ -1,0 +1,300 @@
+/* ═══ coder.css — the coder-mode effects layer ══════════════════════════════
+ *
+ * HARD INVARIANT: if this file were deleted the page must still be a correct,
+ * complete dark theme. Every rule here is scoped under `html[data-effects="coder"]`
+ * — an attribute the pre-paint script stamps ONLY in coder mode and removes
+ * otherwise — and every rule is *additive*. Nothing below is the sole carrier of
+ * a boundary, a state, or a level of hierarchy. Deleting the file costs
+ * decoration; it never costs structure. (M12's test: screenshot coder mode with
+ * every glow off — it must still obviously be a different mode. That is what
+ * §STRUCTURE is for. §GLOW is garnish on four elements.)
+ *
+ * Colours come exclusively from the mode tokens the provider guarantees in every
+ * mode — `--glow` is the SINGLE coder accent hue, and there is no second lit
+ * hue anywhere in this file. Purple *and* cyan both glowing is the definition of
+ * neon soup (M16).
+ *
+ * The `html[...]` prefix is not decoration either: it puts every selector one
+ * step above the Emotion class it must override, so no rule here needs
+ * `!important` to win against a component's `sx`.
+ *
+ * ─── GLOW BUDGET ──────────────────────────────────────────────────────────
+ * Exactly four surfaces glow, and nothing else:
+ *   1. the chat FAB          (the only primary action, and the only element
+ *                             whose halo can encode real machine state — M14)
+ *   2. the focus ring        (keyboard location is the one place extra salience
+ *                             is unambiguously good)
+ *   3. the hovered timeline dot
+ *   4. the header hairline   (1px, zero blur — the whole "IDE chrome" cue at
+ *                             zero salience cost)
+ * At most two of these are lit in any one viewport (the 1px hairline has no
+ * blur and does not count). Isolation is a ratio: if fifteen things glow,
+ * nothing glows.
+ *
+ * Rules every glow below obeys:
+ *   · ONE blur layer per element (a `0 0 0 1px` ring has zero blur and is a
+ *     hairline, not a second layer).
+ *   · NEGATIVE spread, so the halo stays inside the element's optical footprint.
+ *     Enlarged bounding boxes are what make glow read as bloom, i.e. as cheap.
+ *   · Alpha ceiling 0.30 at rest / 0.50 on interaction. Blur radius <= 28px;
+ *     past ~32px the gradient falls below the display's discriminable step and
+ *     reads as a grey smudge on OLED.
+ *   · `box-shadow` ONLY — never a `background` behind a text-bearing box.
+ *
+ * WHY 0.30 IS A MEASUREMENT, NOT A TASTE (M24). Over the coder ground `#0A0A0F`,
+ * body `#E2E8F0` runs 16.02:1 and survives even a 40% glow at 9.25:1 — but muted
+ * metadata `#94A3B8` falls 7.70:1 -> 4.45:1 and FAILS AA. The casualties are
+ * exactly the elements that sit nearest card edges, where an edge glow bleeds
+ * inward: period / location captions. Hence the ceiling, and hence edge glow
+ * only.
+ *
+ * ─── BANNED, and the failure each ban prevents ────────────────────────────
+ *   · Glow on TEXT (`text-shadow`) — banned outright. The site's default face is
+ *     Amarante: single weight 400, no italic, with `font-synthesis: none`. There
+ *     is no weight channel to fall back on, so blurring the strokes destroys the
+ *     only legibility margin the face has. This is also the single loudest
+ *     cheap-portfolio tell.
+ *   · Glow on cards — 10-15 are visible at once, so everything glows and
+ *     therefore nothing does. Hairline border only.
+ *   · Glow on chips — ~40 in Skills alone.
+ *   · Glow on section headings — an earlier fix deliberately made all six
+ *     identical so they read as one landmark layer; glow re-differentiates them.
+ *   · Glow on the sidebar active pill — already a solid fill, i.e. already the
+ *     strongest state signal on the page. Double-encoding turns a clean state
+ *     into a smear behind white label text.
+ *   · Glow on the scrollbar — it would be in motion for the entire read.
+ *   · Two glowing hues.
+ *   · Scanlines, CRT curvature, matrix rain, animated gradient borders,
+ *     typewriter effects. These are the four strongest junior-portfolio priors,
+ *     and this page is a résumé read by hiring managers.
+ *
+ * ─── MOTION ───────────────────────────────────────────────────────────────
+ * Interaction-triggered only, 150ms in / 250ms out, on the existing decelerate
+ * easing `cubic-bezier(0.2,0,0,1)` — no second curve is introduced. Named
+ * properties only, never `all`. Perfectly still at rest: all prose and headings,
+ * the timeline rule and its dots, cards, chips, the sidebar, the scrollbar.
+ * The FAB's state glow (M14) is the ONLY ambient loop on the page and it stops
+ * the moment the model goes idle.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+html[data-effects="coder"] {
+    /* Derived alphas, declared once. `--glow` itself is owned by the provider. */
+    --glow-hairline: color-mix(in srgb, var(--glow) 16%, transparent);
+    --glow-rest: color-mix(in srgb, var(--glow) 30%, transparent);
+    --glow-hot: color-mix(in srgb, var(--glow) 50%, transparent);
+    --glow-halo-hot: color-mix(in srgb, var(--glow) 45%, transparent);
+    --glow-dim: color-mix(in srgb, var(--glow) 20%, transparent);
+    --glow-mid: color-mix(in srgb, var(--glow) 40%, transparent);
+    --coder-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ═══ STRUCTURE — this is the mode. Everything above is garnish. ═════════════
+ * These rules survive with every glow disabled, and they are what makes coder
+ * recognisable in a screenshot: hairlines instead of shadows as the elevation
+ * language, mono for machine data only, squarer geometry. */
+
+/* Elevation by hairline, not by shadow. Dark UIs communicate depth with borders;
+ * a big tinted drop shadow is a light-mode idiom wearing a dark costume.
+ * `--border` still carries the boundary, so removing this file only restores the
+ * shadow — it never leaves a card unbounded. */
+html[data-effects="coder"] .MuiCard-root {
+    box-shadow: none;
+    border-color: var(--border);
+    border-radius: 8px;
+    transition: border-color 250ms var(--coder-ease), transform 250ms var(--coder-ease);
+}
+html[data-effects="coder"] .MuiCard-root:hover,
+html[data-effects="coder"] .MuiCard-root:focus-within {
+    /* The hover step is a border-colour step, not a halo (see the card ban). */
+    box-shadow: none;
+    border-color: var(--glow-mid);
+    transition: border-color 150ms var(--coder-ease), transform 150ms var(--coder-ease);
+}
+
+/* Squarer = terminal. A one-line geometry change that reads instantly and costs
+ * nothing perceptually. The FAB and other IconButtons keep their pill radius —
+ * a 64px circle is a circle in every mode. */
+html[data-effects="coder"] .MuiChip-root {
+    border-radius: 4px;
+}
+html[data-effects="coder"] .MuiButton-root {
+    border-radius: 4px;
+}
+
+/* Mono is the METADATA voice, never the prose voice. JetBrains Mono is already
+ * loaded and currently renders eight date strings; this is where it earns its
+ * download. `caption` and `overline` are the two variants this codebase uses
+ * exclusively for machine data and labels — periods, locations, coursework,
+ * counts — and `.MuiChip-label` is the tag layer. Body prose and every heading
+ * stay Amarante: the brand is not negotiable per mode, and swapping a résumé's
+ * reading face for a monospace one is a legibility regression, not a theme. */
+html[data-effects="coder"] .MuiTypography-caption,
+html[data-effects="coder"] .MuiTypography-overline,
+html[data-effects="coder"] .MuiChip-label {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+}
+
+/* A tighter, more mechanical rhythm for the label layer only. */
+html[data-effects="coder"] .MuiChip-root {
+    letter-spacing: 0.01em;
+}
+
+/* ═══ GLOW 1 — the chat FAB, bound to real machine state (M14) ═══════════════
+ *
+ * The honest differentiator on this site is not CSS: a 4B multimodal model runs
+ * on-device, in the visitor's own GPU. So the one halo that is allowed to move
+ * is the one that reports what that model is doing. Glow that encodes machine
+ * state reads as an instrument, and instruments read as engineering; glow that
+ * encodes nothing reads as compensation, and decoration on a résumé reads as
+ * the presentation doing work the content could not.
+ *
+ * `data-model-state` is published by ChatWidget from the state it already
+ * lifts (`llm.loading` / `busy`), so no coder-mode value enters that component.
+ * The determinate/indeterminate `CircularProgress` ring around the FAB and the
+ * panel's `aria-live` region remain the redundant visual and textual channels —
+ * the glow is never the only encoding of any of these three states.
+ *
+ * idle       -> static, 0.30. No animation. The page is at rest and so is this.
+ * loading    -> breath 0.20 <-> 0.40 over a 1600ms cycle, while weights stream.
+ * generating -> static, 0.50. Brightest, and still, because "working" is a
+ *               steady state, not a pulsing one.
+ *
+ * The breath uses `alternate` on the same decelerate curve rather than
+ * introducing an ease-in-out; mirroring the curve gives the ease-out/ease-in
+ * shape a breath wants without adding a second easing token to the system. */
+html[data-effects="coder"] [data-testid="chat-open"] {
+    box-shadow:
+        0 0 0 1px var(--glow-rest),
+        0 0 20px -6px var(--glow-rest);
+    transition: box-shadow 250ms var(--coder-ease), background-color 250ms var(--coder-ease);
+}
+
+html[data-effects="coder"] [data-testid="chat-open"]:hover,
+html[data-effects="coder"] [data-testid="chat-open"]:focus-visible {
+    box-shadow:
+        0 0 0 1px var(--glow-hot),
+        0 0 28px -4px var(--glow-halo-hot);
+    transition: box-shadow 150ms var(--coder-ease), background-color 150ms var(--coder-ease);
+}
+
+html[data-effects="coder"] [data-testid="chat-open"][data-model-state="loading"] {
+    animation: kk-fab-breath 800ms var(--coder-ease) infinite alternate;
+}
+
+html[data-effects="coder"] [data-testid="chat-open"][data-model-state="generating"] {
+    box-shadow:
+        0 0 0 1px var(--glow-hot),
+        0 0 24px -6px var(--glow-hot);
+}
+
+@keyframes kk-fab-breath {
+    from {
+        box-shadow:
+            0 0 0 1px var(--glow-dim),
+            0 0 18px -6px var(--glow-dim);
+    }
+    to {
+        box-shadow:
+            0 0 0 1px var(--glow-mid),
+            0 0 24px -6px var(--glow-mid);
+    }
+}
+
+/* ═══ GLOW 2 — the focus ring ═══════════════════════════════════════════════
+ * The outline itself is owned by the base stylesheet and is what actually
+ * carries focus; this only adds a halo behind it. If this rule vanished the ring
+ * would be unchanged and still compliant. It appears instantly and disappears
+ * over 250ms — a focus indicator that fades *in* is a focus indicator that is
+ * absent at the moment the user needs it. */
+html[data-effects="coder"] :focus-visible {
+    box-shadow: 0 0 12px -2px var(--glow-hot);
+    transition: box-shadow 0ms;
+}
+html[data-effects="coder"] :focus:not(:focus-visible) {
+    transition: box-shadow 250ms var(--coder-ease);
+}
+
+/* ═══ GLOW 3 — the hovered timeline dot ═════════════════════════════════════
+ * On hover of the entry only; the dot is perfectly static at rest, because a
+ * vertical rule is a reading guide and eight animated dots make the whole
+ * timeline feel unstable. The direct-child combinator keeps this bound to the
+ * hovered entry rather than to every ancestor that hover bubbles through. */
+html[data-effects="coder"] .timeline-dot {
+    transition: box-shadow 250ms var(--coder-ease);
+}
+html[data-effects="coder"] *:hover > .timeline-dot {
+    box-shadow: 0 0 14px -4px var(--glow-hot);
+    transition: box-shadow 150ms var(--coder-ease);
+}
+
+/* ═══ GLOW 4 — the header hairline ══════════════════════════════════════════
+ * 1px, zero blur, 0.16 alpha. Not a halo: a lit edge. The AppBar's own
+ * `borderBottom` remains the actual boundary in every mode, so this is purely
+ * the "chrome" cue. Because there is no blur it does not count against the
+ * two-lit-elements-per-viewport cap, and it cannot bleed into any text. */
+html[data-effects="coder"] .coder-header {
+    box-shadow: 0 1px 0 0 var(--glow-hairline);
+    /* A backdrop blur over a near-black ground has almost no luminance variance
+       to work with — it costs a compositor layer for no visible effect. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* ═══ DEGRADATION ═══════════════════════════════════════════════════════════
+ *
+ * Two axes, and they are NOT the same request:
+ *
+ *  · `prefers-reduced-motion: reduce` (below) is a request about MOVEMENT, not
+ *    about design. Glow is therefore KEPT and made STATIC — the three model
+ *    states become three discrete resting intensities that a viewer can still
+ *    read at a glance, just without the loop. Structure (mono, radii,
+ *    hairlines, ground) is untouched; reduced motion is not a request for a
+ *    different design.
+ *
+ *  · `prefers-contrast: more` is a request about LUMINANCE, and it is handled by
+ *    the provider taking `--glow` transparent, which zeroes every halo in this
+ *    file at the token layer without a single rule here needing to know. Do not
+ *    add a `prefers-contrast` block below — it would be a second owner of the
+ *    same decision.
+ */
+@media (prefers-reduced-motion: reduce) {
+    /* Three discrete static steps stand in for the animation. The base
+       stylesheet already collapses animation durations globally; this states
+       the resting value for each state explicitly so the encoding survives
+       rather than falling back to whatever frame 1 happened to be. */
+    html[data-effects="coder"] [data-testid="chat-open"] {
+        animation: none;
+        box-shadow:
+            0 0 0 1px var(--glow-dim),
+            0 0 18px -6px var(--glow-dim);
+    }
+    html[data-effects="coder"] [data-testid="chat-open"][data-model-state="loading"] {
+        animation: none;
+        box-shadow:
+            0 0 0 1px var(--glow-mid),
+            0 0 22px -6px var(--glow-mid);
+    }
+    html[data-effects="coder"] [data-testid="chat-open"][data-model-state="generating"] {
+        animation: none;
+        box-shadow:
+            0 0 0 1px var(--glow-hot),
+            0 0 24px -6px var(--glow-hot);
+    }
+}
+
+/* Nothing in this file survives paper. Chrome renders `box-shadow` to paper when
+ * "Background graphics" is on — which is exactly what a recruiter enables when
+ * they want the printout to look right — so coder mode would otherwise print
+ * grey halos around the FAB region and a grey band under the header. */
+@media print {
+    html[data-effects="coder"] *,
+    html[data-effects="coder"] *::before,
+    html[data-effects="coder"] *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        animation: none !important;
+        transition: none !important;
+    }
+}

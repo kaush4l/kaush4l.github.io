@@ -1,28 +1,78 @@
 /* ─── Stylesheet color tokens ─────────────────────────────────────────────── */
-/* PRE-HYDRATION DEFAULT ONLY. These literals are theme variant `a` (Purple
-   Glow) and exist so the first painted frame — before React runs — is not
-   unstyled. The authority is `THEME_PALETTES` in `src/theme/ThemeProvider.tsx`:
-   `applyPaletteTokens()` rewrites every property below onto `documentElement`
-   inline whenever the resolved palette changes, so under variants b/c/d these
-   values are superseded. Do not add a token here without a writer there. */
+/* PRE-HYDRATION DEFAULT ONLY. These literals are hue variant `a` (Purple Glow)
+   under each of the three appearances. They exist so the first painted frame —
+   before React runs — is already correct, including for a stored `coder` user
+   (M22): the pre-paint script in `layout.tsx` stamps `data-theme` and
+   `data-effects` before anything paints, and these blocks are what those
+   attributes select.
+
+   The authority once React is alive is `MODE_SURFACES` in
+   `src/theme/ThemeProvider.tsx`. `applyTokens()` writes EVERY property below
+   onto `documentElement` as an inline style on every appearance change, and an
+   inline style beats any selector here — so under hues b/c/d, and after the
+   first hydration in every configuration, these values are superseded rather
+   than blended with. Do not add a token here without a writer there, and do not
+   expect a `@media` block here to override one of them without `!important`
+   (see the `prefers-contrast` block at the bottom, which needs exactly that).
+
+   Ground literals (#FAFAFA / #12151C / #0A0A0F) are repeated in three places by
+   necessity — here, in `MODE_SURFACES`, and in the pre-paint script's
+   `theme-color` write. They must agree (M28). */
+
+/* ── Light: the default, and the no-JS rendering (M40) ── */
 :root {
+  color-scheme: light;
   --primary:         #7C3AED;
   --secondary:       #06B6D4;
+  --link:            #5B21B6;
   --bg:              #FAFAFA;
+  --bg-alt:          #F3F4F6;
+  --surface:         #FFFFFF;
+  --surface-alt:     #F1F5F9;
   --text:            #1F2937;
-  --link:            #6D28D9;
-  --scrollbar-thumb: #C4B5FD;
-  --scrollbar-hover: #7C3AED;
+  --text-muted:      #5B6472;
+  --border:          rgba(124, 58, 237, 0.08);
+  --glow:            #0E7490;
+  --focus-ring:      #111318;
+  --scrollbar-thumb: rgba(124, 58, 237, 0.35);
+  --scrollbar-hover: rgba(124, 58, 237, 0.70);
 }
 
-/* Dark default, likewise pre-hydration only. `data-theme` is stamped pre-paint
-   by the inline script in layout.tsx and kept in sync by ThemeProvider. */
-[data-theme="dark"], .dark {
-  --bg:              #0F0F14;
-  --text:            #F1F0F9;
+/* ── Dark ── */
+[data-theme="dark"] {
+  color-scheme: dark;
   --link:            #A78BFA;
-  --scrollbar-thumb: #5B21B6;
-  --scrollbar-hover: #A78BFA;
+  --bg:              #12151C;
+  --bg-alt:          #171B24;
+  --surface:         #171B24;
+  --surface-alt:     #212632;
+  --text:            #E8EAF0;
+  --text-muted:      #A2ACBD;
+  --border:          rgba(167, 139, 250, 0.14);
+  --glow:            #67E8F9;
+  --focus-ring:      #F5F7FF;
+  --scrollbar-thumb: rgba(167, 139, 250, 0.28);
+  --scrollbar-hover: rgba(167, 139, 250, 0.55);
+}
+
+/* ── Coder: a superset of dark, never a parallel design.
+   It always carries `data-theme="dark"` as well, so if this block were deleted
+   the page would still be a correct dark theme — that is the invariant the
+   whole mode model rests on (M4). What changes here is *structure*: a ground a
+   full step below dark's, and one lit hue (cyan) instead of two. Glow, motion
+   and decoration are NOT here — they live in `coder.css`. ── */
+[data-theme="dark"][data-effects="coder"] {
+  --bg:              #0A0A0F;
+  --bg-alt:          #101017;
+  --surface:         #101017;
+  --surface-alt:     #16161F;
+  --text:            #E6EAF2;
+  /* Lifted from dark's #A2ACBD: 10.17:1 on #0A0A0F, and still 4.75:1 under the
+     0.30-alpha cyan edge glow that coder mode permits (M24). */
+  --text-muted:      #B0BBCB;
+  --border:          rgba(103, 232, 249, 0.20);
+  --scrollbar-thumb: rgba(103, 232, 249, 0.30);
+  --scrollbar-hover: rgba(103, 232, 249, 0.55);
 }
 
 /* ─── Base reset ──────────────────────────────────────────────────────────── */
@@ -34,9 +84,12 @@
 
 html {
   scroll-behavior: smooth;
-  color-scheme: light dark;
   /* Painted before MUI's CssBaseline exists, so the first frame is already the
-     correct mode. `body` keeps its palette-driven background once hydrated. */
+     correct mode. `body` keeps its palette-driven background once hydrated.
+     `color-scheme` is declared per appearance above rather than as the pair
+     `light dark`, so the no-JS path — where `data-theme` is never stamped — is
+     internally consistent instead of painting dark native controls over a light
+     page (M40). */
   background-color: var(--bg);
   color: var(--text);
   /* Firefox scrollbar theming (the -webkit- rules below cover Chromium/Safari) */
@@ -50,7 +103,15 @@ body {
   font-family: var(--font-display), var(--font-sans), Georgia, serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  /* M8 — there is deliberately NO transition here.
+     `background-color 0.3s` faded the body while ~10 MUI card surfaces, the
+     AppBar, the Drawer, the chips and the FAB all snapped at frame 1, because
+     those are emotion classes that swap instantly. The eye reads a partial fade
+     as tearing, not as a transition, which is a large part of why the mode
+     switch felt cheap even when the colours were right. An appearance change is
+     a state change: it is now instant and therefore coordinated. Do not
+     reintroduce a transition on `background-color` or `color` unless every
+     surface on the page is driven from the custom properties above. */
 }
 
 /* Amarante ships one weight and no italic. Without this, any `fontWeight: 600`
@@ -64,9 +125,23 @@ body {
 }
 
 /* ─── Focus visibility ────────────────────────────────────────────────────── */
+/* M36 — a two-tone ring. The old rule was `outline: 2px solid var(--primary)`,
+   and `--primary` is the documented FILL channel: on the sidebar's active item,
+   on any contained button and on the chat FAB the focused element *is* a
+   `primary.main` fill, so the ring was primary-on-primary — no visible focus
+   indicator on three of the page's most important controls.
+
+   The outline now takes `--focus-ring`, a mode-owned near-black / near-white
+   chosen to clear 3:1 against a primary fill (3.26:1 light, 5.33:1 dark/coder)
+   and 17:1+ against the page ground. The `box-shadow` paints a 3px halo of the
+   page ground *inside* the outline offset, so the ring is separated from
+   whatever it sits on — the standard technique that survives any background.
+   The ring appears instantly by design: a focus indicator that fades in is a
+   focus indicator that is absent when the user needs it. */
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--bg);
   border-radius: inherit;
 }
 :focus:not(:focus-visible) {
@@ -106,7 +181,8 @@ section[id] {
    heavier — and these spans carry the resume's evidence ("10M+ events per hour",
    "85% code coverage"). Colour is the remaining preattentive channel, so the
    metrics stay the first thing the eye lands on in a bullet. `--link` is the
-   tonal, text-safe primary channel, so this passes contrast in both modes. */
+   tonal, text-safe primary channel, so this passes contrast in every
+   appearance: 8.61:1 light, 6.71:1 dark, 7.26:1 coder. */
 .prose-content strong     { color: var(--link); }
 .prose-content a          { color: var(--link); text-decoration: underline; }
 .prose-content code       { font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace; font-size: 0.875em; }
@@ -124,6 +200,11 @@ section[id] {
 }
 
 /* ─── Vestibular safety ───────────────────────────────────────────────────── */
+/* Reduced motion and high contrast are two DIFFERENT axes and must not be
+   conflated. Reduced motion is a request about *movement*, not about design: it
+   freezes every animation and transition, and coder mode's glow stays — static,
+   at its resting value. Contrast is handled separately below, and that is the
+   axis that removes glow entirely. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
@@ -133,11 +214,96 @@ section[id] {
   }
 }
 
+/* ─── High contrast ───────────────────────────────────────────────────────── */
+/* M19 — the other axis. A bright resting halo is a documented discomfort
+   trigger for photophobia and migraine independently of motion, so here glow
+   goes to zero rather than merely stopping.
+   `!important` is load-bearing and not decoration: `applyTokens()` writes these
+   same properties as INLINE styles on `documentElement`, and a normal
+   declaration in a stylesheet loses to an inline one. An author `!important`
+   declaration wins, which is the only way a media query can reach a token this
+   architecture writes inline (the M29 lesson, applied to ourselves).
+   `--border` is redirected to `--text-muted`, which is ≥5.46:1 against every
+   ground in every appearance and therefore far past the 3:1 a boundary needs. */
+@media (prefers-contrast: more) {
+  :root {
+    --glow: transparent !important;
+    --border: var(--text-muted) !important;
+  }
+  :focus-visible {
+    outline-width: 3px;
+  }
+  .MuiCard-root, .MuiPaper-root {
+    border: 1px solid var(--text-muted) !important;
+  }
+}
+
+/* ─── Windows High Contrast / forced colors ───────────────────────────────── */
+/* M20 — forced-colors discards `box-shadow` and background images wholesale.
+   Coder mode's entire elevation language is border + (absent) shadow, and dark's
+   is a hairline plus a black shadow, so without this block a card can lose its
+   only boundary and become an untextured hole in the page. Every surface that
+   communicates elevation must therefore also carry a real border. */
+@media (forced-colors: active) {
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  .MuiCard-root, .MuiPaper-root {
+    border: 1px solid CanvasText !important;
+  }
+  :focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px;
+  }
+  .gradient-text {
+    -webkit-text-fill-color: CanvasText !important;
+    background: none !important;
+  }
+}
+
 /* ─── Print / PDF ─────────────────────────────────────────────────────────── */
 @media print {
   header[class*="MuiAppBar"], .MuiDrawer-root, [data-testid="chat-open"],
   .no-print { display: none !important; }
   html, body { background: #fff !important; color: #000 !important; }
+  /* M21 — print always renders the LIGHT surface set regardless of the active
+     appearance. `html, body` above reaches the root only; every MUI `Paper`
+     keeps its `background.paper` from its emotion class and wins on
+     specificity, so a coder-mode print otherwise puts near-black card fills on
+     paper. Tokens are reset too, because the root-level custom properties are
+     inline styles that outlive the media query. */
+  :root {
+    --bg: #FFFFFF !important;
+    --bg-alt: #FFFFFF !important;
+    --surface: #FFFFFF !important;
+    --surface-alt: #FFFFFF !important;
+    --text: #000000 !important;
+    --text-muted: #333333 !important;
+    --link: #000000 !important;
+    --border: #CCCCCC !important;
+    --glow: transparent !important;
+  }
+  .MuiPaper-root, .MuiCard-root, .MuiCardContent-root {
+    background: #fff !important;
+    background-image: none !important;
+    color: #000 !important;
+    border-color: #ccc !important;
+  }
+  /* The print block reset background, colour, text-fill, masks and line-clamp,
+     but never shadow, text-shadow, filter or backdrop-filter — so with "Background
+     graphics" enabled (common when a recruiter prints a page they want to look
+     right) Chrome renders every halo to paper, plus the header's
+     `backdrop-filter: blur(12px)` and the hero orbs' `filter: blur(60px)`.
+     Reset them here once, for every element, rather than per component. */
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
   main { padding: 0 !important; }
   section { break-inside: avoid; page-break-inside: avoid; padding: 12pt 0 !important; }
   section[id] { scroll-margin-top: 0 !important; }

@@ -72,8 +72,14 @@ export default function HeroA({ about }: HeroProps) {
     // A1: `secondary.main` is a FILL color (2.35:1 as text on the light bg).
     // The palette documents `dark` as the light-mode text channel and `light`
     // as the dark-mode one; every secondary *text/icon* use resolves here.
-    const secondaryText = isDark ? secondary.light : secondary.dark;
-    const primaryText = isDark ? primary.light : primary.main;
+    const secondaryText = secondary[theme.palette.tonal];
+    // M24 — this was `isDark ? primary.light : primary.main`, i.e. the FILL
+    // channel on the light ground. That gave the "Ask the assistant" label a
+    // different primary from every other text accent on the page (globals.css
+    // resolves `--link` to `primaryDark` in light), and on hues b/d it measured
+    // 2.06:1 / 3.79:1 on #FAFAFA. `dark` is the documented light-ground text
+    // channel: 8.61 / 4.81 / 6.69 / 6.69:1 across a–d.
+    const primaryText = primary[theme.palette.tonal];
 
     // F1: no fallback copy. A field the content does not declare renders
     // nothing — never an empty <p> or a zero-height chip row at the fold.

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Box, Typography, Button, Stack, Chip, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { motion } from 'framer-motion';
+import { RADIUS } from '@/theme/ThemeProvider';
 import type { HeroProps } from './HeroA';
 
 // ─── Canvas particle system ───────────────────────────────────────────────────
@@ -165,18 +166,30 @@ export default function HeroD({ about }: HeroProps) {
     const proof = about?.proof?.trim();
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
-    const { primary, secondary } = theme.palette;
+    const { primary, secondary, tonal } = theme.palette;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
+    // M24 — the previous `isDark ?` branch handed the SAME FOUR COLOURS to both
+    // modes, merely reordered, so the dark branch had no effect at all: a
+    // speculative branch that never rendered and would not have worked if it had.
+    // Particles and their link lines are decoration on the page ground, so each
+    // mode gets the tonal channels that are actually visible against its own
+    // ground — `…Light` on dark/coder, `…Dark` on light. `primary.main` link
+    // lines at 0.12 over #12151C were effectively invisible.
     const particlePalette = useMemo(
         () => ({
-            particles: isDark
-                ? [primary.main, secondary.main, primary.light, secondary.light]
-                : [primary.light, secondary.light, primary.main, secondary.main],
-            link: alpha(primary.main, isDark ? 0.12 : 0.08),
+            // `tonal` is the one owner of "which channel opposes this ground";
+            // the two `main` fills read the same in both modes and stay put.
+            particles: [primary[tonal], secondary[tonal], primary.main, secondary.main],
+            // The alpha still branches on mode — a link line needs more presence
+            // on a dark ground — but that is a density decision, not a hue one.
+            link: alpha(primary[tonal], isDark ? 0.14 : 0.1),
         }),
-        [isDark, primary.main, primary.light, secondary.main, secondary.light],
+        // The whole `primary`/`secondary` objects, not individual channels:
+        // indexing by `tonal` reads the object, so listing channels would leave
+        // the memo stale on a hue change. Both are stable per theme instance.
+        [isDark, tonal, primary, secondary],
     );
 
     useParticleCanvas(canvasRef, containerRef, particlePalette);
@@ -223,9 +236,11 @@ export default function HeroD({ about }: HeroProps) {
                             py: { xs: 4, md: 6 },
                             bgcolor: alpha(theme.palette.background.paper, 0.8),
                             backdropFilter: 'blur(20px)',
-                            borderRadius: '20px',
+                            borderRadius: RADIUS.floating,
                             border: '1px solid',
-                            borderColor: alpha(primary.main, isDark ? 0.2 : 0.12),
+                            // M24 — was `alpha(primary.main, isDark ? 0.2 : 0.12)`.
+                            // `divider` is the mode-owned, hue-resolved equivalent.
+                            borderColor: 'divider',
                         }}
                     >
                         {/* Avatar placeholder */}
@@ -233,7 +248,7 @@ export default function HeroD({ about }: HeroProps) {
                             sx={{
                                 width: 80,
                                 height: 80,
-                                borderRadius: '999px',
+                                borderRadius: RADIUS.pill,
                                 background: `linear-gradient(135deg, ${primary.main}, ${secondary.main})`,
                                 mx: 'auto',
                                 mb: 3,
@@ -285,7 +300,7 @@ export default function HeroD({ about }: HeroProps) {
                                     sx={{
                                         fontSize: '0.8125rem',
                                         fontWeight: 500,
-                                        borderRadius: '8px',
+                                        borderRadius: RADIUS.chip,
                                         bgcolor: 'action.hover',
                                         color: 'text.primary',
                                     }}
@@ -299,7 +314,7 @@ export default function HeroD({ about }: HeroProps) {
                                 variant="contained"
                                 size="large"
                                 onClick={() => scrollTo('experience')}
-                                sx={{ fontWeight: 600, borderRadius: '999px' }}
+                                sx={{ fontWeight: 600, borderRadius: RADIUS.pill }}
                             >
                                 Explore Resume
                             </Button>
@@ -308,7 +323,7 @@ export default function HeroD({ about }: HeroProps) {
                                 color="secondary"
                                 size="large"
                                 href="mailto:kaush4lk@gmail.com"
-                                sx={{ fontWeight: 500, borderRadius: '999px' }}
+                                sx={{ fontWeight: 500, borderRadius: RADIUS.pill }}
                             >
                                 Contact Me
                             </Button>

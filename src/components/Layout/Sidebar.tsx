@@ -74,7 +74,16 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const pathname = usePathname();
     const activeId = useActiveSection(nav.length);
-    const isDark = theme.palette.mode === 'dark';
+    // M24/M26 — the drawer is an elevated surface, so it takes the *mode's own*
+    // authored elevation language rather than an `isDark ? …` guess. The previous
+    // `isDark ? 'none' : theme.shadows[1]` had two defects: the light branch used
+    // MUI's default neutral shadow instead of light mode's hue-tinted one, and
+    // the dark branch collapsed dark and coder into one answer by accident. The
+    // mode table already distinguishes all three (tinted / black / none), so read
+    // it off the theme — the same way ContentCard reads its resting shadow.
+    const drawerShadow =
+        (theme.components?.MuiCard?.styleOverrides?.root as { boxShadow?: string } | undefined)
+            ?.boxShadow ?? 'none';
 
     const isActive = (href: string) => {
         // Home is "active" only at the top of the page, before any section
@@ -200,7 +209,7 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                         }),
                         borderRight: '1px solid',
                         borderColor: 'divider',
-                        boxShadow: isDark ? 'none' : theme.shadows[1],
+                        boxShadow: drawerShadow,
                     },
                 }}
             >

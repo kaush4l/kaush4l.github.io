@@ -28,7 +28,7 @@ export default function SectionHeading({ icon, title, accent = 'primary' }: Sect
     // tonal channel that opposes the surface — `dark` on light, `light` on dark
     // — or `secondary`'s cyan lands at 2.35:1 on every section it accents.
     const accentColor = theme.palette[accent].main;
-    const glyphColor = theme.palette.mode === 'dark' ? theme.palette[accent].light : theme.palette[accent].dark;
+    const glyphColor = theme.palette[accent][theme.palette.tonal];
 
     return (
         <Box

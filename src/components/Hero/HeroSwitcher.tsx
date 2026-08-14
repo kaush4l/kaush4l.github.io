@@ -4,6 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Box, ButtonGroup, Button, Tooltip } from '@mui/material';
 import TuneIcon from '@mui/icons-material/Tune';
+import { RADIUS } from '@/theme/ThemeProvider';
 
 // E1: HeroA is imported STATICALLY so it is present in the static export's HTML.
 // `dynamic(..., { ssr: false })` shipped a hero-less document, and the hero then
@@ -67,7 +68,7 @@ export default function HeroSwitcher({ about }: HeroProps) {
                         bgcolor: 'background.paper',
                         border: '1px solid',
                         borderColor: 'divider',
-                        borderRadius: '20px',
+                        borderRadius: RADIUS.floating,
                         p: 0.75,
                         transform: { xs: 'scale(0.85)', md: 'scale(1)' },
                         transformOrigin: 'left bottom',

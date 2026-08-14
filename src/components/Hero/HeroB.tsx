@@ -3,6 +3,7 @@
 import { Box, Typography, Stack, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { motion } from 'framer-motion';
+import { RADIUS } from '@/theme/ThemeProvider';
 import { useEffect, useRef, useState } from 'react';
 
 // E5: the whole sequence now finishes at t=2400ms, inside the median
@@ -73,12 +74,16 @@ function TypewriterLine({ line, startDelay }: { line: TerminalLine; startDelay: 
         };
     }, [line.text, line.cursor, startDelay]);
 
+    // M24 — these were `secondary.main` and `primary.light` unconditionally, i.e.
+    // one mode's channels used as text in all three. On the light panel
+    // (`background.paper` = #FFFFFF) that is 2.43:1 for the cyan and 2.72:1 for
+    // the purple — both well under AA, on the hero's only prose. `main`/`light`
+    // are FILL channels; text takes the tonal channel opposing the ground.
+    const isDark = theme.palette.mode === 'dark';
+    const cyanText = theme.palette.secondary[theme.palette.tonal];
+    const purpleText = theme.palette.primary[theme.palette.tonal];
     const textColor =
-        line.color === 'cyan'
-            ? theme.palette.secondary.main
-            : line.color === 'purple'
-                ? theme.palette.primary.light
-                : undefined;
+        line.color === 'cyan' ? cyanText : line.color === 'purple' ? purpleText : undefined;
 
     // E5: every line is in the DOM from t=0 — hidden, not absent — so the
     // terminal body never grows.
@@ -94,7 +99,7 @@ function TypewriterLine({ line, startDelay }: { line: TerminalLine; startDelay: 
                 gap: 0.5,
             }}
         >
-            <Box component="span" sx={{ color: 'primary.light', userSelect: 'none' }}>
+            <Box component="span" sx={{ color: purpleText, userSelect: 'none' }}>
                 {line.prompt}
             </Box>
             <Box
@@ -124,7 +129,10 @@ export default function HeroB() {
     const isDark = theme.palette.mode === 'dark';
     const { primary, background, error, warning, success } = theme.palette;
 
-    const dotColor = primary.dark;
+    // M24 — was `primary.dark` in every mode. A dark purple at 0.13 alpha over a
+    // near-black ground is a grid you cannot see; the decorative layer takes the
+    // channel that opposes the ground, exactly like text does.
+    const dotColor = primary[theme.palette.tonal];
 
     return (
         <Box
@@ -163,8 +171,12 @@ export default function HeroB() {
                             mx: 'auto',
                             bgcolor: alpha(background.paper, 0.9),
                             border: '1px solid',
-                            borderColor: alpha(primary.main, isDark ? 0.35 : 0.15),
-                            borderRadius: '16px',
+                            // M24 — was `alpha(primary.main, isDark ? 0.35 : 0.15)`,
+                            // a hand-rolled alpha of the FILL hue that put purple
+                            // chrome on coder's cyan-tinted ground. `divider` is the
+                            // mode-owned, hue-resolved value for exactly this.
+                            borderColor: 'divider',
+                            borderRadius: RADIUS.card,
                             overflow: 'hidden',
                         }}
                     >
@@ -184,7 +196,7 @@ export default function HeroB() {
                             {[error.main, warning.main, success.main].map((c, i) => (
                                 <Box
                                     key={i}
-                                    sx={{ width: 12, height: 12, borderRadius: '999px', bgcolor: c }}
+                                    sx={{ width: 12, height: 12, borderRadius: RADIUS.pill, bgcolor: c }}
                                 />
                             ))}
                             <Typography
