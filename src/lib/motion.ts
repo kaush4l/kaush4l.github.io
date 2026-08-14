@@ -124,10 +124,33 @@ export function onFirstVisible(
     return () => io.disconnect();
 }
 
+function parseHex(hex: string): [number, number, number] | null {
+    const m = /^#?([\da-f]{6})$/i.exec(hex.trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
 /** `#rrggbb` → `r, g, b` for use inside `rgba(…)`. */
 export function rgbChannels(hex: string): string {
-    const m = /^#?([\da-f]{6})$/i.exec(hex.trim());
-    if (!m) return '124, 58, 237';
-    const n = parseInt(m[1], 16);
-    return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+    const rgb = parseHex(hex);
+    return rgb ? rgb.join(', ') : '124, 58, 237';
+}
+
+/**
+ * `r, g, b` channels for `hex` pulled `amount` of the way toward `toward`.
+ *
+ * This exists for one specific problem: on a near-white ground, a high-chroma
+ * hue is candy long before it is light. The theme's `secondary` (a saturated
+ * cyan) at any alpha strong enough to be *visible* in light mode resolves to
+ * mint — so the frame read as pastel, not as lit. Pulling the bounce light
+ * toward the page ground first gives a cool grey that behaves like light,
+ * while dark and coder keep the hue at full chroma, where it belongs.
+ */
+export function mixChannels(hex: string, toward: string, amount: number): string {
+    const a = parseHex(hex);
+    const b = parseHex(toward);
+    if (!a || !b) return rgbChannels(hex);
+    const t = Math.min(1, Math.max(0, amount));
+    return a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(', ');
 }

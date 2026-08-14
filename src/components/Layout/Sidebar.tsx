@@ -210,6 +210,13 @@ export default function Sidebar({ open, onClose, nav }: SidebarProps) {
                         borderRight: '1px solid',
                         borderColor: 'divider',
                         boxShadow: drawerShadow,
+                        // The page-wide grade (`body::before`) has to reach the
+                        // sidebar too. An opaque 260px slab down the left edge
+                        // of a lit frame reads as browser chrome the page drew
+                        // for itself — the light has to cross the whole window,
+                        // or the window is not the frame.
+                        backgroundColor: 'transparent',
+                        backdropFilter: 'blur(8px)',
                     },
                 }}
             >

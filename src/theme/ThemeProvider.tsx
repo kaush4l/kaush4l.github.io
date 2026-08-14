@@ -5,7 +5,7 @@ import type { PaletteMode } from '@mui/material';
 import { createTheme, alpha } from '@mui/material/styles';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { rgbChannels } from '@/lib/motion';
+import { mixChannels, rgbChannels } from '@/lib/motion';
 
 // Expose a first-class mono family on the theme so components never hardcode a
 // monospace stack. Populated below from the `--font-mono` next/font variable.
@@ -501,6 +501,35 @@ function createThemeForVariant(variant: ThemeVariant, appearance: Appearance) {
         },
         shape: { borderRadius: 4 },
         components: {
+            /**
+             * M42 — the keyboard focus ring has to be authored HERE, not in a
+             * stylesheet.
+             *
+             * `globals.css` has a perfectly good `:focus-visible` rule, and on
+             * every MUI control it lost: emotion injects
+             * `.mui-…-MuiButtonBase-root:focus-visible` (specificity 0,2,0) at
+             * runtime, after the stylesheet, and ButtonBase resets `outline: 0`.
+             * So the site's most important controls — the hero CTAs, the chat
+             * FAB, the sidebar items, the appearance menu — had **no visible
+             * focus indicator at all** (WCAG 2.4.7). Emitting the ring as part
+             * of the same emotion layer is the only way it wins at equal weight.
+             *
+             * `--focus-ring` is a MODE token verified to clear 3:1 against a
+             * `primary` fill as well as against the ground; the second,
+             * `--bg`-coloured ring separates the outline from whatever it sits
+             * on, including a saturated fill.
+             */
+            MuiButtonBase: {
+                styleOverrides: {
+                    root: {
+                        '&:focus-visible': {
+                            outline: `2px solid ${m.focusRing}`,
+                            outlineOffset: 2,
+                            boxShadow: `0 0 0 4px ${m.bg}`,
+                        },
+                    },
+                },
+            },
             MuiButton: {
                 styleOverrides: {
                     root: {
@@ -511,9 +540,11 @@ function createThemeForVariant(variant: ThemeVariant, appearance: Appearance) {
                             transform: 'translateY(-1px)',
                             boxShadow: `0 4px 14px ${alpha(p.primary, a.buttonHoverShadow)}`,
                         },
+                        // The lift is shared with hover; the RING is what makes
+                        // this state distinguishable from hover, and it is set
+                        // by the `MuiButtonBase` override above.
                         '&:focus-visible': {
                             transform: 'translateY(-1px)',
-                            boxShadow: `0 4px 14px ${alpha(p.primary, a.buttonHoverShadow)}`,
                         },
                     },
                     containedPrimary: {
@@ -723,18 +754,25 @@ function applyTokens(appearance: Appearance, p: ThemePalette) {
     // `primary` is the key, `secondary` is the fill — the complementary pair the
     // hue table already guarantees, in every variant.
     s.setProperty('--hc-key', rgbChannels(p.primary));
-    s.setProperty('--hc-fill', rgbChannels(p.secondary));
-    // How strongly that pair tints the page BELOW the hero. Deliberately about
-    // a third of the hero's own alphas: enough that the document reads as one
-    // lit frame, far too little to touch any text/background contrast pair.
-    s.setProperty('--hc-page-a', PAGE_GRADE_ALPHA[appearance]);
+    // The bounce light is desaturated toward the ground in light mode only —
+    // full-chroma cyan on #FAFAFA reads as mint candy at any visible alpha.
+    s.setProperty('--hc-fill', appearance === 'light'
+        ? mixChannels(p.secondary, m.bg, 0.42)
+        : rgbChannels(p.secondary));
+    // How strongly the pair lights the page as a whole. The key is dominant by
+    // a factor of ~2 — that is what makes it read as one source with a bounce,
+    // rather than two competing washes. Inverting them (the first cut had the
+    // fill stronger) is why light mode's loudest element was a teal bloom in
+    // the corner instead of the light on the subject.
+    s.setProperty('--hc-page-key-a', PAGE_GRADE[appearance].key);
+    s.setProperty('--hc-page-fill-a', PAGE_GRADE[appearance].fill);
 }
 
-/** Per-mode strength of the page-level grade consumed by `cinema.css`. */
-const PAGE_GRADE_ALPHA: Record<Appearance, string> = {
-    light: '0.05',
-    dark: '0.07',
-    coder: '0.09',
+/** Per-mode strength of the page-wide grade consumed by `cinema.css`. */
+const PAGE_GRADE: Record<Appearance, { key: string; fill: string }> = {
+    light: { key: '0.11', fill: '0.09' },
+    dark: { key: '0.15', fill: '0.09' },
+    coder: { key: '0.14', fill: '0.12' },
 };
 
 /**

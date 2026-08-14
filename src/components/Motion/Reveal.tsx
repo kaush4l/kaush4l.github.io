@@ -23,6 +23,26 @@ import { onFirstVisible, prefersReducedMotion } from '@/lib/motion';
  * `is-done` drops `will-change` once the section has arrived, so a long page
  * does not hold a compositor layer open for every section it has already shown.
  */
+/**
+ * The deepest-but-shallowest node that looks like a list: the first element in
+ * a breadth-first walk with at least `min` element children.
+ *
+ * Sections here are `heading + wrapper + list`, and the list's depth differs by
+ * layout (a grid, a timeline, a stack), so it cannot be addressed by a fixed
+ * path. Breadth-first means the outermost qualifying group wins — the cards
+ * themselves, not the rows inside one card.
+ */
+function findRepeatingGroup(root: Element, min = 3, maxDepth = 4): Element | null {
+    let frontier: Element[] = [root];
+    for (let depth = 0; depth < maxDepth && frontier.length; depth += 1) {
+        for (const node of frontier) {
+            if (node !== root && node.childElementCount >= min) return node;
+        }
+        frontier = frontier.flatMap((n) => Array.from(n.children));
+    }
+    return null;
+}
+
 export default function Reveal({
     children,
     delay = 0,
@@ -46,13 +66,21 @@ export default function Reveal({
         el.classList.add('is-armed');
         if (delay) el.style.transitionDelay = `${delay}ms`;
 
-        // Index the section's own children so they cascade rather than arriving
-        // as one block. Capped at 8: past that the tail is longer than the
-        // reader's patience, and the last card would still be fading in after
-        // they have scrolled past it.
-        const inner = el.firstElementChild;
-        if (inner) {
-            Array.from(inner.children).forEach((child, i) => {
+        // Index the section's REPEATING GROUP so it cascades rather than
+        // arriving as one block.
+        //
+        // Walking a fixed number of levels down finds the wrong thing: the
+        // first two levels are anonymous layout wrappers (a heading box and a
+        // body box), so indexing them staggered exactly two elements by 55ms —
+        // measurably nothing. Descend instead until a node has enough element
+        // children to be the actual list (the cards, the timeline entries), and
+        // stagger those.
+        const group = findRepeatingGroup(el);
+        if (group) {
+            group.classList.add('reveal-group');
+            Array.from(group.children).forEach((child, i) => {
+                // Capped at 8: past that the tail outlasts the reader, and the
+                // last card is still fading in after they have scrolled by.
                 (child as HTMLElement).style.setProperty('--i', String(Math.min(i, 8)));
             });
         }

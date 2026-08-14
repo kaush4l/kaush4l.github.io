@@ -85,7 +85,10 @@ export default function LayoutClient({ children, resumeCorpus, suggestedPrompts,
                             flexGrow: 1,
                             py: { xs: 2, sm: 3, md: 4 },
                             px: { xs: 1.5, sm: 2, md: 4 },
-                            backgroundColor: 'background.default',
+                            // No background. `body` already paints the ground,
+                            // and an opaque box here sat on top of the page-wide
+                            // grade layer (`body::before` in cinema.css) and hid
+                            // it everywhere content lives — i.e. everywhere.
                         }}
                     >
                         {children}

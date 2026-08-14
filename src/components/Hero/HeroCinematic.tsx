@@ -7,6 +7,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { RADIUS, THEME_PALETTES, useThemeContext } from '@/theme/ThemeProvider';
 import {
     EASE_UI_CSS,
+    mixChannels,
     prefersReducedMotion,
     rgbChannels,
     runWhileVisible,
@@ -88,7 +89,13 @@ const GRADE = {
     // Light needs CONTRAST, not smaller numbers: the fill is nearly doubled and
     // anchored under the copy (not off-canvas in the corner), and the vignette
     // is deep enough to give the frame an edge.
-    light: { key: 0.17, fill: 0.22, streak: 0.20, grain: 0.03, vignette: 0.14, contact: 0.05, dust: 0.55 },
+    // The key is dominant by ~2x in every mode. The first cut had light's fill
+    // *stronger* than its key, which is not a two-light grade — it is two
+    // competing washes, and the loudest thing in the frame became a bloom in
+    // the corner instead of the light on the subject. (Light's fill is also
+    // desaturated toward the ground upstream in `ThemeProvider`; full-chroma
+    // cyan on #FAFAFA is mint at any alpha you can actually see.)
+    light: { key: 0.24, fill: 0.11, streak: 0.16, grain: 0.03, vignette: 0.14, contact: 0.05, dust: 0.55 },
     dark: { key: 0.26, fill: 0.20, streak: 0.28, grain: 0.05, vignette: 0.34, contact: 0.16, dust: 1 },
     coder: { key: 0.22, fill: 0.28, streak: 0.30, grain: 0.06, vignette: 0.46, contact: 0.22, dust: 1.15 },
 } as const;
@@ -167,7 +174,16 @@ export default function HeroCinematic({ about }: HeroProps) {
     const primaryText = primary[theme.palette.tonal];
 
     const keyRgb = useMemo(() => rgbChannels(primary.main), [primary.main]);
-    const fillRgb = useMemo(() => rgbChannels(secondary.main), [secondary.main]);
+    // Same softening the page-wide grade uses: on a near-white ground the raw
+    // cyan is candy, so the bounce light is pulled toward the ground first and
+    // behaves like cool grey light. Dark and coder keep full chroma.
+    const fillRgb = useMemo(
+        () =>
+            appearance === 'light'
+                ? mixChannels(secondary.main, theme.palette.background.default, 0.42)
+                : rgbChannels(secondary.main),
+        [appearance, secondary.main, theme.palette.background.default],
+    );
 
     const [given, family] = splitName(about?.title);
     const headline = text((about as HeroAbout | undefined)?.headline);
@@ -232,7 +248,7 @@ export default function HeroCinematic({ about }: HeroProps) {
         // The lights come up first — the room is lit before the subject enters.
         // Opacity is written straight to the element; the scale goes through the
         // shared number so the parallax loop stays the only transform writer.
-        tl.add(lights, { opacity: 1, duration: 700 }, 0)
+        tl.add(lights, { opacity: 1, duration: 420 }, 0)
             .add(enter.current, { lightScale: 1, duration: 900 }, 0);
 
         if (streak) {
@@ -241,19 +257,22 @@ export default function HeroCinematic({ about }: HeroProps) {
                 .add(enter.current, { streakScaleX: 1, duration: 800 }, 60);
         }
 
-        // The wordmark rises out of the clip, letter by letter. 19 characters at
-        // 16ms is a 300ms tail — a readable ripple, not a typewriter.
+        // The wordmark rises out of the clip, letter by letter, starting with
+        // the lights rather than after them: the earlier version held a lit but
+        // *empty* frame for half a second, which is a long time to look at a
+        // page with no name on it. 19 characters at 16ms is a 300ms tail — a
+        // readable ripple, not a typewriter.
         tl.add(
             charEls,
-            { opacity: 1, translateY: '0%', duration: 550, delay: stagger(16) },
-            80,
+            { opacity: 1, translateY: '0%', duration: 420, delay: stagger(16) },
+            0,
         );
 
         // Everything that supports it follows as one soft cascade, landing last.
         tl.add(
             supportEls,
-            { opacity: 1, translateY: 0, duration: 420, delay: stagger(45) },
-            380,
+            { opacity: 1, translateY: 0, duration: 380, delay: stagger(45) },
+            260,
         );
 
         return () => {
@@ -294,13 +313,25 @@ export default function HeroCinematic({ about }: HeroProps) {
         if (!line) return;
 
         const paint = () => {
-            const box = line.getBoundingClientRect();
             const chars = Array.from(line.querySelectorAll<HTMLElement>('.hc-char'));
+            if (!chars.length) return;
+
             // Read every position first, then write — one layout pass, not N.
-            const offsets = chars.map((c) => c.getBoundingClientRect().left - box.left);
+            const rects = chars.map((c) => c.getBoundingClientRect());
+
+            // Measure the INK, not the line box. `.hc-line` is a block, so its
+            // width is the whole column (~888px) while the word is ~272px of
+            // it — sizing the ramp to the line meant the name only ever showed
+            // the first third of the gradient and rendered as flat violet. The
+            // ramp has to span exactly the glyphs, so its last stop lands on
+            // the last letter.
+            const left = rects[0].left;
+            const width = rects[rects.length - 1].right - left;
+            const height = line.getBoundingClientRect().height;
+
             chars.forEach((c, i) => {
-                c.style.backgroundSize = `${box.width}px ${box.height}px`;
-                c.style.backgroundPosition = `${-offsets[i]}px 0`;
+                c.style.backgroundSize = `${width}px ${height}px`;
+                c.style.backgroundPosition = `${-(rects[i].left - left)}px 0`;
             });
         };
 

@@ -71,7 +71,11 @@ export default function Footer({ statement, emailUrl, owner }: FooterProps) {
             <Divider sx={{ mt: 3, mb: 1.5 }} />
 
             <Typography variant="caption" color="text.disabled">
-                {`Built with Next.js and Material UI · © ${year}${owner ? ` ${owner}` : ''}`}
+                {/* The framework credit is gone. On an engineer's own résumé it
+                    is an anti-credential: it names the template stack instead of
+                    the work, and the only interesting technical claim this site
+                    makes — the model runs in your tab — is already at the fold. */}
+                {`© ${year}${owner ? ` ${owner}` : ''}`}
             </Typography>
         </Box>
     );

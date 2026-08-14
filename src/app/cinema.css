@@ -30,6 +30,12 @@
   position: relative;
   isolation: isolate; /* keeps blend modes off the rest of the page */
   overflow: hidden;
+  /* The streak deliberately overhangs the frame (`inset-inline: -10%`) and its
+     blurred `::after` overhangs further. `overflow: hidden` clips the paint but
+     the box still counts toward the document's scroll width — 19px of it at
+     390px, which Chrome ignores and iOS Safari does not. `clip` bounds the
+     scrollable overflow region itself. */
+  overflow-x: clip;
 }
 
 /* Every decoration layer is a sibling of the content, absolutely positioned,
@@ -272,58 +278,47 @@ html[data-motion='on'] .hc-fill {
   100% { transform: translateY(266%); opacity: 0; }
 }
 
-/* ─── Focus ───────────────────────────────────────────────────────────────── */
-
-/**
- * One visible ring, everywhere, keyboard-only.
- *
- * `--focus-ring` was already a per-mode token in `ThemeProvider` (chosen so it
- * clears 3:1 against a `primary` fill as well as against the ground) — it just
- * had no rule consuming it, so every control fell back to the UA outline, which
- * is invisible on a saturated fill. The second, `--bg`-coloured ring separates
- * the outline from whatever it sits on.
- */
-:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px var(--bg);
-}
-
 /* ─── Carrying the grade past the fold ────────────────────────────────────── */
 
 /**
- * The single most common failure of a "cinematic" page is that the cinema stops
- * at the fold and the rest is a white document. Each section gets one very low
- * radial from the same key/fill pair as the hero, alternating side down the
- * page, so the whole document reads as one continuously-lit frame.
+ * The most common failure of a "cinematic" page is that the cinema stops at the
+ * fold and the rest is a white document. So the grade is not a hero child — it
+ * is ONE fixed layer behind the entire page, including the sidebar and the
+ * header, which were otherwise two flat ungraded slabs bolted to a lit frame.
  *
- * Alphas here are a third of the hero's and the layer sits BEHIND the content
- * with no blend mode, so it can tint the ground and never the type.
+ * Fixed, not per-section, for two reasons. A per-section radial sized in
+ * percent gives the 4300px Experience section a 2600px-tall smear and the
+ * 500px Contact section a 310px blob — the "same" light at wildly different
+ * scales down one page. And six layers is five more than this needs.
+ *
+ * `z-index: -1` puts it above the page's own background and below every piece
+ * of content, so it tints the ground and can never touch the type. It scrolls
+ * with nothing: the lights stay put while the document moves through them,
+ * which is what a room with a lamp in it actually does.
  */
-.reveal {
-  position: relative;
-}
-
-.reveal::before {
+body::before {
   content: '';
-  position: absolute;
-  inset: -6% -14%;
+  position: fixed;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(
-    42% 60% at 88% 12%,
-    rgba(var(--hc-key, 124, 58, 237), var(--hc-page-a)) 0%,
-    transparent 70%
-  );
+  background:
+    radial-gradient(
+      900px 620px at 88% -6%,
+      rgba(var(--hc-key, 124, 58, 237), var(--hc-page-key-a, 0.1)) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      760px 560px at 4% 96%,
+      rgba(var(--hc-fill, 6, 182, 212), var(--hc-page-fill-a, 0.08)) 0%,
+      transparent 70%
+    );
 }
 
-/* Alternate the source side so the eye is walked down the page. */
-.reveal:nth-child(even)::before {
-  background: radial-gradient(
-    42% 60% at 10% 84%,
-    rgba(var(--hc-fill, 6, 182, 212), var(--hc-page-a)) 0%,
-    transparent 70%
-  );
+@media print {
+  body::before {
+    display: none;
+  }
 }
 
 /* ─── Scroll reveal ───────────────────────────────────────────────────────── */
@@ -349,21 +344,33 @@ html[data-motion='on'] .hc-fill {
 
 /**
  * A section is not one object arriving — it is a heading and then its entries.
- * The children carry their own short offset, so six identical fades become six
- * cascades. `--i` is written by `Reveal` on mount; without it every child
- * simply lands with the section, which is the old behaviour.
+ *
+ * `Reveal` finds the section's repeating group at mount, tags it
+ * `.reveal-group`, and writes `--i` on each of ITS children. Targeting the
+ * group by class rather than by a `> * > *` depth guess is what makes this a
+ * cascade of five cards instead of a 55ms offset between two anonymous
+ * wrapper divs, which is what the depth guess actually selected.
  */
-.reveal.is-armed > * > * {
+.reveal.is-armed .reveal-group > * {
   opacity: 0;
-  transform: translate3d(0, 10px, 0);
+  transform: translate3d(0, 12px, 0);
 }
 
-.reveal.is-in > * > * {
+.reveal.is-in .reveal-group > * {
   opacity: 1;
   transform: none;
   transition:
-    opacity 520ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 55ms),
-    transform 520ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 55ms);
+    opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 60ms),
+    transform 480ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 60ms);
+}
+
+/**
+ * The section itself then only fades. It used to also travel 18px while its
+ * children travelled another 10px through the same pixels — two transitions
+ * over one object, which reads as lag rather than as arrival.
+ */
+.reveal.is-armed:has(.reveal-group) {
+  transform: none;
 }
 
 /* Once it has played, drop the compositor hint. */
