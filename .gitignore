@@ -50,3 +50,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 node_modules
+
+# Local working notes — candid critique of the résumé itself, kept off the
+# public repo deliberately. Not build output; do not delete.
+/progress.md
+/docs/
