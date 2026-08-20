@@ -209,15 +209,27 @@ function createThemeForVariant(variant: ThemeVariant, appearance: Appearance, sk
                     },
                 },
             },
+            // ── Why these are callbacks and not objects ──────────────────────
+            // `p.primary` is the HUE TABLE's colour. A skin repoints
+            // `palette.primary` through its own options, which are merged over
+            // this theme afterwards — so a literal `background: p.primary` here
+            // is applied AND then ignored by the merge, leaving a violet fill
+            // under a correctly-recoloured label. That is exactly what shipped:
+            // a purple "Ask the assistant" button on a vermilion page, violet
+            // hairlines on every chip.
+            //
+            // The callback form is resolved against the FINAL theme, so these
+            // read whatever the skin actually settled on. Any override that
+            // wants an accent must use it; a literal from `p` is a latent bug.
             MuiButton: {
                 styleOverrides: {
-                    root: {
+                    root: ({ theme: t }) => ({
                         borderRadius: RADIUS.pill,
                         padding: '10px 24px',
                         transition: TRANSITION,
                         '&:hover': {
                             transform: 'translateY(-1px)',
-                            boxShadow: `0 4px 14px ${alpha(p.primary, a.buttonHoverShadow)}`,
+                            boxShadow: `0 4px 14px ${alpha(t.palette.primary.main, a.buttonHoverShadow)}`,
                         },
                         // The lift is shared with hover; the RING is what makes
                         // this state distinguishable from hover, and it is set
@@ -225,10 +237,10 @@ function createThemeForVariant(variant: ThemeVariant, appearance: Appearance, sk
                         '&:focus-visible': {
                             transform: 'translateY(-1px)',
                         },
-                    },
-                    containedPrimary: {
-                        background: p.primary,
-                    },
+                    }),
+                    containedPrimary: ({ theme: t }) => ({
+                        background: t.palette.primary.main,
+                    }),
                 },
             },
             MuiCard: {
@@ -258,26 +270,26 @@ function createThemeForVariant(variant: ThemeVariant, appearance: Appearance, sk
                         fontWeight: 500,
                         transition: TRANSITION,
                     },
-                    outlined: {
-                        borderColor: alpha(p.primary, a.chipOutline),
+                    outlined: ({ theme: t }) => ({
+                        borderColor: alpha(t.palette.primary.main, a.chipOutline),
                         '&:hover': {
-                            backgroundColor: alpha(p.primary, a.chipOutlineHover),
-                            borderColor: p.primary,
+                            backgroundColor: alpha(t.palette.primary.main, a.chipOutlineHover),
+                            borderColor: t.palette.primary.main,
                         },
                         '&:focus-visible': {
-                            backgroundColor: alpha(p.primary, a.chipOutlineHover),
-                            borderColor: p.primary,
+                            backgroundColor: alpha(t.palette.primary.main, a.chipOutlineHover),
+                            borderColor: t.palette.primary.main,
                         },
-                    },
-                    colorSecondary: {
-                        borderColor: alpha(p.secondary, a.chipSecondary),
+                    }),
+                    colorSecondary: ({ theme: t }) => ({
+                        borderColor: alpha(t.palette.secondary.main, a.chipSecondary),
                         '&:hover': {
-                            backgroundColor: alpha(p.secondary, a.chipSecondaryHover),
+                            backgroundColor: alpha(t.palette.secondary.main, a.chipSecondaryHover),
                         },
                         '&:focus-visible': {
-                            backgroundColor: alpha(p.secondary, a.chipSecondaryHover),
+                            backgroundColor: alpha(t.palette.secondary.main, a.chipSecondaryHover),
                         },
-                    },
+                    }),
                 },
             },
             // No MuiDrawer / MuiAppBar overrides: `Sidebar.tsx` and `Header.tsx`

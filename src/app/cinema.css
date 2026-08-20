@@ -506,6 +506,29 @@ html[data-effects='coder'] {
   will-change: auto;
 }
 
+/**
+ * The IN-PAGE reduced-motion request must unhide, not merely shorten.
+ *
+ * `.reveal.is-armed` is the hidden state, applied by JS after mount. The
+ * `@media (prefers-reduced-motion: reduce)` block below unhides it — but the
+ * in-page control (`html[data-reduce-motion]`, WCAG 2.2 SC 2.3.3) only
+ * collapses durations, because that is all a generic kill switch can do.
+ *
+ * So a visitor who turned the control on AFTER load was left with every armed
+ * section still at `opacity: 0` — 27 elements on this page — until they
+ * scrolled far enough for `is-in` to fire. Content was not permanently lost,
+ * but "ask for less motion, and the page goes blank until you scroll" is the
+ * exact opposite of what the control promises, and it affected every skin
+ * identically.
+ *
+ * Reduced motion stills the page. It never hides it.
+ */
+html[data-reduce-motion] .reveal.is-armed,
+html[data-reduce-motion] .reveal.is-armed .reveal-group > * {
+  opacity: 1;
+  transform: none;
+}
+
 /* ─── Opt-outs ────────────────────────────────────────────────────────────── */
 
 /**
