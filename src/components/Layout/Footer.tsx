@@ -23,6 +23,16 @@ export default function Footer({ statement, emailUrl, owner }: FooterProps) {
             sx={{
                 py: 4,
                 px: 3,
+                // Clearance for the chat FAB, which is `position: fixed` at the
+                // bottom-right and therefore floats over whatever the document
+                // ends on. A FAB covering mid-page copy as you scroll past is
+                // the pattern working as intended; a FAB permanently parked on
+                // the last line of the page is not — at 390px it sat on the
+                // footer with nothing below to scroll to, so the covered text
+                // could not be reached at all. The FAB is 64px plus its 16px
+                // inset, so this clears it with a margin and costs desktop
+                // nothing.
+                pb: { xs: 14, sm: 4 },
                 mt: 'auto',
                 borderTop: '1px solid',
                 borderColor: 'divider',
