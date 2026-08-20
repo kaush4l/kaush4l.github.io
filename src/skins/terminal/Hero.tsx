@@ -669,7 +669,7 @@ export default function TerminalHero({ about }: HeroProps) {
                         <div className="tm-actions" style={rise()}>
                             <p className="tm-assistant" id="tm-assistant-line">
                                 The assistant in the corner answers from a model that loads into
-                                this tab and runs on your own GPU. The panel to the right is that
+                                this tab and runs on your own GPU. The instrument panel is that
                                 machine, reporting itself.
                             </p>
                             <div className="tm-buttons no-print">

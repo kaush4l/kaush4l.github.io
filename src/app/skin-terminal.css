@@ -456,12 +456,14 @@ html[data-skin='terminal'] .tm-instruments {
 
 /* The stat panel: one big number, one sparkline, and that is the whole
    pattern. The number answers "what"; the trace answers "and is that fine". */
+/* The unit follows its own label rather than being pushed to the cell's right
+   edge: `space-between` put `ms` hard against the neighbouring cell's `DECODE`,
+   so the row read as one four-word label instead of two captioned numbers. */
 html[data-skin='terminal'] .tm-stat-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 7px;
 }
 
 html[data-skin='terminal'] .tm-stat-unit {
@@ -477,7 +479,7 @@ html[data-skin='terminal'] .tm-stat-unit {
 html[data-skin='terminal'] .tm-stat-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 20px;
 }
 
 html[data-skin='terminal'] .tm-stat-cell {

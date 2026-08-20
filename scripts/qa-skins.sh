@@ -33,6 +33,14 @@ for skin in "${SKINS[@]}"; do
   # re-persists its own skin between them, so the reload can load the skin that
   # was already showing rather than the one under test.
   $B goto "$URL" >/dev/null
+  # Clear the buffer BEFORE the load under test. The browse daemon accumulates
+  # console output across every page it has ever visited in the session, so
+  # without this each skin inherits the previous ones' noise and every skin
+  # reports an identical count -- which is the tell that the number is not
+  # about this page at all. The first version of this check "found" 140 errors
+  # per skin, including THREE.js WebGL failures from a project that does not
+  # use THREE.js.
+  $B console --clear >/dev/null 2>&1 || true
   $B js "localStorage.setItem('kk-skin','$skin'); location.reload(); 'go'" >/dev/null
   $B js "new Promise(r=>setTimeout(()=>r('ok'),2500))" >/dev/null
 
@@ -48,9 +56,11 @@ for skin in "${SKINS[@]}"; do
       text: cs.getPropertyValue('--text').trim(),
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       stuckMotion: el.dataset.motion === 'on',
-      // Was `main.previousElementSibling`, which resolves to the docked
-      // Drawer, not the hero — so it reported the whole document height and
-      // looked alarming while measuring nothing.
+      // Was main.previousElementSibling, which resolves to the docked
+      // Drawer rather than the hero, so it reported the whole document height
+      // while measuring nothing. NOTE: no backticks anywhere in this probe --
+      // it is inside a double-quoted shell argument, and a backtick there is
+      // command substitution, not a comment.
       heroHeight: Math.round(document.querySelector('main > div > div')?.firstElementChild?.getBoundingClientRect().height || 0),
       // Asserted, not assumed: an overflow number is meaningless if the
       // viewport is not the one the check claims to be testing. The first
@@ -80,8 +90,22 @@ for skin in "${SKINS[@]}"; do
   inv=$(printf '%s' "$report" | sed -n 's/.*"invisible":\([0-9]*\).*/\1/p')
   if [ "${inv:-0}" -gt 0 ]; then echo "  FAIL: ${inv} heading(s) left invisible"; fail=1; fi
 
-  errs=$($B console --errors 2>&1 | grep -civ 'no console errors\|UNTRUSTED' || true)
-  if [ "${errs:-0}" -gt 0 ]; then echo "  WARN: console output present"; $B console --errors | head -8; fi
+  # Buffer to a file first. Piping the browse process straight into `grep -c`
+  # (or `head`) lets the reader close the pipe as soon as it has counted, and
+  # the SIGPIPE kills browse mid-write — which surfaced as an EPIPE stack trace
+  # that aborted the whole sweep two skins in.
+  $B console --errors > "$OUT/console-$skin.txt" 2>&1 || true
+  # Font-preload advisories are Next's dev server, not the page, and every skin
+  # emits them; counting them as findings trains the reader to ignore the gate.
+  # Count real page errors only. Font-preload advisories are the Next dev
+  # server talking about itself, and the WOFF2/403 noise comes from fonts the
+  # dev server rebuilds mid-session -- neither is a defect in the page.
+  errs=$(grep -i 'error' "$OUT/console-$skin.txt" \
+    | grep -civ 'preloaded using link preload\|OTS parsing\|status of 403\|UNTRUSTED\|no console errors' || true)
+  if [ "${errs:-0}" -gt 0 ]; then
+    echo "  FAIL: $errs console error line(s) — see $OUT/console-$skin.txt"
+    fail=1
+  fi
 
   $B screenshot "$OUT/$skin-desktop.png" >/dev/null
   $B viewport 390x844 >/dev/null
