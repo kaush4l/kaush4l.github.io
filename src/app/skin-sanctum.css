@@ -406,10 +406,10 @@ html[data-skin='sanctum'] .sx-lamp-body path {
 html[data-skin='sanctum'] .sx-lamp-flame {
   position: absolute;
   left: 50%;
-  bottom: 62%;
-  width: 20px;
-  height: 34px;
-  margin-left: -10px;
+  bottom: 76%;
+  width: 18px;
+  height: 28px;
+  margin-left: -9px;
   border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%;
   background: radial-gradient(
     58% 62% at 50% 74%,

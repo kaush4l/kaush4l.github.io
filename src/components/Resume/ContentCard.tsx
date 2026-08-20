@@ -45,7 +45,15 @@ export default function ContentCard({ item, variant = 'card' }: ContentCardProps
             .join(' · ');
 
         return (
+            // `data-catalog-item` is a STYLING SEAM, not state — the peer of
+            // `data-section-rule` on SectionHeading. It marks "one résumé
+            // entry", which is the unit a skin needs to address and which the
+            // DOM otherwise only expresses as a nesting depth. Without it a
+            // skin has to reach an entry through a structural guess like
+            // `section[id] > div:last-child > div`, which is one refactor of
+            // an unrelated wrapper away from silently matching nothing.
             <Box
+                data-catalog-item
                 sx={{
                     position: 'relative',
                     pl: { xs: 2.5, sm: 3, md: 4 },
@@ -291,7 +299,9 @@ export default function ContentCard({ item, variant = 'card' }: ContentCardProps
     );
 
     return (
+        // See the note on the timeline variant above — same seam, same reason.
         <Card
+            data-catalog-item
             // The cursor lights this surface — see `PointerGlow` (which writes
             // the position) and `cinema.css` (which draws the pool and the rim).
             data-glow

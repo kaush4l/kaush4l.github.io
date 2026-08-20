@@ -127,7 +127,9 @@ const sanctum: Skin = {
             '--reveal-distance': '10px',
             '--reveal-duration': '900ms',
             '--reveal-stagger': '80ms',
-            '--reveal-ease': 'cubic-bezier(0.22, 1, 0.36, 1)',
+            // One motion vocabulary for the whole page: the curve is the token
+            // `globals.css` publishes, not a bezier respelled at this call site.
+            '--reveal-ease': 'var(--ease-out-quint)',
             '--skin-ink': '#F3E7D0',
             '--skin-accent': '#FF9933',
             '--skin-accent-soft': '#FFC46B',
