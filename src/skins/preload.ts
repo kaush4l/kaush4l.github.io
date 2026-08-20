@@ -33,7 +33,12 @@ export interface SkinPrePaint {
 export const SKIN_PREPAINT: Record<SkinId, SkinPrePaint | null> = {
     professional: null,
     ronin: { stamp: 'dark', bg: '#0B0B0D' },
-    sanctum: { stamp: 'dark', bg: '#050505' },
+    // Warm, not cold. This is a garbhagriha — an unlit room with a lamp
+    // somewhere in it — and a cold near-black reads as outer space instead.
+    sanctum: { stamp: 'dark', bg: '#0A0806' },
     terminal: { stamp: 'dark', effects: 'coder', bg: '#080B10' },
-    voyager: { stamp: 'dark', bg: '#070A12' },
+    // The only light-ground skin, and that is the point: three dark siblings
+    // and one printed object gives the switcher real range rather than three
+    // shades of the same idea.
+    accession: { stamp: 'light', bg: '#F2EEE6' },
 };

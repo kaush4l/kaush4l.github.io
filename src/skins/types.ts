@@ -29,7 +29,7 @@ import type { Appearance, ThemePalette } from '@/theme/tokens';
 import type { HeroProps } from '@/components/Hero';
 import type { SiteSection } from '@/lib/contentTypes';
 
-export type SkinId = 'professional' | 'ronin' | 'sanctum' | 'terminal' | 'voyager';
+export type SkinId = 'professional' | 'ronin' | 'sanctum' | 'terminal' | 'accession';
 
 /**
  * Every custom property any skin is allowed to write.

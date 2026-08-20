@@ -19,6 +19,48 @@
    necessity — here, in `MODE_SURFACES`, and in the pre-paint script's
    `theme-color` write. They must agree (M28). */
 
+/**
+ * ── Motion tokens ───────────────────────────────────────────────────────────
+ *
+ * These are appearance-independent and skin-independent: a curve is a physical
+ * claim about how a thing moves, and that claim does not change because the
+ * page got darker. They live on `:root` and are never redefined per mode.
+ *
+ * The rule the set encodes: **entrances decelerate, exits accelerate, and an
+ * exit runs about 60% of its entrance.** An entrance that starts slow is the
+ * single most reliable tell of a default `ease`, which is why none of these is
+ * symmetric.
+ *
+ *   quint       the default entrance — reveals, cards, anything arriving
+ *   expo        large moves only — a hero line, a pinned scene
+ *   in-out-quart  A→B state swaps, where both ends are equally real
+ *   swift       micro-feedback: hover, focus, press. Never over 160ms.
+ *   back        overshoot. ONE element, ONCE, per page. Never on a list.
+ *
+ * Durations that go with them, as a table rather than a habit:
+ *   hover / focus / press          90–160ms   swift
+ *   tooltip, icon morph            180–260ms  quint
+ *   card or list-item entrance     500–700ms  quint
+ *   hero or section title          800–1100ms expo
+ *   page or theme transition       500–800ms  in-out-quart
+ *
+ * Scroll-LINKED animation takes none of these: a scrubbed timeline is always
+ * `linear`, because the scroll input is already the easing. Applying a curve
+ * on top of it is what makes scrubbed motion feel like it is fighting the
+ * finger.
+ *
+ * Stagger: chars 20–40ms · words 60–100ms · lines 100–200ms · cards 60–90ms,
+ * and cap the TOTAL at ~600ms — with n items use min(base, 600/n), or a
+ * twenty-item grid takes 1.8s to finish arriving.
+ */
+:root {
+  --ease-out-quint:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-swift:        cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-back:         cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* ── Light: the default, and the no-JS rendering (M40) ── */
 :root {
   color-scheme: light;

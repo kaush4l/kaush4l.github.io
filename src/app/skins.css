@@ -9,3 +9,45 @@
  * graded résumé under every skin. Nothing here may be the sole carrier of a
  * boundary, a state, or a level of hierarchy.
  */
+
+/**
+ * ── Typographic voice, per skin ─────────────────────────────────────────────
+ *
+ * `--font-display` is the one indirection the whole page already reads through
+ * (`globals.css` sets `.gradient-text`/headings from it, the theme's
+ * `FONT_DISPLAY` resolves it, and `coder.css` already overrides it the same
+ * way). So a skin changes its typographic voice by remapping this variable and
+ * nothing else — no component learns a font name.
+ *
+ * These are scoped to `body`, not `html`, and that is load-bearing rather than
+ * stylistic: next/font declares its `--font-*` variables on a class it puts on
+ * the BODY element. A rule on `html` would be resolving variables that are not
+ * in scope yet, and would silently fall through to the fallback stack.
+ *
+ * Every stack ends in a real, metric-compatible fallback. A skin must look
+ * deliberate before its webfont arrives — `display: swap` guarantees there IS
+ * such a frame, so the fallback is not a hypothetical.
+ */
+
+html[data-skin='ronin'] body {
+  --font-display: var(--font-ronin-display), 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+  --font-sans: var(--font-ronin-sans), 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
+}
+
+html[data-skin='sanctum'] body {
+  --font-display: var(--font-sanctum-display), 'Playfair Display', Georgia, serif;
+  --font-sans: var(--font-sanctum-sans), Georgia, 'Times New Roman', serif;
+  /* Dates, metrics, and anything that wants to read as cut signage. */
+  --font-label: var(--font-sanctum-label), 'Oswald', 'Arial Narrow', sans-serif;
+}
+
+html[data-skin='terminal'] body {
+  --font-display: var(--font-terminal-display), var(--font-mono), ui-monospace, monospace;
+}
+
+html[data-skin='accession'] body {
+  --font-display: var(--font-accession-display), 'Iowan Old Style', Georgia, serif;
+  --font-sans: var(--font-accession-serif), Georgia, 'Times New Roman', serif;
+  /* Tracked caps for catalogue metadata labels. */
+  --font-label: var(--font-accession-label), system-ui, -apple-system, sans-serif;
+}

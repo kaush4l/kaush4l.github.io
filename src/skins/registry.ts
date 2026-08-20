@@ -3,7 +3,7 @@ import professional from './professional';
 import ronin from './ronin/index';
 import sanctum from './sanctum/index';
 import terminal from './terminal/index';
-import voyager from './voyager/index';
+import accession from './accession/index';
 
 /**
  * The skin table. Order is the menu order, and the menu order is an argument:
@@ -16,7 +16,7 @@ export const SKINS: Record<SkinId, Skin> = {
     ronin,
     sanctum,
     terminal,
-    voyager,
+    accession,
 };
 
 export const SKIN_LIST: readonly Skin[] = [
@@ -24,7 +24,7 @@ export const SKIN_LIST: readonly Skin[] = [
     ronin,
     sanctum,
     terminal,
-    voyager,
+    accession,
 ];
 
 export const DEFAULT_SKIN: SkinId = 'professional';

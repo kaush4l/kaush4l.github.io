@@ -1,0 +1,6 @@
+/**
+ * The accession skin's effects layer. Every rule is scoped under
+ * `html[data-skin="accession"]`, so this file is inert under every other skin.
+ *
+ * INVARIANT: deleting this file must leave a complete, readable résumé.
+ */

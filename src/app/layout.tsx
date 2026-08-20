@@ -1,5 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Amarante, Inter, JetBrains_Mono } from "next/font/google";
+import {
+  Amarante,
+  Inter,
+  JetBrains_Mono,
+  // ── Skin faces ────────────────────────────────────────────────────────────
+  // Every one of these is `preload: false` and Latin-subset only.
+  //
+  // `preload: false` is the whole reason nine extra families are affordable:
+  // next/font emits the @font-face rules at build time but adds no
+  // <link rel="preload">, and a browser fetches a face only when a rule
+  // actually selects it. A visitor on the professional skin therefore pays
+  // nothing for the other four — not a request, not a byte.
+  //
+  // Latin-only matters even more for the Japanese and Devanagari faces. The
+  // full `japanese` subset of a mincho is several megabytes; the résumé is
+  // written in English, so the CJK and Devanagari coverage would be paid for
+  // and never rendered. If a skin ever sets a real Japanese or Devanagari
+  // line, add that subset to that face alone — never to all of them.
+  Shippori_Mincho_B1,
+  Zen_Kaku_Gothic_New,
+  Rozha_One,
+  Martel,
+  Khand,
+  Space_Mono,
+  Instrument_Serif,
+  Newsreader,
+  Archivo,
+} from "next/font/google";
 import "./globals.css";
 // The coder-mode effects layer. Every rule inside is scoped under
 // `[data-effects="coder"]`, which is present only when the user has explicitly
@@ -27,7 +54,7 @@ import "./skins.css";
 import "./skin-ronin.css";
 import "./skin-sanctum.css";
 import "./skin-terminal.css";
-import "./skin-voyager.css";
+import "./skin-accession.css";
 
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 
@@ -120,7 +147,112 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
-const fontVariables = `${inter.variable} ${amarante.variable} ${jetbrainsMono.variable}`;
+
+// ─── Skin faces ──────────────────────────────────────────────────────────────
+// Declared here because next/font must be called at module scope, but CHOSEN by
+// the skins — each skin's stylesheet maps `--font-display` (and `--font-sans`
+// where it needs to) onto the variables below, under its own `[data-skin]`
+// scope and on `body`, since next/font declares the variables on a body class.
+
+// Rōnin — a brush-cut mincho for display over a humanist gothic for body. That
+// split (mincho headings, sans body) is the pairing Japanese editorial design
+// actually uses; a single face for both is what makes a "Japanese-inspired"
+// page read as a costume.
+const shipporiMincho = Shippori_Mincho_B1({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  display: "swap",
+  preload: false,
+  variable: "--font-ronin-display",
+});
+
+const zenKaku = Zen_Kaku_Gothic_New({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
+  preload: false,
+  variable: "--font-ronin-sans",
+});
+
+// Sanctum — Rozha One is the closest Google Fonts equivalent to the
+// reverse-contrast Devanagari display faces this direction is drawn from.
+// Khand is the condensed signage voice for dates and metrics.
+const rozhaOne = Rozha_One({
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+  preload: false,
+  variable: "--font-sanctum-display",
+});
+
+const martel = Martel({
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
+  display: "swap",
+  preload: false,
+  variable: "--font-sanctum-sans",
+});
+
+const khand = Khand({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  display: "swap",
+  preload: false,
+  variable: "--font-sanctum-label",
+});
+
+// Terminal — display mono only. Its body voice is JetBrains Mono and Inter,
+// both already loaded, because setting an entire résumé in a display mono is
+// the point at which the aesthetic stops being readable.
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["700"],
+  display: "swap",
+  preload: false,
+  variable: "--font-terminal-display",
+});
+
+// Accession — Instrument Serif ships exactly two styles, and the ITALIC is the
+// strongest single gesture available to that direction. Newsreader carries both
+// an `opsz` and a `wght` axis, which is what lets a pull quote and a caption
+// have genuinely different optical cadence rather than just different sizes.
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  display: "swap",
+  preload: false,
+  variable: "--font-accession-display",
+});
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
+  preload: false,
+  variable: "--font-accession-serif",
+});
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  variable: "--font-accession-label",
+});
+
+const skinFontVariables = [
+  shipporiMincho.variable,
+  zenKaku.variable,
+  rozhaOne.variable,
+  martel.variable,
+  khand.variable,
+  spaceMono.variable,
+  instrumentSerif.variable,
+  newsreader.variable,
+  archivo.variable,
+].join(" ");
+
+const fontVariables = `${inter.variable} ${amarante.variable} ${jetbrainsMono.variable} ${skinFontVariables}`;
 
 // Blocking, pre-paint appearance stamp. This is a static export — there is no
 // server to resolve the appearance, so the very first frame would otherwise be
