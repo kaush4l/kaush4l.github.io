@@ -26,12 +26,14 @@ fail=0
 
 for skin in "${SKINS[@]}"; do
   echo "──────── $skin ────────"
-  $B js "localStorage.setItem('kk-skin','$skin'); 'set'" >/dev/null
-  # `reload`, not `goto`: navigating to the URL already loaded is a no-op in
-  # some cases, and the run then silently reports the PREVIOUS skin's state.
-  # That is not hypothetical — it is what the first version of this script did.
+  # The professional skin deletes the attribute rather than setting a sentinel,
+  # so the page reports it as the string below rather than as `undefined`.
+  if [ "$skin" = "professional" ]; then skinJson="undefined"; else skinJson="'$skin'"; fi
+  # Set and reload in ONE expression. Split across two commands the live page
+  # re-persists its own skin between them, so the reload can load the skin that
+  # was already showing rather than the one under test.
   $B goto "$URL" >/dev/null
-  $B reload >/dev/null
+  $B js "localStorage.setItem('kk-skin','$skin'); location.reload(); 'go'" >/dev/null
   $B js "new Promise(r=>setTimeout(()=>r('ok'),2500))" >/dev/null
 
   report=$($B js "(() => {
@@ -46,7 +48,15 @@ for skin in "${SKINS[@]}"; do
       text: cs.getPropertyValue('--text').trim(),
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       stuckMotion: el.dataset.motion === 'on',
-      heroHeight: Math.round(document.querySelector('main')?.previousElementSibling?.getBoundingClientRect().height || 0),
+      // Was `main.previousElementSibling`, which resolves to the docked
+      // Drawer, not the hero — so it reported the whole document height and
+      // looked alarming while measuring nothing.
+      heroHeight: Math.round(document.querySelector('main > div > div')?.firstElementChild?.getBoundingClientRect().height || 0),
+      // Asserted, not assumed: an overflow number is meaningless if the
+      // viewport is not the one the check claims to be testing. The first
+      // version reported overflow at "390px" from a window that was still 1440
+      // wide, which is where its false positives came from.
+      width: window.innerWidth,
       sections: document.querySelectorAll('section[id], [id]').length,
       invisible: [...document.querySelectorAll('h1,h2,h3')].filter(n => {
         const s = getComputedStyle(n);
@@ -77,8 +87,13 @@ for skin in "${SKINS[@]}"; do
   $B viewport 390x844 >/dev/null
   $B goto "$URL" >/dev/null
   $B js "new Promise(r=>setTimeout(()=>r('ok'),2000))" >/dev/null
-  mob=$($B js "document.documentElement.scrollWidth - document.documentElement.clientWidth")
-  if [ "${mob:-0}" -gt 0 ]; then echo "  FAIL: ${mob}px horizontal overflow at 390px"; fail=1; fi
+  mob=$($B js "(() => { if (window.innerWidth !== 390) return 'BADVIEWPORT:' + window.innerWidth; if (document.documentElement.dataset.skin !== ($skinJson)) return 'BADSKIN'; return String(document.documentElement.scrollWidth - document.documentElement.clientWidth); })()")
+  case "$mob" in
+    BAD*) echo "  WARN: mobile probe void ($mob) — not counted" ;;
+    ''|*[!0-9]*) echo "  WARN: mobile probe returned '$mob'" ;;
+    0) ;;
+    *) echo "  FAIL: ${mob}px horizontal overflow at 390px"; fail=1 ;;
+  esac
   $B screenshot "$OUT/$skin-mobile.png" >/dev/null
   $B viewport 1440x900 >/dev/null
 done

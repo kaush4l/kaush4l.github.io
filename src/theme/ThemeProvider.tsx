@@ -202,9 +202,24 @@ function createThemeForVariant(variant: ThemeVariant, appearance: Appearance, sk
                 styleOverrides: {
                     root: {
                         '&:focus-visible': {
-                            outline: `2px solid ${m.focusRing}`,
+                            // `var(--focus-ring)` / `var(--bg)`, not the mode
+                            // literals `m.focusRing` / `m.bg`. A skin owns both
+                            // tokens (`groundTokens`) but cannot reach a literal
+                            // baked into this object — so three dark skins each
+                            // declared a ring and all three got the BASE
+                            // `#F5F7FF`, and the halo painted the base dark
+                            // ground `#12151C` at 1.08:1 on Rōnin's near-black,
+                            // making the separator invisible on exactly the
+                            // grounds that needed it most.
+                            //
+                            // Reading the variables also makes this override and
+                            // the `:focus-visible` rule in `globals.css` share
+                            // one source, which is what the comment above
+                            // promises: tabbing from a link to a button must not
+                            // change the ring.
+                            outline: '2px solid var(--focus-ring)',
                             outlineOffset: 2,
-                            boxShadow: `0 0 0 4px ${m.bg}`,
+                            boxShadow: '0 0 0 4px var(--bg)',
                         },
                     },
                 },
@@ -612,7 +627,15 @@ function commitAppearance(
     if (!persist) return;
     try {
         localStorage.setItem(APPEARANCE_STORAGE_KEY, requested);
-        localStorage.setItem(SKIN_STORAGE_KEY, skin.id);
+        // Only when it actually changed. Writing the skin on every appearance
+        // commit coupled two independent axes in storage: a live page stamped
+        // its own skin back over `kk-skin` on any appearance change, so
+        // "set the key, then reload" was not deterministic for anything driving
+        // the page from outside — which is exactly how the QA gate and the
+        // design audit both ended up measuring the previous skin.
+        if (localStorage.getItem(SKIN_STORAGE_KEY) !== skin.id) {
+            localStorage.setItem(SKIN_STORAGE_KEY, skin.id);
+        }
     } catch {
         /* private mode — the in-memory state still holds */
     }

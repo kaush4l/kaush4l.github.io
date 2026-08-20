@@ -240,8 +240,27 @@ section[id] {
    header wordmark) should carry `className="gradient-text"` rather than
    reimplementing background-clip inline — the print block below can only
    un-transparent text it has a selector for, and this is that selector. */
+/**
+ * The ramp is built from the TEXT channels, not the FILL channels.
+ *
+ * It read `--primary` → `--secondary`, which the palette contract documents as
+ * fills. On the default light ground that put `#06B6D4` at the end of the
+ * candidate's own name: **2.33:1**, below the 3:1 large-text floor, so the last
+ * letters of "Kaushal" were pale blue on near-white. It was also two saturated
+ * hues inside one word, and a gradient doing the job of hierarchy.
+ *
+ * `--link` and `--glow` are the tonal channels the mode table already picks to
+ * oppose the ground, and both are contrast-verified for text. Composing the
+ * ramp as a variable REFERENCE rather than a resolved literal also means a skin
+ * that repoints those two tokens repoints the ramp with them, at use time, with
+ * nothing to keep in sync.
+ */
+:root {
+  --text-ramp: linear-gradient(135deg, var(--link) 0%, var(--glow) 100%);
+}
+
 .gradient-text {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  background: var(--text-ramp);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

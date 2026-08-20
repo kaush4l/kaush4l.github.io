@@ -429,12 +429,50 @@ export default function TerminalHero({ about }: HeroProps) {
                 ctx.fill();
             };
 
-            // Decode: each character resolves out of punctuation once, on entry.
+            /**
+             * ── Decode: each character resolves out of punctuation, once ────
+             *
+             * Driven by `performance.now()`, NOT by the loop's delta.
+             * `runWhileVisible` clamps its tick to 1/30s so that a restored
+             * background tab cannot teleport an integrator — correct for the
+             * dust field it was written for, and catastrophic here. Accumulating
+             * the clamped delta makes the decode advance in FRAMES: ~0.8s at
+             * 60fps, 1.6s at 30, 3.2s at 15. And this page runs ONNX inference
+             * on the main thread, so the frame rate collapses exactly while the
+             * model is loading — i.e. the name would be longest unreadable at
+             * the moment the fold matters most.
+             *
+             * Two guarantees close it off, because the ONE string on this page
+             * that must never be ambiguous is the candidate's name:
+             *
+             *   · a WALL-CLOCK ceiling at 1.2× the intended duration, checked
+             *     inside the tick; and
+             *   · a `setTimeout` at the same ceiling, which does not depend on
+             *     the loop running at all. `runWhileVisible` is
+             *     IntersectionObserver-gated, so scrolling away mid-decode used
+             *     to freeze the name mid-scramble until the reader came back.
+             *
+             * The finished name is the state this fails INTO, from every path.
+             */
             const decodeStart = chars.map((_, i) => i * 22);
             const DECODE_MS = 420;
-            let decodeT = 0;
+            const DECODE_CEILING = chars.length
+                ? (decodeStart[chars.length - 1] + DECODE_MS) * 1.2
+                : 0;
+            const decodeT0 = performance.now();
             let decodeDone = chars.length === 0;
             let lastSwap = 0;
+
+            const resolveName = () => {
+                chars.forEach((el) => {
+                    el.textContent = el.dataset.ch ?? '';
+                    el.dataset.resolved = '1';
+                });
+                decodeDone = true;
+            };
+
+            // The net that does not need the rAF loop to be running.
+            const decodeTimer = window.setTimeout(resolveName, DECODE_CEILING);
 
             stop = (() => {
                 const dispose = runWhileVisible(root, (dt, elapsed) => {
@@ -444,34 +482,38 @@ export default function TerminalHero({ about }: HeroProps) {
 
                     // ── decode ──────────────────────────────────────────────
                     if (!decodeDone) {
-                        decodeT += ms;
-                        const swap = decodeT - lastSwap > 45;
-                        if (swap) lastSwap = decodeT;
-                        let remaining = false;
-                        chars.forEach((el, i) => {
-                            const local = decodeT - decodeStart[i];
-                            if (local >= DECODE_MS) {
-                                if (el.dataset.resolved !== '1') {
-                                    el.textContent = el.dataset.ch ?? '';
-                                    el.dataset.resolved = '1';
+                        const decodeT = performance.now() - decodeT0;
+                        if (decodeT >= DECODE_CEILING) {
+                            resolveName();
+                        } else {
+                            const swap = decodeT - lastSwap > 45;
+                            if (swap) lastSwap = decodeT;
+                            let remaining = false;
+                            chars.forEach((el, i) => {
+                                const local = decodeT - decodeStart[i];
+                                if (local >= DECODE_MS) {
+                                    if (el.dataset.resolved !== '1') {
+                                        el.textContent = el.dataset.ch ?? '';
+                                        el.dataset.resolved = '1';
+                                    }
+                                    return;
                                 }
-                                return;
-                            }
-                            remaining = true;
-                            if (local < 0) {
-                                // A non-breaking space, not a plain one: a
-                                // leading space in an inline-block collapses to
-                                // zero width, and the line would then jitter
-                                // sideways as each character resolved.
-                                el.textContent = '\u00A0';
-                                return;
-                            }
-                            if (swap) {
-                                el.textContent =
-                                    SCRAMBLE[(Math.random() * SCRAMBLE.length) | 0];
-                            }
-                        });
-                        decodeDone = !remaining;
+                                remaining = true;
+                                if (local < 0) {
+                                    // A non-breaking space, not a plain one: a
+                                    // leading space in an inline-block collapses
+                                    // to zero width, and the line would then
+                                    // jitter sideways as each character resolved.
+                                    el.textContent = '\u00A0';
+                                    return;
+                                }
+                                if (swap) {
+                                    el.textContent =
+                                        SCRAMBLE[(Math.random() * SCRAMBLE.length) | 0];
+                                }
+                            });
+                            decodeDone = !remaining;
+                        }
                     }
 
                     // ── DOM, at 4Hz. Not every frame. ───────────────────────
@@ -495,11 +537,9 @@ export default function TerminalHero({ about }: HeroProps) {
                 return () => {
                     dispose();
                     ro?.disconnect();
+                    window.clearTimeout(decodeTimer);
                     // Leave the wordmark resolved, never mid-scramble.
-                    chars.forEach((el) => {
-                        el.textContent = el.dataset.ch ?? '';
-                        el.dataset.resolved = '1';
-                    });
+                    resolveName();
                 };
             })();
         };

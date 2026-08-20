@@ -153,9 +153,18 @@ html[data-skin='sanctum'] .sx-atmos-diya {
   position: absolute;
   top: 16%;
   left: 50%;
-  width: 260px;
-  height: 260px;
-  margin-left: -130px;
+  /* Sized to the viewport, not to a fixed pixel box.
+     At 390px the fixed 260px lamp came out 889px wide after `scale(3.2)` —
+     2.3× the screen. The atmosphere frame clipped it, so nothing looked wrong,
+     but `filter: blur()` cost scales with radius squared times layer area, and
+     every one of those pixels was painted and thrown away on exactly the class
+     of device least able to afford it. */
+  width: min(260px, 26vw);
+  height: min(260px, 26vw);
+  /* `translate` rather than a negative margin, so the centring no longer
+     depends on a literal that has to be kept at half the width — and so it
+     composes with the `transform` the breathing animation owns. */
+  translate: -50% 0;
   border-radius: 50%;
   background: radial-gradient(
     circle,

@@ -74,7 +74,12 @@ export default function Footer({ statement, emailUrl, owner }: FooterProps) {
 
             <Divider sx={{ mt: 3, mb: 1.5 }} />
 
-            <Typography variant="caption" color="text.disabled">
+            {/* `text.disabled` is MUI's `rgba(0,0,0,0.38)`, which measured
+                2.66:1 on the light ground and 2.62:1 on Accession's cream. The
+                dark skins were passing at 5.33:1, which is what made this an
+                oversight rather than a decision. A copyright line is small, but
+                it is text, and `disabled` is a state this element is not in. */}
+            <Typography variant="caption" color="text.secondary">
                 {/* The framework credit is gone. On an engineer's own résumé it
                     is an anti-credential: it names the template stack instead of
                     the work, and the only interesting technical claim this site

@@ -49,14 +49,22 @@ html[data-skin='terminal'] body {
   --font-display: var(--font-terminal-display, var(--font-mono)), ui-monospace,
     SFMono-Regular, Menlo, monospace;
 
-  /* `.gradient-text` and any hand-written rule reading the hue pair. The page
-     grade in `cinema.css` lights the document from `--hc-key` (upper right) and
-     `--hc-fill` (lower left); left at the hue table's purple/cyan they would put
-     two foreign hues behind a page whose whole argument is that ONE hue means
-     something. Both are now the accent family, so the frame is lit rather than
-     tinted twice. */
-  --primary: #1e7263;
-  --secondary: #5ebdab;
+  /* `--primary` and `--secondary` are NOT redeclared here. They used to be,
+     because the provider published them from the hue table and this skin's
+     teal page inherited a violet pair; the provider now derives them from the
+     BUILT theme, which already contains this skin's `theme()` overrides. The
+     workaround is gone rather than left sitting next to the fix.
+
+     `--hc-key` / `--hc-fill` stay, and for a different reason than they
+     originally did. They are no longer correcting a hue — the built theme gets
+     that right now — they are correcting a CHANNEL. The provider publishes the
+     `main` fills, and this skin's fills are deliberately dark (`#1E7263`,
+     `#4A6880`) so the bright focus ring clears 3:1 on the FAB. A 5% wash of a
+     colour that dark over `#080B10` is invisible: it is a pigment, not a light.
+     The codebase's own rule is that anything sitting ON a dark ground takes the
+     tonal channel opposing it, and a light source is the clearest case there
+     is — so the grade is lit from the accent's light channel while the buttons
+     keep the dark fills they need. */
   --hc-key: 94, 189, 171;
   --hc-fill: 71, 212, 185;
   --hc-page-key-a: 0.055;
@@ -188,7 +196,12 @@ html[data-skin='terminal'] .tm-rail {
 
 html[data-skin='terminal'] .tm-rail-path {
   display: inline-flex;
+  flex: none;
   gap: 6px;
+  /* `layer-00` was breaking after its hyphen and orphaning `00` onto a second
+     line. A breadcrumb is one token per segment by definition; it may never
+     break inside one. */
+  white-space: nowrap;
 }
 html[data-skin='terminal'] .tm-rail-host {
   color: var(--text);
@@ -214,12 +227,43 @@ html[data-skin='terminal'] .tm-rail-state[data-tone='ok'] {
 html[data-skin='terminal'] .tm-rail-state[data-tone='warn'] {
   color: var(--tm-warn);
 }
+html[data-skin='terminal'] .tm-rail-state {
+  flex: none;
+}
+
 /* A square, not a dot. 6px, no blur — the glow budget is spent on the FAB. */
 html[data-skin='terminal'] .tm-dot {
   width: 6px;
   height: 6px;
   background: currentColor;
   flex: none;
+}
+
+/**
+ * ── The rail on a phone ────────────────────────────────────────────────────
+ *
+ * At 390px the breadcrumb and the model state cannot share one line: the rule
+ * between them collapsed to nothing and `model · not loaded` was then CLIPPED
+ * by the console's `overflow: hidden` to `model · not loade`. A rail whose
+ * entire premise is precise instrument typesetting cannot truncate a word.
+ *
+ * So below 620px the rail becomes two rows — path, then state — and the rule
+ * that separated them horizontally is dropped rather than squeezed, because a
+ * 0px-wide hairline is not a hairline. Both `flex: none` declarations above
+ * exist for the same reason: a flex item's default `min-width: auto` is what
+ * lets it be compressed below its content in the first place.
+ */
+@media (max-width: 620px) {
+  html[data-skin='terminal'] .tm-rail {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  html[data-skin='terminal'] .tm-rail-spacer {
+    display: none;
+  }
+  html[data-skin='terminal'] .tm-rail-state {
+    flex-basis: 100%;
+  }
 }
 
 /* ── Body grid. Detail on the left, aggregate on the right — one consistent

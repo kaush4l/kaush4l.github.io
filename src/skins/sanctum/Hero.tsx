@@ -287,6 +287,12 @@ export default function SanctumHero({ about }: HeroProps) {
                             maxWidth: '62ch',
                             mx: 'auto',
                             mb: 3,
+                            // Centred setting gives the eye no fixed left edge
+                            // to return to, so an orphaned last line reads as a
+                            // layout accident rather than as a measured claim —
+                            // and this line ends on a metric. `pretty` costs
+                            // nothing where unsupported.
+                            textWrap: 'pretty',
                         }}
                     >
                         {proof}
@@ -324,7 +330,7 @@ export default function SanctumHero({ about }: HeroProps) {
                     <Typography
                         component="p"
                         id="hero-assistant-line"
-                        sx={{ color: 'text.secondary', fontSize: '0.92rem', mb: 1 }}
+                        sx={{ color: 'text.secondary', fontSize: '0.92rem', mb: 1, textWrap: 'pretty' }}
                     >
                         {ASSISTANT_LINE}
                     </Typography>

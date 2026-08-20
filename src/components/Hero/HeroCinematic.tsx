@@ -168,7 +168,11 @@ export default function HeroCinematic({ about }: HeroProps) {
     const enter = useRef({ lightScale: 1, streakScaleX: 1 });
 
     const grade = GRADE[appearance];
-    const heroGradient = THEME_PALETTES[variant].heroGradient;
+    // The hue table's `heroGradient` is a fill ramp and ends on the cyan that
+    // measured 2.33:1 against the light ground — on the candidate's name. The
+    // shared `--text-ramp` is built from the tonal TEXT channels instead, and
+    // being a variable reference it follows a skin that repoints them.
+    const heroGradient = 'var(--text-ramp)';
 
     // A1: `primary.main`/`secondary.main` are FILL channels. Anything that is
     // TEXT resolves through the tonal channel the palette documents for this
@@ -740,18 +744,22 @@ export default function HeroCinematic({ about }: HeroProps) {
                     <Button
                         variant="outlined"
                         size="large"
-                        color="secondary"
+                        // One accent per row. This was `secondary`, so the fold
+                        // lit a purple fill and a cyan outline side by side —
+                        // two saturated hues in one row, which is the defect the
+                        // palette contract exists to prevent.
+                        color="primary"
                         onClick={() => scrollTo('projects')}
                         sx={{
                             fontWeight: 500,
                             px: 4,
                             py: 1.5,
                             borderRadius: RADIUS.pill,
-                            color: secondaryText,
-                            borderColor: secondaryText,
+                            color: primaryText,
+                            borderColor: primaryText,
                             transition: `transform 140ms ${EASE_UI_CSS}, background-color 140ms ${EASE_UI_CSS}, border-color 140ms ${EASE_UI_CSS}`,
                             '&:hover': {
-                                borderColor: secondaryText,
+                                borderColor: primaryText,
                                 transform: 'translateY(-1px)',
                             },
                             '&:active': {
