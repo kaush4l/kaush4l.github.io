@@ -334,8 +334,8 @@ html[data-skin='sanctum'] .sx-hero-content {
  */
 html[data-skin='sanctum'] .sx-torana-wrap {
   position: relative;
-  width: min(520px, 84%);
-  margin: 0 auto 10px;
+  width: min(430px, 76%);
+  margin: 0 auto 6px;
   pointer-events: none;
 }
 
@@ -688,16 +688,18 @@ html[data-skin='sanctum'] section[id] a:focus-visible::after {
  * opening from the centre outward over 1000ms — the arch is not painted onto
  * the title, the title is standing inside it.
  *
- * `div:first-of-type` is `SectionHeading`'s row in all four section layouts.
+ * The row is matched through `SectionHeading`'s own `data-section-rule` seam
+ * rather than by `div:first-of-type` — an ordinal guess would silently move to
+ * the wrong element the first time a section layout gains a wrapper.
  * The RESTING state is the complete arch, so a section that is never armed
  * (reduced motion, or already on screen at mount) shows the finished gateway
  * rather than nothing.
  */
-html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type {
+html[data-skin='sanctum'] .reveal > section[id] > div:has(> [data-section-rule]) {
   position: relative;
 }
 
-html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before {
+html[data-skin='sanctum'] .reveal > section[id] > div:has(> [data-section-rule])::before {
   content: '';
   position: absolute;
   left: -16px;
@@ -713,7 +715,7 @@ html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 330 62' fill='none'%3E%3Cg stroke='%23C9A227' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M6 62 L6 56 A 287 287 0 0 1 324 56 L324 62'/%3E%3Cpath d='M165 14 C159 22 159 28 165 33 C171 28 171 22 165 14 Z'/%3E%3C/g%3E%3C/svg%3E");
 }
 
-html[data-skin='sanctum'] .reveal.is-in > section[id] > div:first-of-type::before {
+html[data-skin='sanctum'] .reveal.is-in > section[id] > div:has(> [data-section-rule])::before {
   animation: sx-gate 1000ms var(--ease-out-expo) both;
 }
 
@@ -929,14 +931,26 @@ html[data-skin='sanctum'] .reveal > section#projects::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 92' fill='none'%3E%3Cg stroke='%23C9A227' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M20 72 Q64 4 108 44' stroke-dasharray='2 6' opacity='.7'/%3E%3Ccircle cx='20' cy='72' r='3'/%3E%3Ccircle cx='108' cy='44' r='3'/%3E%3C/g%3E%3C/svg%3E");
 }
 
+/**
+ * The ember is drawn at the LANDING point and flies IN from the launch point,
+ * rather than being drawn at the launch point and flying out.
+ *
+ * That is not a stylistic preference — it is the fix for 30px of horizontal
+ * scroll at 390px. The first cut rested at `translate(68.7%, …)`, and a
+ * transform does not shrink the scrollable overflow region: the niche is
+ * anchored `right: 0`, so translating it 68.7% of its own width to the right
+ * put its box 58px past the content edge and every phone got a horizontal
+ * scrollbar. Anchoring at rest and translating NEGATIVELY at the start keeps
+ * the whole flight inside the box the section already owns.
+ */
 html[data-skin='sanctum'] .reveal > section#projects::after {
   background: radial-gradient(
-    5px 5px at 15.6% 78%,
+    5px 5px at 84.4% 47.8%,
     rgba(255, 244, 214, 1) 0%,
     rgba(255, 153, 51, 0.6) 40%,
     rgba(255, 153, 51, 0) 74%
   );
-  transform: translate(68.7%, -30.4%);
+  transform: translate(0, 0);
   opacity: 0.4;
 }
 
@@ -946,23 +960,23 @@ html[data-skin='sanctum'] .reveal.is-in > section#projects::after {
 
 @keyframes sx-leap {
   0% {
-    transform: translate(0, 0) scale(0.6);
+    transform: translate(-68.7%, 30.4%) scale(0.6);
     opacity: 0;
   }
   12% {
     opacity: 1;
   }
   25% {
-    transform: translate(17%, -30%) scale(1);
+    transform: translate(-51.7%, 0.4%) scale(1);
   }
   50% {
-    transform: translate(34.4%, -44.6%) scale(1);
+    transform: translate(-34.3%, -14.2%) scale(1);
   }
   75% {
-    transform: translate(52%, -42%) scale(1);
+    transform: translate(-16.7%, -11.6%) scale(1);
   }
   100% {
-    transform: translate(68.7%, -30.4%) scale(1);
+    transform: translate(0, 0) scale(1);
     opacity: 0.4;
   }
 }
@@ -1065,7 +1079,7 @@ html[data-skin='sanctum'] .reveal.is-in > section#contact::after {
   html[data-skin='sanctum'] .sx-hero .sx-lamp-flame,
   html[data-skin='sanctum'] .sx-hero .hc-char,
   html[data-skin='sanctum'] .sx-hero [data-hc-rise],
-  html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before,
+  html[data-skin='sanctum'] .reveal > section[id] > div:has(> [data-section-rule])::before,
   html[data-skin='sanctum'] .reveal > section[id]::after {
     animation: none !important;
   }
@@ -1090,7 +1104,7 @@ html[data-reduce-motion][data-skin='sanctum'] .sx-hero .sx-lamp-body path,
 html[data-reduce-motion][data-skin='sanctum'] .sx-hero .sx-lamp-flame,
 html[data-reduce-motion][data-skin='sanctum'] .sx-hero .hc-char,
 html[data-reduce-motion][data-skin='sanctum'] .sx-hero [data-hc-rise],
-html[data-reduce-motion][data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before,
+html[data-reduce-motion][data-skin='sanctum'] .reveal > section[id] > div:has(> [data-section-rule])::before,
 html[data-reduce-motion][data-skin='sanctum'] .reveal > section[id]::after {
   animation: none !important;
 }
@@ -1120,7 +1134,7 @@ html[data-reduce-motion][data-skin='sanctum'] .sx-yantra-arc {
 
   html[data-skin='sanctum'] .reveal > section[id]::before,
   html[data-skin='sanctum'] .reveal > section[id]::after,
-  html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before,
+  html[data-skin='sanctum'] .reveal > section[id] > div:has(> [data-section-rule])::before,
   html[data-skin='sanctum'] section[id] a::after {
     display: none !important;
   }

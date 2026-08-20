@@ -52,23 +52,32 @@
  * `--font-sans` and `--font-mono` and would silently win for `--font-display`,
  * which is exactly the kind of half-applied state that reads as a bug.
  *
- * FONTS TO WIRE (see the report — `layout.tsx` is not ours to edit):
- *   Instrument Serif   400 + 400 italic   → --font-display
- *   Newsreader         300..500 + italics → --ac-body   (variable opsz + wght)
- *   Archivo            500/600            → --ac-caps   (variable wdth)
- *   JetBrains Mono     400                → --font-mono (already loaded)
+ * The families themselves are wired in `layout.tsx` and mapped in `skins.css`:
+ *   Instrument Serif  400 + 400 italic     → --font-display
+ *   Newsreader        variable opsz + wght → --font-sans, aliased --ac-body
+ *   Archivo           variable wdth        → --font-label, aliased --ac-caps
+ *   JetBrains Mono    400                  → --font-mono (shared, already loaded)
  *
- * Until they are wired the fallbacks are chosen to be DELIBERATE rather than
- * merely present: Iowan Old Style / Palatino / Georgia is a book stack, which
- * is the same argument Instrument Serif and Newsreader are making, just less
- * loudly. Nothing here depends on a font actually loading.
+ * Every stack there ends in a real book fallback, and `display: swap` means
+ * there IS a frame rendered in it — so nothing below may depend on a webfont
+ * having arrived.
  */
 html[data-skin='accession'] body {
-  --font-display: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype',
-    Palatino, 'Book Antiqua', Georgia, serif;
-  --ac-body: 'Newsreader', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
-  --ac-caps: 'Archivo', var(--font-sans), 'Helvetica Neue', Helvetica, Arial,
-    sans-serif;
+  /**
+   * `skins.css` is the SINGLE OWNER of the three family stacks (it maps
+   * `--font-display` → Instrument Serif, `--font-sans` → Newsreader and
+   * `--font-label` → Archivo from the `next/font` variables). This file only
+   * gives two of them names that say what they are FOR in this direction, so
+   * the rules below read as "body" and "caps" rather than as "sans" — which,
+   * for a skin whose body face is a serif, would be actively misleading.
+   *
+   * Deliberately NOT re-declaring `--font-display` here. This file is imported
+   * after `skins.css`, so a second declaration would silently win, and two
+   * declarations of one font stack in two files is exactly the drift the
+   * indirection exists to prevent.
+   */
+  --ac-body: var(--font-sans);
+  --ac-caps: var(--font-label);
 
   /* One continuous spine number for the whole document. See "The catalogue
      number" below for why it is a counter and not a component. */
@@ -437,8 +446,8 @@ html[data-skin='accession'] .ac-link.MuiButton-root::after {
   background: var(--text);
   opacity: 0.32;
   transition:
-    opacity 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1)),
-    background-color 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1));
+    opacity 140ms var(--ease-swift),
+    background-color 140ms var(--ease-swift);
 }
 
 html[data-skin='accession'] .ac-link.MuiButton-root:hover::after,
@@ -457,21 +466,22 @@ html[data-skin='accession'] .ac-link.MuiButton-root:focus-visible::after {
  * is the only implementation that cannot drift out of sequence, cannot skip an
  * entry a future content file adds, and costs nothing to maintain.
  *
- * Addressed structurally (`section#id > div:last-child > div`) rather than by a
- * class, because the components are not ours to edit and a skin may not require
- * them to be. If the content folders are ever renamed, the numbers simply stop
- * appearing — which is the correct failure for pure decoration, and exactly
- * what the skin INVARIANT asks for.
+ * Addressed through `[data-catalog-item]` — the styling seam `ContentCard`
+ * carries on the root of BOTH variants — rather than through a structural path
+ * like `section#id > div:last-child > div`. That guess worked, and it was one
+ * refactor of an unrelated layout wrapper away from silently matching nothing;
+ * the attribute means "one résumé entry", which is the unit this skin actually
+ * needs to address, and it cannot be moved without moving the entry with it.
+ *
+ * One consequence worth stating: because the counter keys off the seam and not
+ * off a section id, an entry added to ANY catalogued section is numbered
+ * automatically and the sequence stays continuous across all of them.
  */
-html[data-skin='accession'] section#experience > div:last-child > div,
-html[data-skin='accession'] section#education > div:last-child > div,
-html[data-skin='accession'] section#projects > div:last-child > div {
+html[data-skin='accession'] [data-catalog-item] {
   counter-increment: ac-acc;
 }
 
-html[data-skin='accession'] section#experience > div:last-child > div::before,
-html[data-skin='accession'] section#education > div:last-child > div::before,
-html[data-skin='accession'] section#projects > div:last-child > div::before {
+html[data-skin='accession'] [data-catalog-item]::before {
   /**
    * `2026.1`, not `ACC. 01`.
    *
@@ -483,14 +493,37 @@ html[data-skin='accession'] section#projects > div:last-child > div::before {
    * records; it is not a claim about when the work was done.
    */
   content: 'Acc. 2026.' counter(ac-acc);
+  /**
+   * On the grid variant this element is ALSO `[data-glow]`, and `cinema.css`
+   * owns its `::before` as the pointer-light pool — absolutely positioned,
+   * `z-index: -1`, `opacity: 0`, radial-gradient. Every one of those has to be
+   * unwound here or the number inherits a hidden, out-of-flow glow box and
+   * never appears. Winning on specificity is not enough; the properties have
+   * to be answered one for one.
+   */
+  position: static;
+  inset: auto;
+  z-index: auto;
+  opacity: 1;
+  background: none;
+  border-radius: 0;
+  transition: none;
   display: block;
   font-family: var(--font-mono);
   font-size: 0.64rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
   color: var(--link);
   margin-bottom: 7px;
+}
+
+/* The grid variant is a flex column, so its `::before` is a real flex item and
+   needs the card's own gutter; the timeline variant is a block and already
+   sits inside the entry's inset. */
+html[data-skin='accession'] .MuiCard-root[data-catalog-item]::before {
+  padding: 14px 16px 0;
+  margin-bottom: 0;
 }
 
 /* ── Specimen plates (BEAT 5) ───────────────────────────────────────────────
@@ -505,57 +538,53 @@ html[data-skin='accession'] section#projects > div:last-child > div::before {
  * and a transform makes it a stacking context, which would drag a `z-index: -1`
  * child up in front of its own background.
  */
-html[data-skin='accession'] section#projects > div:last-child > div {
+/* The mount: whatever element directly wraps a card-variant entry. Addressed
+   with `:has(> …)` rather than by a structural path, so it follows the seam
+   instead of the grid's nesting. It is the plate's UNTRANSFORMED parent, which
+   is the whole reason the shadow hangs here and not on the card itself. */
+html[data-skin='accession'] div:has(> .MuiCard-root[data-catalog-item]) {
   position: relative;
-  padding-top: 24px;
 }
 
-html[data-skin='accession'] section#projects > div:last-child > div::before {
-  position: absolute;
-  top: 0;
-  left: 0;
-  margin: 0;
-}
-
-html[data-skin='accession'] section#projects > div:last-child > div::after {
+html[data-skin='accession'] div:has(> .MuiCard-root[data-catalog-item])::after {
   content: '';
   position: absolute;
   z-index: -1;
-  inset: 24px 0 0 0;
+  inset: 0;
   transform: translate(4px, 4px);
   background: rgba(22, 19, 15, 0.13);
   opacity: 0;
-  transition: opacity 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1));
+  transition: opacity 140ms var(--ease-swift);
 }
 
-html[data-skin='accession'] section#projects > div:last-child > div:hover::after,
 html[data-skin='accession']
-  section#projects
-  > div:last-child
-  > div:focus-within::after {
+  div:has(> .MuiCard-root[data-catalog-item]):hover::after,
+html[data-skin='accession']
+  div:has(> .MuiCard-root[data-catalog-item]):focus-within::after {
   opacity: 1;
 }
 
-html[data-skin='accession'] section#projects .MuiCard-root {
+html[data-skin='accession'] .MuiCard-root[data-catalog-item] {
   transition:
-    transform 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1)),
-    border-color 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1));
+    transform 140ms var(--ease-swift),
+    border-color 140ms var(--ease-swift);
 }
 
-html[data-skin='accession'] section#projects > div:last-child > div:hover .MuiCard-root,
 html[data-skin='accession']
-  section#projects
-  > div:last-child
-  > div:focus-within
-  .MuiCard-root {
+  div:has(> .MuiCard-root[data-catalog-item]):hover
+  > .MuiCard-root,
+html[data-skin='accession']
+  div:has(> .MuiCard-root[data-catalog-item]):focus-within
+  > .MuiCard-root {
   transform: translateY(-4px);
   /* Foil, and the only place on the page anything is lit (M16). */
   border-color: var(--glow);
 }
 
-/* The pointer glow is a screen effect and this is a sheet of paper. Killing it
-   is not a preference: a coloured radial wash on cream reads as a stain. */
-html[data-skin='accession'] [data-glow]::before,
+/* The pointer glow is a screen effect and this is a sheet of paper: a coloured
+   radial wash on cream reads as a stain. Only the RIM is killed here — the pool
+   lives on `::before`, which the catalogue number has already taken over above,
+   property for property. */
 html[data-skin='accession'] [data-glow]::after {
   display: none;
 }
@@ -563,8 +592,7 @@ html[data-skin='accession'] [data-glow]::after {
 /* ── The timeline, re-ruled ─────────────────────────────────────────────────
    2px of divider becomes a hairline, and the dot becomes a punched square
    register mark in stamp ink — the mark a catalogue uses to say "entry here". */
-html[data-skin='accession'] section#experience > div:last-child > div,
-html[data-skin='accession'] section#education > div:last-child > div {
+html[data-skin='accession'] [data-catalog-item] {
   border-left-width: 1px;
 }
 
@@ -578,8 +606,7 @@ html[data-skin='accession'] .timeline-dot {
   background-color: var(--bg);
 }
 
-html[data-skin='accession'] section#experience > div:last-child > div:hover .timeline-dot,
-html[data-skin='accession'] section#education > div:last-child > div:hover .timeline-dot {
+html[data-skin='accession'] [data-catalog-item]:hover .timeline-dot {
   background-color: var(--link);
   transform: none;
 }
@@ -630,7 +657,7 @@ html[data-skin='accession'] .reveal.is-armed section[id] > div:first-child::afte
 
 html[data-skin='accession'] .reveal.is-in section[id] > div:first-child::after {
   transform: scaleX(1);
-  transition: transform 800ms var(--ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1))
+  transition: transform 800ms var(--ease-out-quint)
     60ms;
 }
 
@@ -767,8 +794,8 @@ html[data-skin='accession'] .prose-content a {
     transition: none;
   }
 
-  html[data-skin='accession'] section#projects .MuiCard-root,
-  html[data-skin='accession'] section#projects > div:last-child > div::after,
+  html[data-skin='accession'] .MuiCard-root[data-catalog-item],
+  html[data-skin='accession'] div:has(> .MuiCard-root[data-catalog-item])::after,
   html[data-skin='accession'] .ac-link.MuiButton-root::after {
     transition: none;
   }
@@ -871,8 +898,6 @@ html[data-skin='accession'][data-theme='dark'] .ac-stamp {
 }
 
 html[data-skin='accession'][data-theme='dark']
-  section#projects
-  > div:last-child
-  > div::after {
+  div:has(> .MuiCard-root[data-catalog-item])::after {
   background: rgba(0, 0, 0, 0.5);
 }

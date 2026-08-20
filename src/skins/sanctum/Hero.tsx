@@ -133,8 +133,8 @@ export default function SanctumHero({ about }: HeroProps) {
                 // padding exactly, so the hall has no edges.
                 mx: { xs: -1.5, sm: -2, md: -4 },
                 mt: { xs: -2, sm: -3, md: -4 },
-                pt: { xs: 7, md: 11 },
-                pb: { xs: 7, md: 9 },
+                pt: { xs: 6, md: 8 },
+                pb: { xs: 6, md: 8 },
             }}
         >
             {/* ── The hall. Decoration in full: aria-hidden, no-print. ───────── */}

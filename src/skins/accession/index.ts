@@ -100,10 +100,21 @@ const accession: Skin = {
         '--reveal-ease': 'cubic-bezier(0.76, 0, 0.24, 1)',
     }),
 
-    theme: () => ({
-        ...groundTheme('accession', GROUND),
+    theme: () => {
+        /**
+         * `groundTheme` returns `{ palette, components }`, and an object spread
+         * is SHALLOW — so writing `{ ...groundTheme(...), palette: {…} }` does
+         * not add to its palette, it REPLACES it, silently dropping the
+         * background, text and divider colours the ground helper exists to
+         * publish. The merge is therefore done a level down, by hand, per key.
+         */
+        const ground = groundTheme('accession', GROUND);
+
+        return {
+        ...ground,
 
         palette: {
+            ...ground.palette,
             /**
              * The hue axis is overridden here rather than respected, and that is
              * deliberate for a PINNED skin: an accession stamp is oxblood the
@@ -159,6 +170,7 @@ const accession: Skin = {
         },
 
         components: {
+            ...ground.components,
             /**
              * The ring is re-declared here for the same reason the base theme
              * declares it (M42): emotion injects `MuiButtonBase` focus styles at
@@ -192,12 +204,26 @@ const accession: Skin = {
                     },
                 },
             },
+            /**
+             * The base card lifts 2px and grows a soft shadow on hover. This
+             * skin owns that gesture itself (4px, with a hard offset plate
+             * drawn by `skin-accession.css` on the card's untransformed
+             * parent), so the inherited half of it is cancelled here rather
+             * than left to fight: two lift rules on one element resolve to a
+             * 2px lift with a blurred shadow under a 4px hard one.
+             */
             MuiCard: {
                 styleOverrides: {
                     root: {
+                        backgroundColor: GROUND.surface,
                         borderRadius: 2,
                         border: `1px solid ${RULE}`,
                         boxShadow: 'none',
+                        '&:hover, &:focus-within': {
+                            transform: 'none',
+                            boxShadow: 'none',
+                            borderColor: FOIL,
+                        },
                     },
                 },
             },
@@ -212,16 +238,50 @@ const accession: Skin = {
                         textTransform: 'uppercase',
                         borderColor: RULE,
                     },
+                    // Both chip variants are hard-coded to `alpha(p.primary,…)`
+                    // in the base theme, so a violet hairline survives every
+                    // palette override. Restated in ink.
+                    outlined: {
+                        borderColor: RULE,
+                        color: INK,
+                        '&:hover, &:focus-visible': {
+                            borderColor: OXBLOOD,
+                            backgroundColor: 'rgba(140, 47, 30, 0.06)',
+                        },
+                    },
+                    outlinedSecondary: {
+                        borderColor: RULE,
+                        '&:hover, &:focus-visible': {
+                            borderColor: INK_BLUE,
+                            backgroundColor: 'rgba(31, 58, 95, 0.06)',
+                        },
+                    },
                 },
             },
+            /**
+             * The base theme paints `containedPrimary` with `background:
+             * p.primary` — the HUE TABLE's colour, read straight from the
+             * variant rather than from `palette.primary.main`. So overriding
+             * the palette is not enough on its own: without this the stamp
+             * button stays the variant's violet on a cream page while its
+             * CONTRAST TEXT correctly turns plate white, which is precisely
+             * how it was found (violet fill, #FBF9F5 label).
+             *
+             * The root hover is unwound for the same reason it is unwound on
+             * cards: a 1px lift plus an animated `box-shadow` is a screen
+             * affordance, and this is a stamp being pressed into paper.
+             */
             MuiButton: {
                 styleOverrides: {
-                    root: { borderRadius: 2 },
-                    // A filled oxblood button is a stamp, so it gets no lift and
-                    // no shadow — only the ink getting slightly wetter.
-                    contained: {
+                    root: {
+                        borderRadius: 2,
+                        '&:hover': { transform: 'none', boxShadow: 'none' },
+                        '&:focus-visible': { transform: 'none' },
+                    },
+                    containedPrimary: {
+                        background: OXBLOOD,
                         boxShadow: 'none',
-                        '&:hover': { boxShadow: 'none', backgroundColor: '#7A2718' },
+                        '&:hover': { background: '#7A2718', boxShadow: 'none' },
                     },
                     outlined: { borderColor: hairline(INK, 0.28) },
                 },
@@ -250,7 +310,8 @@ const accession: Skin = {
                 },
             },
         },
-    }),
+        };
+    },
 
     Hero,
     Atmosphere,
