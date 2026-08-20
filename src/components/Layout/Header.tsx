@@ -15,6 +15,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import Link from 'next/link';
 import { ThemeVariantSwitcher, RADIUS } from '@/theme/ThemeProvider';
 import AppearanceMenu from './AppearanceMenu';
+import SkinMenu from './SkinMenu';
 
 /**
  * The résumé PDF lives in `public/`. Exported so the Footer links to the same
@@ -110,6 +111,11 @@ export default function Header({ onMenuToggle, menuButtonRef }: HeaderProps) {
                     {/* M2/M6 — one trigger, three named peer states, current state
                         checked. Replaces the two-state moon/sun toggle, which both
                         lied about the resolved mode and had no room for a third. */}
+                    {/* Perspective sits before appearance because it is the
+                        coarser choice: a skin can pin the appearance, so a
+                        visitor who picks brightness first may see that choice
+                        immediately overridden. Coarse to fine, left to right. */}
+                    <SkinMenu />
                     <AppearanceMenu />
 
                     {/* The highest-value header slot: the recruiter's most common action. */}

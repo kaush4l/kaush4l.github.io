@@ -1,0 +1,11 @@
+/**
+ * The perspective-skin layer.
+ *
+ * Every rule is scoped under `html[data-skin="…"]`. That attribute is ABSENT
+ * on the professional skin — never set to a sentinel — so this whole file is
+ * inert by default, exactly like `coder.css`.
+ *
+ * INVARIANT: deleting this file must leave a complete, readable, correctly
+ * graded résumé under every skin. Nothing here may be the sole carrier of a
+ * boundary, a state, or a level of hierarchy.
+ */

@@ -433,13 +433,28 @@ html[data-effects='coder'] {
 /* ─── Scroll reveal ───────────────────────────────────────────────────────── */
 
 /**
+ * The four numbers below are the section entrance, and they are the ONLY part
+ * of the choreography a skin may retune. They are custom properties with the
+ * shipped values as fallbacks, so this block is complete on its own: delete
+ * every skin and the professional entrance is unchanged, to the millisecond.
+ *
+ * A skin retunes them through `Skin.tokens()` (inline styles on <html>) rather
+ * than through a stylesheet rule, for the reason set out in `applyTokens` —
+ * inline properties are the channel the whole token system already uses, and a
+ * stylesheet rule would lose to it.
+ *
+ * What a skin may NOT do is replace `Reveal.tsx`. The group-finding heuristic
+ * is subtle and hard-won; four copies of it is four places for it to rot.
+ */
+
+/**
  * `.reveal` is applied by JS *after* mount (`Reveal.tsx` adds `is-armed`), so a
  * visitor with JS off, or a crawler, sees fully-opaque content. Never author
  * the hidden state as the document default.
  */
 .reveal.is-armed {
   opacity: 0;
-  transform: translate3d(0, 18px, 0);
+  transform: translate3d(0, var(--reveal-distance, 18px), 0);
   will-change: transform, opacity;
 }
 
@@ -447,8 +462,8 @@ html[data-effects='coder'] {
   opacity: 1;
   transform: none;
   transition:
-    opacity 560ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity var(--reveal-duration, 560ms) var(--reveal-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform var(--reveal-duration, 560ms) var(--reveal-ease, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 /**
@@ -462,15 +477,19 @@ html[data-effects='coder'] {
  */
 .reveal.is-armed .reveal-group > * {
   opacity: 0;
-  transform: translate3d(0, 12px, 0);
+  /* Two-thirds of the section's own travel. The child must arrive from a
+     shorter distance than its parent or the two motions read as one blur. */
+  transform: translate3d(0, calc(var(--reveal-distance, 18px) * 0.67), 0);
 }
 
 .reveal.is-in .reveal-group > * {
   opacity: 1;
   transform: none;
   transition:
-    opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 60ms),
-    transform 480ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 60ms);
+    opacity calc(var(--reveal-duration, 560ms) * 0.857) var(--reveal-ease, cubic-bezier(0.16, 1, 0.3, 1))
+      calc(var(--i, 0) * var(--reveal-stagger, 60ms)),
+    transform calc(var(--reveal-duration, 560ms) * 0.857) var(--reveal-ease, cubic-bezier(0.16, 1, 0.3, 1))
+      calc(var(--i, 0) * var(--reveal-stagger, 60ms));
 }
 
 /**

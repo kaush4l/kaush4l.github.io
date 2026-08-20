@@ -12,6 +12,22 @@ import "./coder.css";
 // comment in cinema.css).
 import "./cinema.css";
 import { ThemeProvider } from "@/theme/ThemeProvider";
+// Ground literals only — this module imports nothing, precisely so the head
+// script can carry them without dragging a skin module (and its hero) into
+// the first paint. See the header comment in that file.
+import { SKIN_PREPAINT } from "@/skins/preload";
+// The perspective-skin stylesheets. Every rule inside is scoped under
+// html[data-skin="…"], an attribute that is absent on the professional skin,
+// so this import is inert by default — exactly like coder.css. Deleting the
+// file must leave a complete, readable résumé under every skin.
+import "./skins.css";
+// One file per skin — separate files rather than one, so that the four
+// perspectives never share a merge surface and each can be deleted on its
+// own without disturbing the others.
+import "./skin-ronin.css";
+import "./skin-sanctum.css";
+import "./skin-terminal.css";
+import "./skin-voyager.css";
 
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 
@@ -135,7 +151,20 @@ const fontVariables = `${inter.variable} ${amarante.variable} ${jetbrainsMono.va
 // `ThemeProvider.tsx` and to the token blocks in `globals.css` (M28). They are
 // the only colours this script needs, because it sets `theme-color` — the
 // document's own ground comes from the stylesheet.
-const THEME_INIT_SCRIPT = `(function(){try{var el=document.documentElement;var s=null;try{s=localStorage.getItem('kk-appearance');}catch(e){}if(s!=='light'&&s!=='dark'&&s!=='coder'){var g=null;try{g=localStorage.getItem('kk-color-mode');}catch(e){}s=(g==='light'||g==='dark')?g:null;}if(s===null){s=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var dark=s!=='light';el.dataset.theme=dark?'dark':'light';if(s==='coder'){el.dataset.effects='coder';}else{delete el.dataset.effects;}el.style.colorScheme=dark?'dark':'light';var bg=s==='coder'?'#0A0A0F':(dark?'#12151C':'#FAFAFA');var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',bg);try{if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){el.dataset.motion='on';setTimeout(function(){if(el.dataset.motion==='on'){delete el.dataset.motion;}},4000);}}catch(e){}}catch(err){}})();`;
+//
+// M42 — the script now resolves the SKIN first, because a skin may pin the
+// appearance. Resolution order is: skin from storage, then that skin’s pin,
+// then (only if it does not pin) the stored appearance, then the media query.
+// Getting that order wrong is a visible bug rather than a subtle one: a
+// visitor whose stored appearance is light and whose stored skin is black
+// would get a full-screen white flash that repaints to near-black.
+//
+// The ground literals for the skins are NOT written here. They are
+// interpolated from `SKIN_PREPAINT`, which is their single owner — the three
+// appearance grounds below are the only ones still spelled out, and they must
+// stay identical to `MODE_SURFACES` and to the token blocks in `globals.css`
+// (M28).
+const THEME_INIT_SCRIPT = `(function(){try{var el=document.documentElement;var SK=${JSON.stringify(SKIN_PREPAINT)};var k=null;try{k=localStorage.getItem('kk-skin');}catch(e){}if(!k||!Object.prototype.hasOwnProperty.call(SK,k)){k='professional';}if(k==='professional'){delete el.dataset.skin;}else{el.dataset.skin=k;}var pin=SK[k];var s=null;try{s=localStorage.getItem('kk-appearance');}catch(e){}if(s!=='light'&&s!=='dark'&&s!=='coder'){var g=null;try{g=localStorage.getItem('kk-color-mode');}catch(e){}s=(g==='light'||g==='dark')?g:null;}if(s===null){s=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var stamp,fx,bg;if(pin){stamp=pin.stamp;fx=pin.effects||null;bg=pin.bg;}else{var dark=s!=='light';stamp=dark?'dark':'light';fx=(s==='coder')?'coder':null;bg=s==='coder'?'#0A0A0F':(dark?'#12151C':'#FAFAFA');}el.dataset.theme=stamp;if(fx){el.dataset.effects=fx;}else{delete el.dataset.effects;}el.style.colorScheme=stamp;var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',bg);try{if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){el.dataset.motion='on';setTimeout(function(){if(el.dataset.motion==='on'){delete el.dataset.motion;}},4000);}}catch(e){}}catch(err){}})();`;
 
 export default function RootLayout({
   children,

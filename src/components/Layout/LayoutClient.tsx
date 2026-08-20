@@ -6,6 +6,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer, { type FooterProps } from './Footer';
 import ChatWidget from '@/components/Chat/ChatWidget';
+import SkinAtmosphere from '@/skins/SkinAtmosphere';
 import { ModelProvider } from '@/context/ModelContext';
 import type { NavItem } from '@/lib/contentTypes';
 import type { ResumeCorpus } from '@/lib/resumeContext';
@@ -61,6 +62,12 @@ export default function LayoutClient({ children, resumeCorpus, suggestedPrompts,
 
     return (
         <ModelProvider resumeCorpus={resumeCorpus}>
+            {/* The skin's atmosphere layer. Rendered here rather than as a
+                `body` pseudo-element because both pseudo-slots are already
+                owned — `cinema.css` paints the page grade on `::before` and
+                `coder.css` the scanlines on `::after`. Renders nothing on the
+                professional skin. */}
+            <SkinAtmosphere />
             <Box sx={{ display: 'flex', minHeight: '100vh' }}>
                 <Header onMenuToggle={toggleSidebar} menuButtonRef={menuButtonRef} />
                 <Sidebar open={sidebarOpen} onClose={closeSidebar} nav={nav} />

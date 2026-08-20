@@ -4,7 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Box, ButtonGroup, Button, Tooltip } from '@mui/material';
 import TuneIcon from '@mui/icons-material/Tune';
-import { RADIUS } from '@/theme/ThemeProvider';
+import { RADIUS, useThemeContext } from '@/theme/ThemeProvider';
 
 // E1: the SHIPPED hero is imported STATICALLY so it is present in the static
 // export's HTML. `dynamic(..., { ssr: false })` shipped a hero-less document,
@@ -48,8 +48,26 @@ function getInitialVariant(): HeroVariant {
 export default function HeroSwitcher({ about }: HeroProps) {
     const [variant, setVariant] = useState<HeroVariant>(getInitialVariant);
     const isDev = process.env.NODE_ENV === 'development';
+    const { skinDef } = useThemeContext();
 
-    const Hero = HEROES[variant];
+    /**
+     * Resolution order, highest priority first:
+     *
+     *   1. the dev-only A–E override, when the developer has touched it;
+     *   2. the current skin's own hero;
+     *   3. HeroCinematic — the shipped fold.
+     *
+     * The dev override wins because its entire purpose is to let a developer
+     * look at one specific hero; a skin silently outranking it would make the
+     * picker appear broken. In production branch 1 never fires.
+     *
+     * E1 still holds: HeroCinematic is a STATIC import, so the static export's
+     * HTML contains a hero. A skin hero is `dynamic({ ssr: false })`, which is
+     * safe only because the wrapper below reserves the fold's height — a late
+     * hero swaps in place rather than shoving the document down.
+     */
+    const devOverride = isDev && variant !== 'E' ? HEROES[variant] : null;
+    const Hero = devOverride ?? skinDef.Hero ?? HEROES[variant];
 
     return (
         // E1: the height is reserved on the wrapper, so swapping variants (or a
