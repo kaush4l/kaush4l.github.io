@@ -138,6 +138,17 @@ const accession: Skin = {
                 dark: '#16293F',
                 contrastText: '#FBF9F5',
             },
+            /**
+             * The base theme tints `action.hover` with the variant hue, which on
+             * cream stock is not a highlight but a STAIN — the education quote
+             * block rendered as a mauve panel. Ink at 4% is what a wash on paper
+             * actually is: the same sheet, slightly darker.
+             */
+            action: {
+                hover: 'rgba(22, 19, 15, 0.04)',
+                selected: 'rgba(22, 19, 15, 0.07)',
+                focus: 'rgba(22, 19, 15, 0.08)',
+            },
         },
 
         /**

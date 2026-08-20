@@ -105,6 +105,30 @@ html[data-skin='accession'] body {
   font-synthesis: none;
 }
 
+/**
+ * `--primary` and `--secondary` are written as INLINE styles on `<html>` by
+ * `applyTokens`, straight from the hue table, and they are not on
+ * `SKIN_TOKEN_KEYS` — so a skin cannot reach them through `Skin.tokens()` and a
+ * stylesheet rule loses to the inline declaration. `!important` is the only
+ * channel left, and it is used here rather than chasing each consumer because
+ * the consumers are not ours (`.prose-content li::marker` puts a violet bullet
+ * on every line of every timeline entry; `.gradient-text` paints the masthead).
+ *
+ * One declaration, at the token, is also the version that stays correct when a
+ * new consumer of `--primary` is added to a shared file later.
+ */
+html[data-skin='accession'] {
+  --primary: #8c2f1e !important;
+  --secondary: #1f3a5f !important;
+}
+
+/* A list marker on paper is ink, not colour — the accent is spent on the
+   accession numbers and the stamp, and a page of oxblood bullets would be the
+   third place it appears. */
+html[data-skin='accession'] .prose-content li::marker {
+  color: var(--text-muted);
+}
+
 /* Tracked caps for every metadata label on the page. Archivo's `wdth` axis is
    an axis on the ONE family, not a separate "Archivo Expanded" — expanding it
    slightly is what keeps a 0.7rem cap line from looking like small print. */
@@ -373,12 +397,24 @@ html[data-skin='accession'] .ac-row-label {
   margin: 0;
 }
 
+/**
+ * Every cell carries its OWN left rule, including the first, and the row is
+ * pulled left by exactly that gutter so the first rule lands on the value
+ * column's edge.
+ *
+ * The obvious version — a rule between cells, suppressed on the first — breaks
+ * the moment the row wraps, which on a phone every row does: the first cell of
+ * each continued line inherits the between-cells rule and a hairline hangs in
+ * front of it with nothing on its left. Ruling every cell turns that from an
+ * artefact into the geometry: each line begins on the same vertical, and what
+ * was a stray mark becomes a table's column edge.
+ */
 html[data-skin='accession'] .ac-row-value {
-  margin: 0;
+  margin: 0 0 0 -14px;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  row-gap: 7px;
+  row-gap: 9px;
 }
 
 html[data-skin='accession'] .ac-cell {
@@ -392,10 +428,7 @@ html[data-skin='accession'] .ac-cell {
   color: var(--text);
 }
 
-html[data-skin='accession'] .ac-cell:first-child {
-  padding-left: 0;
-  border-left: 0;
-}
+
 
 /* ── The note ───────────────────────────────────────────────────────────────
    The one sentence that argues with the frame. Cream paper and a book italic
@@ -751,6 +784,41 @@ html[data-skin='accession'] .prose-content a {
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
   text-decoration-skip-ink: auto;
+}
+
+/**
+ * The pulled quote on an education entry. `ContentCard` draws it as a tinted
+ * panel with a 3px accent bar and rounded corners — a screen callout. On paper
+ * a quotation is marked by a rule in the margin and nothing else, so the panel
+ * is unwound to exactly that.
+ *
+ * Reached through `:has(> [data-testid='FormatQuoteIcon'])` rather than a
+ * structural path: the icon is what makes this box a quote, so the selector
+ * says the same thing the component does.
+ */
+html[data-skin='accession']
+  [data-catalog-item]
+  div:has(> [data-testid='FormatQuoteIcon']) {
+  background-color: transparent;
+  border-radius: 0;
+  border-left-width: 1px;
+  border-left-color: var(--link);
+  padding: 2px 0 2px 18px;
+}
+
+html[data-skin='accession'] [data-testid='FormatQuoteIcon'] {
+  display: none;
+}
+
+html[data-skin='accession']
+  [data-catalog-item]
+  div:has(> [data-testid='FormatQuoteIcon'])
+  .MuiTypography-root {
+  font-family: var(--ac-body);
+  font-style: italic;
+  font-size: 1.02rem;
+  font-variation-settings: 'opsz' 26, 'wght' 360;
+  line-height: 1.5;
 }
 
 /* ═══ OPT-OUTS ═══════════════════════════════════════════════════════════════ */

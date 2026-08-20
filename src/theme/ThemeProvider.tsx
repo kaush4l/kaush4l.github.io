@@ -439,7 +439,28 @@ function readStoredAppearance(): Appearance | null {
  * The rule this function must keep: **no token may be left stale from a
  * previous appearance.** Every property in the list is written on every call.
  */
-function applyTokens(appearance: Appearance, p: ThemePalette, skin: Skin) {
+function applyTokens(
+    appearance: Appearance,
+    p: ThemePalette,
+    skin: Skin,
+    /**
+     * The fill hues **as the built theme resolved them** — which is not always
+     * what the hue table says.
+     *
+     * A skin may repoint `palette.primary`/`secondary` (a skin whose whole
+     * argument is that one hue means something has to), and until this argument
+     * existed `--primary` and `--secondary` were written straight from the hue
+     * table regardless. So every rule reading `var(--primary)` — the list
+     * marker, the `.gradient-text` ramp, and by extension anything a skin's own
+     * stylesheet built on them — kept painting the base purple and cyan on a
+     * page that had moved to vermilion or oxblood. Visible, and exactly the
+     * "two unrelated hues" defect the palette contract exists to prevent.
+     *
+     * The invariant this restores: `--primary` IS `theme.palette.primary.main`,
+     * always, on every axis. One hue, one owner.
+     */
+    fills: { primary: string; secondary: string },
+) {
     if (typeof document === 'undefined') return;
     const m = MODE_SURFACES[appearance];
     const s = document.documentElement.style;
@@ -456,9 +477,9 @@ function applyTokens(appearance: Appearance, p: ThemePalette, skin: Skin) {
     // this pass just produced, since a skin may own `--bg` too.
     for (const key of SKIN_TOKEN_KEYS) s.removeProperty(key);
 
-    s.setProperty('--primary', p.primary);
+    s.setProperty('--primary', fills.primary);
     // Fill-only — its consumer is the `.gradient-text` utility.
-    s.setProperty('--secondary', p.secondary);
+    s.setProperty('--secondary', fills.secondary);
     s.setProperty('--link', link);
     s.setProperty('--bg', m.bg);
     s.setProperty('--bg-alt', m.bgAlt);
@@ -479,12 +500,12 @@ function applyTokens(appearance: Appearance, p: ThemePalette, skin: Skin) {
     // b` channels rather than colours so a rule can pick its own alpha.
     // `primary` is the key, `secondary` is the fill — the complementary pair the
     // hue table already guarantees, in every variant.
-    s.setProperty('--hc-key', rgbChannels(p.primary));
+    s.setProperty('--hc-key', rgbChannels(fills.primary));
     // The bounce light is desaturated toward the ground in light mode only —
     // full-chroma cyan on #FAFAFA reads as mint candy at any visible alpha.
     s.setProperty('--hc-fill', appearance === 'light'
-        ? mixChannels(p.secondary, m.bg, 0.42)
-        : rgbChannels(p.secondary));
+        ? mixChannels(fills.secondary, m.bg, 0.42)
+        : rgbChannels(fills.secondary));
     // How strongly the pair lights the page as a whole. The key is dominant by
     // a factor of ~2 — that is what makes it read as one source with a bounce,
     // rather than two competing washes. Inverting them (the first cut had the
@@ -551,6 +572,8 @@ function commitAppearance(
      * appearance and storage takes the request.
      */
     requested: Appearance = appearance,
+    /** See `applyTokens` — the resolved fills, not the hue table's. */
+    fills: { primary: string; secondary: string } = { primary: p.primary, secondary: p.secondary },
 ) {
     if (typeof document === 'undefined') return;
     const m = MODE_SURFACES[appearance];
@@ -572,7 +595,7 @@ function commitAppearance(
         delete el.dataset.effects;
     }
     el.style.colorScheme = m.scheme;
-    applyTokens(appearance, p, skin);
+    applyTokens(appearance, p, skin, fills);
     applyThemeColorMeta(appearance);
     if (!persist) return;
     try {
@@ -710,8 +733,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     );
 
     useEffect(() => {
-        commitAppearance(effectiveAppearance, THEME_PALETTES[variant], skinDef, true, appearance);
-    }, [effectiveAppearance, appearance, variant, skinDef]);
+        // The fills come off the BUILT theme, after the skin's options were
+        // merged — so a skin that repointed its accents repoints the custom
+        // properties with them, and the two can never disagree.
+        commitAppearance(effectiveAppearance, THEME_PALETTES[variant], skinDef, true, appearance, {
+            primary: theme.palette.primary.main,
+            secondary: theme.palette.secondary.main,
+        });
+    }, [effectiveAppearance, appearance, variant, skinDef, theme]);
 
     const value = useMemo<ThemeContextType>(
         () => ({
