@@ -27,7 +27,11 @@ fail=0
 for skin in "${SKINS[@]}"; do
   echo "──────── $skin ────────"
   $B js "localStorage.setItem('kk-skin','$skin'); 'set'" >/dev/null
+  # `reload`, not `goto`: navigating to the URL already loaded is a no-op in
+  # some cases, and the run then silently reports the PREVIOUS skin's state.
+  # That is not hypothetical — it is what the first version of this script did.
   $B goto "$URL" >/dev/null
+  $B reload >/dev/null
   $B js "new Promise(r=>setTimeout(()=>r('ok'),2500))" >/dev/null
 
   report=$($B js "(() => {
@@ -51,6 +55,14 @@ for skin in "${SKINS[@]}"; do
     });
   })()")
   echo "  $report"
+
+  # The run is only meaningful if the page under test is the page we asked for.
+  actual=$(printf '%s' "$report" | sed -n 's/.*"skin":"\([a-z]*\)".*/\1/p')
+  if [ "$actual" != "$skin" ]; then
+    echo "  FAIL: asked for '$skin' but the page reports '$actual' — result discarded"
+    fail=1
+    continue
+  fi
 
   ov=$(printf '%s' "$report" | sed -n 's/.*"overflow":\([0-9-]*\).*/\1/p')
   if [ "${ov:-0}" -gt 0 ]; then echo "  FAIL: ${ov}px horizontal overflow"; fail=1; fi

@@ -1,6 +1,652 @@
 /**
- * The ronin skin's effects layer. Every rule is scoped under
+ * The rōnin skin's effects layer. Every rule is scoped under
  * `html[data-skin="ronin"]`, so this file is inert under every other skin.
  *
  * INVARIANT: deleting this file must leave a complete, readable résumé.
+ *
+ * ── The idea, in one sentence ───────────────────────────────────────────────
+ * Ten years read as 守破離 (shu-ha-ri) — learn the form, break the form, leave
+ * the form — so the page is a single sheet of paper down which the ink gets
+ * hotter: every section is one more stroke, the aura behind it lifts from
+ * gunjō blue (群青, the calm before) toward shu-iro red (朱色, the seal), and
+ * the loudest thing on the page is also the smallest.
+ *
+ * ── The colour rule ─────────────────────────────────────────────────────────
+ * Exactly one hue is ever LIT: shu-iro. Everything else is ink (#0B0B0D),
+ * bone (#EDE7DC) and paper. Gunjō is deliberately kept BELOW the threshold at
+ * which it reads as an accent — it is the temperature of the unlit half of the
+ * page, which is what makes the red mean something when it arrives.
+ *
+ * ── Where the tokens live ───────────────────────────────────────────────────
+ * The ground, text, link, glow and focus-ring tokens are written by
+ * `Skin.tokens()` as INLINE styles on <html> — they always win, and this file
+ * must not restate them. What is declared here is (a) the type stacks, (b) the
+ * skin's own `--rn-*` palette, and (c) a retune of the cinematic page grade's
+ * channels, which are set inline on <html> and so are re-declared on `body`
+ * where an author stylesheet can still reach them.
  */
+
+/* ─── Type and palette ────────────────────────────────────────────────────── */
+
+/**
+ * Declared on `body`, not on `html`, for two independent reasons: `next/font`
+ * puts its `--font-*` variables on a body class, so an `html` scope loses the
+ * cascade; and `--hc-key`/`--hc-fill`/`--hc-page-*` are written inline on
+ * `<html>` by `applyTokens`, where no stylesheet can outrank them — but every
+ * consumer of those channels (`body::before`, `[data-glow]`) resolves them
+ * against `body` or below, so re-declaring here retints the whole page grade
+ * with one block and no `!important`.
+ */
+html[data-skin='ronin'] body {
+  /* Requested faces (see the report): Shippori Mincho B1 for display, Zen Kaku
+     Gothic New for body. Until they are wired in `layout.tsx`, the stack falls
+     through to the mincho and gothic faces that macOS and Windows both ship —
+     so the skin is a real Japanese type pairing on day one rather than a
+     placeholder. Inter (`--font-sans`) remains the metric fallback. */
+  --font-display: 'Shippori Mincho B1', 'Shippori Mincho', 'Yuji Syuku',
+    'Hiragino Mincho ProN', 'Yu Mincho', 'Songti SC', 'Noto Serif JP', Georgia, serif;
+  --rn-sans: 'Zen Kaku Gothic New', var(--font-sans), 'Hiragino Kaku Gothic ProN',
+    'Yu Gothic', system-ui, -apple-system, sans-serif;
+
+  /* The canon. Shu-iro is the seal and the torii; gunjō is the mineral blue of
+     an unlit ground; yamabuki is held in reserve for the one hairline that
+     needs to be warm without being red. Never pure #000, never pure #FFF. */
+  --rn-ink: #ede7dc;
+  --rn-ink-rgb: 237, 231, 220;
+  --rn-shu: #e8380d;
+  --rn-shu-rgb: 232, 56, 13;
+  --rn-shu-lit: #f2603a;
+  --rn-ember: #ff7a2f;
+  --rn-gunjo: #35617f;
+  --rn-gunjo-rgb: 53, 97, 127;
+  --rn-gunjo-lit: #7ba6c6;
+  --rn-yamabuki: #ffa400;
+  --rn-seal-ink: #f0e7d8;
+
+  /* The house curves, with the shipped values as fallbacks so this file is
+     complete on its own if the global easing tokens are not present. */
+  --rn-ease-brush: var(--ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1));
+  --rn-ease-expo: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  --rn-ease-swap: var(--ease-in-out-quart, cubic-bezier(0.76, 0, 0.24, 1));
+  --rn-ease-swift: var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1));
+
+  /* The page grade, re-aimed. The key is shu, the "fill" is bone — a neutral,
+     so only one hue is ever lit — and every alpha is roughly halved against
+     the shipped grade, because this ground is two stops darker than the
+     shared dark surface and the same numbers read as fog on it. */
+  --hc-key: var(--rn-shu-rgb);
+  --hc-fill: var(--rn-ink-rgb);
+  --hc-page-key-a: 0.05;
+  --hc-page-fill-a: 0.04;
+  --hc-page-amb-a: 0.016;
+  --glow-pool-a: 0.05;
+  --glow-rim-a: 0.4;
+
+  /* Body copy is gothic; display is mincho. That split IS the pairing. */
+  font-family: var(--rn-sans);
+}
+
+/* The mincho is for display only — headings, the fold, the seal. */
+html[data-skin='ronin'] h1,
+html[data-skin='ronin'] h2,
+html[data-skin='ronin'] h3,
+html[data-skin='ronin'] .rn-name,
+html[data-skin='ronin'] .rn-seal {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+/* A brush-cut face wants air at display size and tightness at heading size. */
+html[data-skin='ronin'] h2 {
+  letter-spacing: 0.01em;
+}
+
+/* ─── The hero ────────────────────────────────────────────────────────────── */
+
+html[data-skin='ronin'] .rn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  /* The wash overhangs the frame; `clip` bounds the scrollable overflow region
+     itself, which `hidden` does not do on iOS Safari. */
+  overflow-x: clip;
+}
+
+html[data-skin='ronin'] .rn-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/**
+ * The wash — `yohaku`, the negative space, made just visible.
+ *
+ * Two very faint bone clouds and one shu ember low and left. The ember is the
+ * only lit hue in the fold and it sits BELOW and BESIDE the copy column, never
+ * behind it: a glow behind text is the fastest way to lose a contrast pair, and
+ * it is an explicit anti-pattern in the contract.
+ */
+html[data-skin='ronin'] .rn-wash {
+  background:
+    radial-gradient(
+      44% 52% at 78% 14%,
+      rgba(var(--rn-ink-rgb), 0.07) 0%,
+      rgba(var(--rn-ink-rgb), 0.025) 42%,
+      transparent 72%
+    ),
+    radial-gradient(
+      60% 44% at 12% 96%,
+      rgba(var(--rn-shu-rgb), 0.09) 0%,
+      rgba(var(--rn-shu-rgb), 0.03) 38%,
+      transparent 70%
+    ),
+    radial-gradient(
+      120% 90% at 50% 40%,
+      rgba(var(--rn-gunjo-rgb), 0.05) 0%,
+      transparent 70%
+    );
+  will-change: transform;
+}
+
+/* The sheet's tooth. One static tile — no live filter, no animation. */
+html[data-skin='ronin'] .rn-tooth,
+html[data-skin='ronin'] .rn-atmos-paper {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  /* No blend mode: `overlay` and `soft-light` both resolve to almost nothing
+     over a #0B0B0D ground, which is how "film grain" ends up invisible on a
+     black page. Normal compositing at 5% lifts the flat digital black into a
+     sheet with a tooth. It sits BELOW the content (`.rn-content` is z-index 1),
+     so it can never haze a text pair: the worst case it touches is the ground
+     itself, and #EDE7DC over the lightest speckle it can produce is still
+     ~13.9:1. */
+  opacity: 0.05;
+}
+
+/* The seam into the page below: the sheet does not end, it runs out of ink. */
+html[data-skin='ronin'] .rn-fade {
+  top: auto;
+  height: 24%;
+  background: linear-gradient(to bottom, transparent, var(--bg) 94%);
+}
+
+html[data-skin='ronin'] .rn-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Masked line reveal ──────────────────────────────────────────────────── */
+
+/**
+ * The premium default: type is UNCOVERED, not faded in. The outer element
+ * clips; the inner one travels 105% of its own height. Nothing here is the
+ * resting state — `.rn-line-in` renders at rest and the hidden state is
+ * applied inline by the timeline, pre-paint, so JS-off sees a finished fold.
+ */
+html[data-skin='ronin'] .rn-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.1em; /* room for descenders inside the clip */
+}
+
+html[data-skin='ronin'] .rn-line-in,
+html[data-skin='ronin'] .rn-char {
+  display: inline-block;
+  white-space: pre;
+  backface-visibility: hidden;
+}
+
+html[data-skin='ronin'] .rn-surname {
+  transform-origin: 0% 100%;
+}
+
+/* ─── The strike: stroke, charge and seal ─────────────────────────────────── */
+
+html[data-skin='ronin'] .rn-strike {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2.4vw, 28px);
+  max-width: 46rem;
+  will-change: transform;
+}
+
+/**
+ * The charge — the loaded brush touching down. It is two pixels wide and it
+ * lives for a quarter of a second, which is the point: the anticipation before
+ * a strike is felt, not read.
+ */
+html[data-skin='ronin'] .rn-charge {
+  flex: none;
+  width: 2px;
+  height: clamp(20px, 3vw, 30px);
+  background: var(--rn-ink);
+  opacity: 0;
+  transform-origin: 50% 100%;
+}
+
+html[data-skin='ronin'] .rn-stroke {
+  flex: 1 1 auto;
+  display: block;
+  height: clamp(26px, 4.4vw, 46px);
+  min-width: 0;
+}
+
+/**
+ * The rakkan. One shu-iro square, off-square by a degree and a half, wiped in
+ * through an ensō sweep. It is the only saturated fill on the fold.
+ *
+ * The RESTING state is stamped. `.is-armed` — the hidden state — is added by
+ * the hero's layout effect and only when motion is allowed, exactly like every
+ * other hidden state in this fold, so a bundle that half-executes leaves a
+ * finished seal rather than an empty square. `.is-stamped` is declared after
+ * `.is-armed` at equal specificity, so it wins on source order once both are
+ * present.
+ */
+html[data-skin='ronin'] .rn-seal {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: clamp(40px, 5.4vw, 56px);
+  height: clamp(40px, 5.4vw, 56px);
+  background: var(--rn-shu);
+  color: var(--rn-seal-ink);
+  transform: rotate(-1.5deg);
+  border-radius: 2px;
+  /* The pressed edge: a seal never lands perfectly flat. */
+  box-shadow: inset 0 0 0 1px rgba(11, 11, 13, 0.28);
+}
+
+html[data-skin='ronin'] .rn-seal-glyph {
+  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  /* Decorative: the accessible name is the <h1>'s aria-label. */
+  user-select: none;
+}
+
+/* The ensō. Off-axis origin, 700ms, the A→B curve. */
+html[data-skin='ronin'] .rn-seal.is-armed {
+  clip-path: circle(0% at 30% 22%);
+  opacity: 0;
+}
+
+html[data-skin='ronin'] .rn-seal.is-stamped {
+  clip-path: circle(150% at 30% 22%);
+  opacity: 1;
+  transition:
+    clip-path 700ms var(--rn-ease-swap),
+    opacity 160ms var(--rn-ease-swift);
+}
+
+/* ─── Fold copy ───────────────────────────────────────────────────────────── */
+
+html[data-skin='ronin'] .rn-headline {
+  margin: 0 0 0.5rem;
+  color: var(--text);
+  font-size: clamp(1.05rem, 0.9rem + 0.6vw, 1.35rem);
+  font-weight: 500;
+  max-width: 42ch;
+}
+
+html[data-skin='ronin'] .rn-proof {
+  margin: 0 0 1.75rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+  max-width: 60ch;
+}
+
+html[data-skin='ronin'] .rn-assistant {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* The tag rail: metadata, so it is set in mono and tracked, not in chips that
+   pretend to be buttons. */
+html[data-skin='ronin'] .rn-tags .MuiChip-root {
+  border-radius: 0;
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  height: 26px;
+}
+
+/* ─── Scroll cue ──────────────────────────────────────────────────────────── */
+
+html[data-skin='ronin'] .rn-cue-track {
+  position: relative;
+  width: 1px;
+  height: 34px;
+  flex: none;
+  overflow: hidden;
+  background: var(--border);
+}
+
+html[data-skin='ronin'] .rn-cue-track::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: -60%;
+  height: 60%;
+  background: linear-gradient(to bottom, transparent, var(--rn-shu-lit));
+  animation: rn-cue 2.8s var(--rn-ease-expo) infinite;
+}
+
+@keyframes rn-cue {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  24% {
+    opacity: 1;
+  }
+  76% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(266%);
+    opacity: 0;
+  }
+}
+
+html[data-skin='ronin'] .rn-cue-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ─── The atmosphere ──────────────────────────────────────────────────────── */
+
+html[data-skin='ronin'] .rn-atmos {
+  position: absolute;
+  inset: 0;
+}
+
+html[data-skin='ronin'] .rn-atmos-wash {
+  background:
+    radial-gradient(
+      70vmax 54vmax at 84% -12%,
+      rgba(var(--rn-ink-rgb), 0.045) 0%,
+      transparent 66%
+    ),
+    radial-gradient(
+      86vmax 62vmax at -8% 72%,
+      rgba(var(--rn-gunjo-rgb), 0.055) 0%,
+      transparent 68%
+    );
+}
+
+/* The mounting edge of a hanging scroll. One hairline, stopping short of both
+   ends so it reads as a mount rather than as a border. */
+html[data-skin='ronin'] .rn-atmos-rule {
+  inset: 14% 3.5% 14% auto;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--skin-rule, rgba(237, 231, 220, 0.1)) 12%,
+    var(--skin-rule, rgba(237, 231, 220, 0.1)) 88%,
+    transparent
+  );
+}
+
+@media (max-width: 900px) {
+  html[data-skin='ronin'] .rn-atmos-rule {
+    display: none;
+  }
+}
+
+html[data-skin='ronin'] .rn-atmos-foot {
+  top: auto;
+  height: 34vh;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.55));
+}
+
+/* ─── Beat 1: the ink-drawn section head ──────────────────────────────────── */
+
+/**
+ * `SectionHeading` already ships a 48×3px accent bar as the page's one landmark
+ * gesture. This skin does not add a second gesture next to it — it re-cuts the
+ * one that exists into a brush stroke and gives it a draw.
+ *
+ * The selector is the heading's decorative bar, which `SectionHeading` marks
+ * with `data-section-rule` as an explicit styling seam. This started out
+ * matching an anonymous Emotion box by `aria-hidden`, which was unique inside
+ * a heading only by accident and would have broken the day anything else there
+ * was hidden from assistive tech. Emotion's generated class is a single class
+ * (0,1,0); this is (0,3,1), so it still wins at author level with no
+ * `!important`.
+ *
+ * RESTING STATE IS VISIBLE. `.is-armed` is added by JS only, so a visitor with
+ * no JS, a crawler, or a section that was already on screen at mount (Reveal
+ * skips arming those) sees a finished stroke.
+ */
+html[data-skin='ronin'] .reveal [data-section-rule] {
+  width: clamp(64px, 9vw, 104px);
+  height: 11px;
+  border-radius: 0;
+  background: linear-gradient(
+    90deg,
+    var(--rn-shu) 0%,
+    var(--rn-shu) 44%,
+    rgba(var(--rn-shu-rgb), 0.6) 76%,
+    rgba(var(--rn-shu-rgb), 0.15) 100%
+  );
+  /* The brush silhouette. Masking the fill is what stops this from being a bar
+     with a gradient on it: the stroke has a pressure curve and a dry tail. */
+  -webkit-mask-image: var(--rn-brush);
+  mask-image: var(--rn-brush);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+html[data-skin='ronin'] {
+  --rn-brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2,7 C24,3 60,1.4 104,1.8 C132,2 160,3.2 184,5 L194,6.1 L184,7.5 C158,9.1 130,10.3 104,10.3 C60,10.3 24,9.5 2,7 Z' fill='%23fff'/%3E%3Cpath d='M196,6.6 C198,6.4 199.4,6.6 200,7 C198.6,7.4 197,7.4 196,7.2 Z' fill='%23fff' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+html[data-skin='ronin'] .reveal.is-armed [data-section-rule] {
+  clip-path: inset(0 100% 0 0);
+}
+
+html[data-skin='ronin'] .reveal.is-in [data-section-rule] {
+  clip-path: inset(0 0 0 0);
+  /* 900ms is the section-title band; the delay lets the heading's own fade
+     start first, so the stroke is drawn ONTO a page that is already there. */
+  transition: clip-path 900ms var(--rn-ease-expo) 120ms;
+}
+
+/* ─── Beat 2: the progressive aura ────────────────────────────────────────── */
+
+/**
+ * The power-up as a PAGE-LENGTH gradient rather than a per-element effect.
+ *
+ * Two independent inputs multiply:
+ *   `--rn-stage`  0 → 1 by the section's ordinal. It interpolates the aura's
+ *                 hue from gunjō (calm, the form being learned) to shu (the
+ *                 form left behind). This is the ten-year arc, spatially.
+ *   `--rn-charge` 0 → 1 by the section's own scroll progress, driven by a
+ *                 `view()` timeline so it runs on the compositor. That matters
+ *                 here more than usual: this page runs ONNX inference on the
+ *                 main thread, and a rAF-driven scroll effect would visibly
+ *                 stutter against it.
+ *
+ * `--rn-charge` is registered with `inherits: false` and is read only by the
+ * element it is animated on. Mutating an INHERITED custom property per frame
+ * invalidates style for the whole subtree beneath it, which is exactly the
+ * cost this beat is trying to avoid.
+ */
+@property --rn-charge {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+html[data-skin='ronin'] .reveal {
+  --rn-stage: 0;
+  --rn-charge: 1;
+  --rn-aura: color-mix(
+    in oklab,
+    var(--rn-gunjo),
+    var(--rn-shu) calc(var(--rn-stage) * 100%)
+  );
+  background-image: radial-gradient(
+    64% 42% at 4% -4%,
+    color-mix(in srgb, var(--rn-aura) calc(var(--rn-charge) * 10%), transparent) 0%,
+    transparent 66%
+  );
+  background-repeat: no-repeat;
+}
+
+/* Six sections, six stages of the same stroke. `nth-of-type` rather than a
+   per-section class: this skin must know nothing about which section is which,
+   and content owns the order. */
+html[data-skin='ronin'] .reveal:nth-of-type(1) { --rn-stage: 0; }
+html[data-skin='ronin'] .reveal:nth-of-type(2) { --rn-stage: 0.2; }
+html[data-skin='ronin'] .reveal:nth-of-type(3) { --rn-stage: 0.4; }
+html[data-skin='ronin'] .reveal:nth-of-type(4) { --rn-stage: 0.6; }
+html[data-skin='ronin'] .reveal:nth-of-type(5) { --rn-stage: 0.8; }
+html[data-skin='ronin'] .reveal:nth-of-type(n + 6) { --rn-stage: 1; }
+
+@supports (animation-timeline: view()) {
+  html[data-skin='ronin'] .reveal {
+    animation: rn-charge linear both;
+    animation-timeline: view();
+    /* Scrubbed motion is ALWAYS linear — the scroll is already the easing. */
+    animation-range: entry 15% cover 55%;
+  }
+
+  @keyframes rn-charge {
+    from {
+      --rn-charge: 0;
+    }
+    to {
+      --rn-charge: 1;
+    }
+  }
+}
+
+/* ─── Beat 5: the ink-bleed link ──────────────────────────────────────────── */
+
+/**
+ * The underline grows from the left through the same brush mask as the section
+ * stroke, so a link and a section head are visibly the same gesture at two
+ * scales. 160ms — a micro-interaction, on the swift curve.
+ *
+ * The underline is decoration ON TOP of a link that is already distinguished
+ * by colour at 5.36:1 or better, so a browser that supports neither `mask` nor
+ * `clip-path` loses nothing that carries meaning.
+ */
+html[data-skin='ronin'] .prose-content a,
+html[data-skin='ronin'] a.MuiLink-root {
+  position: relative;
+  text-decoration: none;
+}
+
+html[data-skin='ronin'] .prose-content a::after,
+html[data-skin='ronin'] a.MuiLink-root::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.14em;
+  height: 5px;
+  background: var(--link);
+  -webkit-mask-image: var(--rn-brush);
+  mask-image: var(--rn-brush);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 160ms var(--rn-ease-swift);
+  pointer-events: none;
+}
+
+html[data-skin='ronin'] .prose-content a:hover::after,
+html[data-skin='ronin'] .prose-content a:focus-visible::after,
+html[data-skin='ronin'] a.MuiLink-root:hover::after,
+html[data-skin='ronin'] a.MuiLink-root:focus-visible::after {
+  clip-path: inset(0 0 0 0);
+}
+
+/* ─── Geometry ────────────────────────────────────────────────────────────── */
+
+/**
+ * `RADIUS` is a const imported by components, so the geometry is retuned from
+ * here instead. A sheet of paper has no rounded corners, and neither does a
+ * seal: the whole skin is square except the pill controls the chat needs.
+ */
+html[data-skin='ronin'] .MuiCard-root,
+html[data-skin='ronin'] .MuiPaper-root:not(.MuiPopover-paper):not(.MuiDrawer-paper) {
+  border-radius: 2px;
+}
+
+/* ─── Opt-outs ────────────────────────────────────────────────────────────── */
+
+/**
+ * Reduced motion. Nothing is HIDDEN here — only stilled. Every clip-path and
+ * mask reveal is resolved to its finished state, the scroll cue stops, and the
+ * `view()` timeline is switched off by pinning `--rn-charge` to 1 (so the aura
+ * is present and static rather than absent).
+ */
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin='ronin'] .rn-cue-track::after {
+    animation: none !important;
+  }
+
+  html[data-skin='ronin'] .reveal {
+    animation: none !important;
+    --rn-charge: 1;
+  }
+
+  html[data-skin='ronin'] .reveal [data-section-rule],
+  html[data-skin='ronin'] .reveal.is-armed [data-section-rule],
+  html[data-skin='ronin'] .reveal.is-in [data-section-rule] {
+    clip-path: none;
+    transition: none;
+  }
+
+  html[data-skin='ronin'] .rn-seal,
+  html[data-skin='ronin'] .rn-seal.is-armed {
+    clip-path: none;
+    opacity: 1;
+    transition: none;
+  }
+
+  html[data-skin='ronin'] .prose-content a::after,
+  html[data-skin='ronin'] a.MuiLink-root::after {
+    transition: none;
+  }
+}
+
+/* Print: the ink is decoration the reader did not ask for, and `globals.css`
+   forces a light print surface which this skin must not fight. */
+@media print {
+  html[data-skin='ronin'] .rn-layer,
+  html[data-skin='ronin'] .rn-strike,
+  html[data-skin='ronin'] .rn-cue,
+  html[data-skin='ronin'] .rn-atmos {
+    display: none !important;
+  }
+
+  html[data-skin='ronin'] .rn-line-in,
+  html[data-skin='ronin'] .rn-char {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  html[data-skin='ronin'] .reveal {
+    background-image: none !important;
+    animation: none !important;
+  }
+
+  html[data-skin='ronin'] .reveal [data-section-rule] {
+    clip-path: none !important;
+  }
+}

@@ -30,7 +30,16 @@ export default function SkinAtmosphere() {
                 inset: 0,
                 zIndex: -1,
                 pointerEvents: 'none',
-                overflow: 'hidden',
+                // `clip`, not `hidden`. An atmosphere layer that deliberately
+                // overhangs the frame — a blurred glow scaled past the edge, an
+                // arc wider than the column — still counts toward the
+                // document's scroll width under `hidden`: the paint is clipped
+                // but the box is not. Chrome forgives that; iOS Safari renders
+                // it as real horizontal scroll, which on a phone is the single
+                // most visible "this site is broken" signal there is.
+                // `clip` bounds the scrollable overflow region itself.
+                // Same defect, same fix, as the hero shell in cinema.css.
+                overflow: 'clip',
                 '@media print': { display: 'none' },
             }}
         >

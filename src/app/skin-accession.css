@@ -2,5 +2,877 @@
  * The accession skin's effects layer. Every rule is scoped under
  * `html[data-skin="accession"]`, so this file is inert under every other skin.
  *
- * INVARIANT: deleting this file must leave a complete, readable résumé.
+ * INVARIANT: deleting this file must leave a complete, readable résumé. Nothing
+ * below is the sole carrier of a boundary, a state or a level of hierarchy —
+ * the ground, the surfaces and the type scale all come from the theme, and this
+ * file only makes them behave like paper.
+ *
+ * ── The idea, in one line ───────────────────────────────────────────────────
+ * Ten years as an accessioned collection: every role and every project is an
+ * object with a catalogue record, and the page is the catalogue.
+ *
+ * ── The two things paper has that a screen does not ─────────────────────────
+ * RULES and MARGINS. This direction is built almost entirely out of hairlines
+ * and white space, and it deliberately refuses the screen's own vocabulary:
+ * there is no glow, no gradient, no soft shadow and no saturation anywhere in
+ * this file. The one lit hue (M16) is foil gold, and it appears only under a
+ * pointer, on a border, never as text.
+ *
+ * ── The performance argument ────────────────────────────────────────────────
+ * Every scroll-linked beat here uses `animation-timeline: view()`, which runs
+ * on the compositor, rather than an IntersectionObserver or a rAF loop. That is
+ * not a purity preference: the assistant on this page runs ONNX inference on
+ * the MAIN THREAD, so a scroll effect that costs main-thread work is a scroll
+ * effect that stutters the model. Each one is wrapped in `@supports` and the
+ * un-supported result is always the finished, visible state.
  */
+
+/* ─── Registered custom properties ────────────────────────────────────────────
+ *
+ * `@property` cannot be nested inside a scoping selector, so these live at the
+ * top level. They are namespaced `--ac-` and read by nothing outside this file,
+ * so registering them is inert under every other skin.
+ *
+ * `inherits: false` is load-bearing rather than tidy: an INHERITED custom
+ * property that changes every frame invalidates style for the whole subtree
+ * below the element it changes on, which for a scroll-scrubbed value means a
+ * full-page style recalc per frame. Non-inherited, the invalidation stops at
+ * the element that declares it.
+ */
+@property --ac-opsz {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 20;
+}
+
+/* ─── Type ────────────────────────────────────────────────────────────────────
+ *
+ * Declared on `body`, not `html`: `next/font` puts its own variables on a body
+ * class, so a rule scoped to `html` would be overridden by them for
+ * `--font-sans` and `--font-mono` and would silently win for `--font-display`,
+ * which is exactly the kind of half-applied state that reads as a bug.
+ *
+ * FONTS TO WIRE (see the report — `layout.tsx` is not ours to edit):
+ *   Instrument Serif   400 + 400 italic   → --font-display
+ *   Newsreader         300..500 + italics → --ac-body   (variable opsz + wght)
+ *   Archivo            500/600            → --ac-caps   (variable wdth)
+ *   JetBrains Mono     400                → --font-mono (already loaded)
+ *
+ * Until they are wired the fallbacks are chosen to be DELIBERATE rather than
+ * merely present: Iowan Old Style / Palatino / Georgia is a book stack, which
+ * is the same argument Instrument Serif and Newsreader are making, just less
+ * loudly. Nothing here depends on a font actually loading.
+ */
+html[data-skin='accession'] body {
+  --font-display: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype',
+    Palatino, 'Book Antiqua', Georgia, serif;
+  --ac-body: 'Newsreader', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --ac-caps: 'Archivo', var(--font-sans), 'Helvetica Neue', Helvetica, Arial,
+    sans-serif;
+
+  /* One continuous spine number for the whole document. See "The catalogue
+     number" below for why it is a counter and not a component. */
+  counter-reset: ac-acc;
+
+  font-family: var(--ac-body);
+  /* Newsreader's optical size at reading size, and a weight a hair under 400 —
+     a book face set at 400 on a bright cream ground prints heavier than it
+     measures. */
+  font-variation-settings: 'opsz' 16, 'wght' 380;
+
+  /**
+   * Instrument Serif ships TWO static faces — 400 roman and 400 italic — and
+   * no axes at all. Any `font-weight: 600` on a heading therefore produces a
+   * SYNTHETIC bold: the browser smears an already high-contrast condensed
+   * serif sideways, which on a display line at 9rem is the single ugliest
+   * thing this direction can do. Turning synthesis off makes that impossible
+   * rather than merely discouraged.
+   *
+   * `-webkit-font-smoothing: antialiased` is deliberately NOT set: it thins
+   * dark strokes, and a warm ground already costs luminance contrast against
+   * a cool one. The compensation for cream is to darken the ink, not to
+   * thicken or re-smooth the letterform.
+   */
+  font-synthesis: none;
+}
+
+/* Tracked caps for every metadata label on the page. Archivo's `wdth` axis is
+   an axis on the ONE family, not a separate "Archivo Expanded" — expanding it
+   slightly is what keeps a 0.7rem cap line from looking like small print. */
+html[data-skin='accession'] .ac-caps {
+  font-family: var(--ac-caps);
+  font-size: 0.68rem;
+  font-weight: 600;
+  /* Published tracking tables put caps at ~0.11em at 12px and ~0.14em at
+     10px — the smaller the cap line, the more air it needs. This one sets at
+     ~10.9px. */
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-variation-settings: 'wdth' 118;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Anything numeric on this page is tabular. A catalogue whose figures do not
+   align in a column is not a catalogue. */
+html[data-skin='accession'] .ac-stamp-no,
+html[data-skin='accession'] time,
+html[data-skin='accession'] .MuiTypography-caption,
+html[data-skin='accession'] .ac-caps {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ─── The stock ───────────────────────────────────────────────────────────────
+ *
+ * The whole atmosphere layer: a static grain tile and a warm edge fall-off.
+ * The grain is a data-URI SVG whose `feTurbulence` is rasterised ONCE at decode
+ * and thereafter treated as a bitmap — as opposed to a live `filter: url(#…)`
+ * over the viewport, which is re-evaluated on every composite.
+ *
+ * 3.5% is the ceiling, and it is a contrast decision rather than a taste one:
+ * grain strong enough to see as texture is grain strong enough to move a
+ * text/background pair, and the ink pair here (16.00:1) has room for exactly
+ * this much and no more.
+ */
+html[data-skin='accession'] .ac-atmos {
+  position: absolute;
+  inset: 0;
+}
+
+html[data-skin='accession'] .ac-atmos-grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--skin-atmos-a, 0.035);
+  /* `fractalNoise` rather than `turbulence` (which is signed and clumps),
+     `numOctaves: 3` because the visual gain above three does not pay for
+     the rasterisation, `stitchTiles` so the 180px tile is seamless,
+     saturate 0 so the noise is grey grain and not RGB confetti, and sRGB
+     interpolation so it is not washed out to nothing in linearRGB. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='t' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23t)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+/**
+ * `prefers-reduced-transparency` is exactly this class of overlay: a texture
+ * laid over everything the visitor is trying to read. Honouring it costs one
+ * rule and removes the only thing on the page sitting between the ink and the
+ * eye.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-skin='accession'] .ac-atmos-grain {
+    display: none;
+  }
+}
+
+/* Deckle: the sheet is very slightly darker at its edges, the way a stacked
+   sheet is. No hue shift — it only darkens, so it cannot lift a pair out of AA. */
+html[data-skin='accession'] .ac-atmos-edge {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 90% at 50% 42%,
+    transparent 55%,
+    rgba(22, 19, 15, 0.05) 100%
+  );
+}
+
+/* ═══ THE FOLD ═══════════════════════════════════════════════════════════════
+ *
+ * A catalogue page: running head, rule, object, record, note, apparatus, rule.
+ */
+
+html[data-skin='accession'] .ac-hero {
+  position: relative;
+  padding: clamp(1.5rem, 5vw, 3.5rem) clamp(1rem, 3vw, 1.5rem)
+    clamp(2rem, 5vw, 3.5rem);
+}
+
+html[data-skin='accession'] .ac-plate {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ── Rules ─────────────────────────────────────────────────────────────────
+   Every hairline in the fold is a real element rather than a border, because
+   BEAT 3 draws them: a border cannot be `scaleX`-ed independently of the box
+   it belongs to, and a transform is the only thing cheap enough to draw six of
+   them in the same frame as the entrance. */
+html[data-skin='accession'] .ac-rule {
+  display: block;
+  height: 1px;
+  background: var(--border);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+html[data-skin='accession'] .ac-rule--heavy {
+  height: 2px;
+  background: var(--text);
+}
+
+html[data-skin='accession'] .ac-rule--row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* ── Running head ───────────────────────────────────────────────────────── */
+html[data-skin='accession'] .ac-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding: 10px 0 11px;
+}
+
+html[data-skin='accession'] .ac-head-right {
+  color: var(--text-muted);
+}
+
+/* ── The object ─────────────────────────────────────────────────────────────
+   Instrument Serif has one weight, so hierarchy at this size is carried by
+   SCALE and by the italic — which is the single strongest gesture the family
+   has, and is therefore spent exactly once, on the surname. */
+html[data-skin='accession'] .ac-name {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(3.1rem, 12.5vw, 9rem);
+  line-height: 0.9;
+  /* Tracking zero-crosses at ~44px and must go NEGATIVE above it, roughly
+     -0.01em per doubling, with a floor near -0.03em. Instrument Serif has no
+     separate display cut, so it behaves like a text drawing set very large and
+     needs the full correction. */
+  letter-spacing: -0.028em;
+  color: var(--text);
+  margin: clamp(1.5rem, 4vw, 2.75rem) 0 clamp(1.75rem, 4.5vw, 3rem);
+}
+
+@media (min-width: 900px) {
+  /* Keep the wordmark clear of the stamp's column. */
+  html[data-skin='accession'] .ac-name {
+    padding-right: 190px;
+  }
+}
+
+/* The mask each line rises out of. The padding/negative-margin pair widens the
+   CLIP box without changing the layout box, so a descender or an italic's
+   overshoot is not shaved off by the very thing that hides it. */
+html[data-skin='accession'] .ac-word {
+  display: block;
+  overflow: hidden;
+  padding: 0.06em 0.08em 0.12em 0;
+  margin: -0.06em -0.08em -0.12em 0;
+}
+
+html[data-skin='accession'] .ac-word > span {
+  display: block;
+  will-change: transform;
+}
+
+/* The italic is a true cursive with entry and exit strokes, not an oblique —
+   which is why it is spent once. Those exit strokes already carry the eye from
+   letter to letter, so it wants ~0.006em MORE air than the roman beside it or
+   it sets visibly tighter at the same nominal tracking. */
+html[data-skin='accession'] .ac-word--italic > span {
+  font-style: italic;
+  letter-spacing: -0.022em;
+}
+
+/* ── The stamp ──────────────────────────────────────────────────────────────
+   `mix-blend-mode: multiply` is the whole trick: an ink stamp on paper does not
+   sit on top of the sheet, it soaks into it, so the grain reads THROUGH the
+   oxblood instead of being covered by it. It is a static blend on one small
+   element, not an animated filter. */
+html[data-skin='accession'] .ac-stamp {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  margin: 14px 0 0;
+  padding: 9px 13px 11px;
+  border: 1.5px solid var(--skin-accent, #8c2f1e);
+  color: var(--skin-accent, #8c2f1e);
+  transform: rotate(-1.5deg);
+  transform-origin: 50% 50%;
+  mix-blend-mode: multiply;
+  will-change: transform;
+}
+
+@media (min-width: 900px) {
+  html[data-skin='accession'] .ac-stamp {
+    position: absolute;
+    top: 58px;
+    right: 0;
+    margin: 0;
+  }
+}
+
+html[data-skin='accession'] .ac-stamp-word {
+  font-family: var(--ac-caps);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-variation-settings: 'wdth' 112;
+}
+
+html[data-skin='accession'] .ac-stamp-no {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin: 2px 0 1px;
+}
+
+html[data-skin='accession'] .ac-stamp-rule {
+  display: block;
+  align-self: stretch;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.45;
+  margin: 4px 0 3px;
+}
+
+/* ── The record ─────────────────────────────────────────────────────────────
+   The standardsmanual.com move: the SPEC LIST is the content. A tracked-caps
+   label in a fixed left column, values as cells divided by hairlines, one
+   hairline closing each row. Nothing is styled to look important; the grid is
+   what makes a list of facts read as specification. */
+html[data-skin='accession'] .ac-record {
+  margin: 0;
+}
+
+html[data-skin='accession'] .ac-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  padding: 14px 0 16px;
+}
+
+@media (min-width: 900px) {
+  html[data-skin='accession'] .ac-row {
+    grid-template-columns: 164px 1fr;
+    gap: 28px;
+    align-items: baseline;
+  }
+}
+
+html[data-skin='accession'] .ac-row-label {
+  margin: 0;
+}
+
+html[data-skin='accession'] .ac-row-value {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  row-gap: 7px;
+}
+
+html[data-skin='accession'] .ac-cell {
+  display: inline-block;
+  padding: 0 14px;
+  border-left: 1px solid var(--border);
+  font-family: var(--ac-body);
+  font-size: clamp(0.98rem, 1.35vw, 1.14rem);
+  font-variation-settings: 'opsz' 18, 'wght' 400;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+html[data-skin='accession'] .ac-cell:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* ── The note ───────────────────────────────────────────────────────────────
+   The one sentence that argues with the frame. Cream paper and a book italic
+   around an on-device language model is the point: the archival treatment only
+   works if the thing being catalogued is unmistakably current. */
+html[data-skin='accession'] .ac-note {
+  font-family: var(--ac-body);
+  font-style: italic;
+  font-size: clamp(1.05rem, 1.7vw, 1.32rem);
+  font-variation-settings: 'opsz' 28, 'wght' 340;
+  line-height: 1.5;
+  max-width: 54ch;
+  color: var(--text-muted);
+  margin: clamp(1.75rem, 4vw, 2.5rem) 0 clamp(1.5rem, 3.5vw, 2.25rem);
+}
+
+/* ── The apparatus ──────────────────────────────────────────────────────── */
+html[data-skin='accession'] .ac-actions {
+  margin: 0 0 clamp(2rem, 4vw, 2.75rem);
+}
+
+html[data-skin='accession'] .ac-actions .MuiButton-contained {
+  padding: 11px 22px;
+}
+
+html[data-skin='accession'] .ac-link.MuiButton-root {
+  position: relative;
+  min-width: 0;
+  padding: 11px 0 9px;
+  border-radius: 0;
+  color: var(--text);
+  background: transparent;
+}
+
+html[data-skin='accession'] .ac-link.MuiButton-root:hover {
+  background: transparent;
+}
+
+/* A link on paper is underlined, and the underline is the thing that reacts —
+   opacity and colour only, so the hover costs a composite and nothing else. */
+html[data-skin='accession'] .ac-link.MuiButton-root::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 1px;
+  background: var(--text);
+  opacity: 0.32;
+  transition:
+    opacity 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1)),
+    background-color 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+html[data-skin='accession'] .ac-link.MuiButton-root:hover::after,
+html[data-skin='accession'] .ac-link.MuiButton-root:focus-visible::after {
+  opacity: 1;
+  background: var(--link);
+}
+
+/* ═══ THE CATALOGUE ══════════════════════════════════════════════════════════ */
+
+/* ── The catalogue number ───────────────────────────────────────────────────
+ *
+ * The conceit lives or dies here. A spine number that appears once is a gag; a
+ * spine number on EVERY object is a catalogue — so it is a CSS counter over the
+ * whole document rather than a per-item decoration. That is not a shortcut, it
+ * is the only implementation that cannot drift out of sequence, cannot skip an
+ * entry a future content file adds, and costs nothing to maintain.
+ *
+ * Addressed structurally (`section#id > div:last-child > div`) rather than by a
+ * class, because the components are not ours to edit and a skin may not require
+ * them to be. If the content folders are ever renamed, the numbers simply stop
+ * appearing — which is the correct failure for pure decoration, and exactly
+ * what the skin INVARIANT asks for.
+ */
+html[data-skin='accession'] section#experience > div:last-child > div,
+html[data-skin='accession'] section#education > div:last-child > div,
+html[data-skin='accession'] section#projects > div:last-child > div {
+  counter-increment: ac-acc;
+}
+
+html[data-skin='accession'] section#experience > div:last-child > div::before,
+html[data-skin='accession'] section#education > div:last-child > div::before,
+html[data-skin='accession'] section#projects > div:last-child > div::before {
+  /**
+   * `2026.1`, not `ACC. 01`.
+   *
+   * Museum numbering practice (SPECTRUM) is specific and this follows it: the
+   * four-digit year FIRST — because year-last sorts wrongly the moment a
+   * machine touches it — a dot, then a sequence number with NO zero padding,
+   * and no classification or location baked into the number. 2026 is the year
+   * the collection was catalogued, which is the year an accession number
+   * records; it is not a claim about when the work was done.
+   */
+  content: 'Acc. 2026.' counter(ac-acc);
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--link);
+  margin-bottom: 7px;
+}
+
+/* ── Specimen plates (BEAT 5) ───────────────────────────────────────────────
+ *
+ * A project card is a mounted specimen: on hover the plate lifts 4px off the
+ * sheet and a hard-edged offset shadow appears under it, exactly as a card
+ * physically raised above paper would cast.
+ *
+ * The shadow is a PSEUDO-ELEMENT whose opacity is toggled, never an animated
+ * `box-shadow`, for the reason the contract gives — and it hangs off the GRID
+ * ITEM rather than the card, because the card is the thing being transformed
+ * and a transform makes it a stacking context, which would drag a `z-index: -1`
+ * child up in front of its own background.
+ */
+html[data-skin='accession'] section#projects > div:last-child > div {
+  position: relative;
+  padding-top: 24px;
+}
+
+html[data-skin='accession'] section#projects > div:last-child > div::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+}
+
+html[data-skin='accession'] section#projects > div:last-child > div::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 24px 0 0 0;
+  transform: translate(4px, 4px);
+  background: rgba(22, 19, 15, 0.13);
+  opacity: 0;
+  transition: opacity 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+html[data-skin='accession'] section#projects > div:last-child > div:hover::after,
+html[data-skin='accession']
+  section#projects
+  > div:last-child
+  > div:focus-within::after {
+  opacity: 1;
+}
+
+html[data-skin='accession'] section#projects .MuiCard-root {
+  transition:
+    transform 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color 140ms var(--ease-swift, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+html[data-skin='accession'] section#projects > div:last-child > div:hover .MuiCard-root,
+html[data-skin='accession']
+  section#projects
+  > div:last-child
+  > div:focus-within
+  .MuiCard-root {
+  transform: translateY(-4px);
+  /* Foil, and the only place on the page anything is lit (M16). */
+  border-color: var(--glow);
+}
+
+/* The pointer glow is a screen effect and this is a sheet of paper. Killing it
+   is not a preference: a coloured radial wash on cream reads as a stain. */
+html[data-skin='accession'] [data-glow]::before,
+html[data-skin='accession'] [data-glow]::after {
+  display: none;
+}
+
+/* ── The timeline, re-ruled ─────────────────────────────────────────────────
+   2px of divider becomes a hairline, and the dot becomes a punched square
+   register mark in stamp ink — the mark a catalogue uses to say "entry here". */
+html[data-skin='accession'] section#experience > div:last-child > div,
+html[data-skin='accession'] section#education > div:last-child > div {
+  border-left-width: 1px;
+}
+
+html[data-skin='accession'] .timeline-dot {
+  border-radius: 0;
+  width: 9px;
+  height: 9px;
+  left: -5px;
+  border-width: 1px;
+  border-color: var(--link);
+  background-color: var(--bg);
+}
+
+html[data-skin='accession'] section#experience > div:last-child > div:hover .timeline-dot,
+html[data-skin='accession'] section#education > div:last-child > div:hover .timeline-dot {
+  background-color: var(--link);
+  transform: none;
+}
+
+/* ── Section heads and their rules (BEAT 3) ─────────────────────────────────
+ *
+ * Every section heading gets a full-measure hairline under it, and the hairline
+ * DRAWS, left to right, 60ms behind its own label. It is the cheapest beat in
+ * the skin and it is the one that makes the page feel printed rather than laid
+ * out: a rule that is already there is furniture; a rule that arrives is a
+ * press.
+ *
+ * Driven off `Reveal`'s existing `is-armed`/`is-in` classes rather than a new
+ * observer — the resting state is DRAWN, so a visitor with no JS, a crawler, or
+ * anything `Reveal` decides not to arm sees the finished rule.
+ */
+html[data-skin='accession'] section[id] > div:first-child {
+  position: relative;
+  padding-bottom: 14px;
+  margin-bottom: 10px;
+}
+
+/* The heading's accent bar, re-cut through the `data-section-rule` seam. A
+   48px gradient fading to transparent is a screen device — on paper a rule is
+   a rule: shorter, solid, ink, square. It also removes the page's last gradient. */
+html[data-skin='accession'] [data-section-rule] {
+  width: 28px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--text);
+}
+
+html[data-skin='accession'] section[id] > div:first-child::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border);
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+html[data-skin='accession'] .reveal.is-armed section[id] > div:first-child::after {
+  transform: scaleX(0);
+}
+
+html[data-skin='accession'] .reveal.is-in section[id] > div:first-child::after {
+  transform: scaleX(1);
+  transition: transform 800ms var(--ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1))
+    60ms;
+}
+
+/* ── The plate turn, outgoing half (BEAT 1) ─────────────────────────────────
+ *
+ * The incoming half is the reveal choreography, retuned in `Skin.tokens()`
+ * (640ms in-out quart — a page being turned, not an element being switched on).
+ * This is the other half: the section head lifts 2% and fades as it leaves,
+ * the way the top sheet does when the next one comes up under it.
+ *
+ * Ranged to `exit`, which for a ~60px heading is a ~60px scroll window ending
+ * as it passes under the app bar — so it is never text moving while it is being
+ * read, which is the anti-pattern this could easily have become. Scrubbed, so
+ * `linear`: the scroll is already the easing.
+ */
+@supports (animation-timeline: view()) {
+  html[data-skin='accession'] section[id] > div:first-child {
+    animation: ac-plate-turn linear both;
+    animation-timeline: view();
+    animation-range: exit 20% exit 100%;
+  }
+}
+
+@keyframes ac-plate-turn {
+  to {
+    opacity: 0.2;
+    transform: translateY(-2%);
+  }
+}
+
+/* ── Optical-size scrub (BEAT 4) ────────────────────────────────────────────
+ *
+ * A section's intro line is set as a pull quote, and Newsreader's `opsz` axis
+ * is SCRUBBED from 8 to 36 as it crosses the fold. An optical size axis is not
+ * a size — it redraws the letterform for the size it will be seen at: at 8 the
+ * serifs thicken, the apertures open and the contrast flattens (a footnote);
+ * at 36 the serifs sharpen to hairlines and the stroke contrast opens up (a
+ * title). So the line does not grow, it CHANGES CHARACTER as it arrives, which
+ * is a thing only a typeface can do and only a variable one can animate.
+ *
+ * The registered property is `inherits: false`, so the per-frame invalidation
+ * stops at this paragraph instead of walking the section.
+ *
+ * Without `view()` support the paragraph is simply set at a good static optical
+ * size — visible content, never a hidden element waiting for a feature.
+ */
+html[data-skin='accession'] section[id] > p {
+  font-family: var(--ac-body);
+  font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+  line-height: 1.55;
+  max-width: 58ch;
+  color: var(--text-muted);
+  font-variation-settings: 'opsz' var(--ac-opsz), 'wght' 360;
+}
+
+@supports (animation-timeline: view()) {
+  html[data-skin='accession'] section[id] > p {
+    animation: ac-opsz-scrub linear both;
+    animation-timeline: view();
+    animation-range: entry 15% cover 40%;
+  }
+}
+
+@keyframes ac-opsz-scrub {
+  from {
+    --ac-opsz: 8;
+  }
+  to {
+    --ac-opsz: 36;
+  }
+}
+
+/* ── Cards and chips as plates and labels ──────────────────────────────────── */
+html[data-skin='accession'] .MuiCard-root {
+  background-color: var(--surface);
+}
+
+html[data-skin='accession'] .prose-content strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* A link in running copy is underlined at a paper weight, not coloured and
+   left to be guessed at. */
+html[data-skin='accession'] .prose-content a {
+  /* Ink stays ink; only the RULE under it is coloured. That is how a printed
+     reference marks a link, and it keeps running copy at 16.00:1 instead of
+     dropping every link in a paragraph to the accent's 7.14:1. */
+  color: var(--text);
+  text-decoration-color: var(--link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-skip-ink: auto;
+}
+
+/* ═══ OPT-OUTS ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Reduced motion — the OS setting AND the in-page one (`data-reduce-motion`,
+ * which exists because a visitor on a managed or borrowed machine frequently
+ * cannot reach the OS setting at all).
+ *
+ * Nothing below is HIDDEN. Every rule stills a moving thing at its FINISHED
+ * state: the rules are drawn, the plate is flat, the optical size is the static
+ * reading value. A printed page is exactly what this skin looks like when it is
+ * not allowed to move, which is a good sign that the motion was decoration.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin='accession'] .ac-rule,
+  html[data-skin='accession'] .ac-word > span,
+  html[data-skin='accession'] [data-ac-rise] {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  html[data-skin='accession'] .ac-stamp {
+    opacity: 1 !important;
+  }
+
+  html[data-skin='accession'] section[id] > div:first-child,
+  html[data-skin='accession'] section[id] > p {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  html[data-skin='accession'] section[id] > p {
+    --ac-opsz: 22;
+  }
+
+  html[data-skin='accession'] .reveal.is-in section[id] > div:first-child::after,
+  html[data-skin='accession'] .reveal.is-armed section[id] > div:first-child::after {
+    transform: scaleX(1);
+    transition: none;
+  }
+
+  html[data-skin='accession'] section#projects .MuiCard-root,
+  html[data-skin='accession'] section#projects > div:last-child > div::after,
+  html[data-skin='accession'] .ac-link.MuiButton-root::after {
+    transition: none;
+  }
+}
+
+html[data-reduce-motion][data-skin='accession'] .ac-rule,
+html[data-reduce-motion][data-skin='accession'] .ac-word > span,
+html[data-reduce-motion][data-skin='accession'] [data-ac-rise] {
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+html[data-reduce-motion][data-skin='accession'] .ac-stamp {
+  opacity: 1 !important;
+}
+
+html[data-reduce-motion][data-skin='accession'] section[id] > div:first-child,
+html[data-reduce-motion][data-skin='accession'] section[id] > p {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+html[data-reduce-motion][data-skin='accession'] section[id] > p {
+  --ac-opsz: 22;
+}
+
+html[data-reduce-motion][data-skin='accession']
+  .reveal.is-in
+  section[id]
+  > div:first-child::after,
+html[data-reduce-motion][data-skin='accession']
+  .reveal.is-armed
+  section[id]
+  > div:first-child::after {
+  transform: scaleX(1);
+  transition: none;
+}
+
+/**
+ * Print. `globals.css` already forces a light print surface, and this skin is
+ * the one that does not have to fight it — it is already a printed object. So
+ * the only thing removed is the chrome that is about the SCREEN's version of
+ * the page.
+ */
+@media print {
+  html[data-skin='accession'] .ac-stamp,
+  html[data-skin='accession'] .ac-atmos {
+    display: none !important;
+  }
+
+  html[data-skin='accession'] .ac-rule,
+  html[data-skin='accession'] .ac-word > span,
+  html[data-skin='accession'] [data-ac-rise] {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  html[data-skin='accession'] section[id] > div:first-child::after {
+    transform: scaleX(1) !important;
+  }
+}
+
+/**
+ * The dark counterpart.
+ *
+ * This skin PINS `light`, so this block is currently unreachable — it is here
+ * because a colour system that only exists in one mode is a colour scheme, not
+ * a system, and because the day the pin is lifted the failure would otherwise
+ * be a cream-coloured stylesheet on a black ground. Same stock at night: warm
+ * near-black paper, ivory ink, and a stamp that has been diluted rather than
+ * brightened (#C4553C, 4.23:1 on #12110F — annotation weight, never body copy).
+ */
+html[data-skin='accession'][data-theme='dark'] {
+  --bg: #12110f;
+  --bg-alt: #171613;
+  --surface: #1b1917;
+  --surface-alt: #221f1c;
+  --text: #ede8de;
+  --text-muted: #a8a196;
+  --border: #332f29;
+  --link: #d2705a;
+  --glow: #c8a96a;
+  --focus-ring: #ede8de;
+  --skin-accent: #c4553c;
+  --skin-rule: #332f29;
+  --skin-atmos-a: 0.05;
+}
+
+html[data-skin='accession'][data-theme='dark'] .ac-atmos-edge {
+  background: radial-gradient(
+    120% 90% at 50% 42%,
+    transparent 55%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+}
+
+html[data-skin='accession'][data-theme='dark'] .ac-stamp {
+  mix-blend-mode: screen;
+}
+
+html[data-skin='accession'][data-theme='dark']
+  section#projects
+  > div:last-child
+  > div::after {
+  background: rgba(0, 0, 0, 0.5);
+}

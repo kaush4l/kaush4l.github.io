@@ -1,6 +1,681 @@
-/**
- * The terminal skin's effects layer. Every rule is scoped under
- * `html[data-skin="terminal"]`, so this file is inert under every other skin.
+/* ═══ skin-terminal.css — the systems skin's effects layer ═══════════════════
  *
- * INVARIANT: deleting this file must leave a complete, readable résumé.
- */
+ * Every rule is scoped under `html[data-skin="terminal"]`, an attribute that is
+ * absent on every other skin, so this file is inert unless Terminal is chosen.
+ *
+ * INVARIANT: delete this file and the page must still be a complete, readable,
+ * correctly-graded résumé. Nothing below is the sole carrier of a boundary, a
+ * state, or a level of hierarchy — `src/skins/terminal/index.ts` owns the
+ * ground and the MUI palette, and those survive this file's absence.
+ *
+ * ── This skin runs ON TOP OF coder mode ─────────────────────────────────────
+ * It pins `pinAppearance: 'coder'`, so `coder.css` is live underneath: hairline
+ * elevation, squared chips, mono metadata, the FAB's model-state halo and a
+ * full-viewport scanline. That layer is designed WITH rather than against —
+ * the only things retuned below are the two places its defaults were built for
+ * a different palette:
+ *
+ *   1. `body::after`'s scanline, which is drawn from `--hc-fill` (the cinematic
+ *      grade's cyan bounce light) at 5% over a 3px period. Rehued to this
+ *      skin's accent and dropped to 3.5% over 4px — a scanline you can see is a
+ *      costume; one you can only feel is a screen.
+ *   2. `--font-display`, which coder maps to `--font-mono` (JetBrains Mono).
+ *      JetBrains is a superb 13px face and a generic 90px one, so display
+ *      moves to Space Mono — the one Google Fonts monospace actually drawn for
+ *      headline use — while JetBrains keeps every readout, log line and date.
+ *      source: https://medium.com/google-design/introducing-space-mono-a-new-monospaced-typeface-by-colophon-foundry-for-google-fonts-84367eac6dfb
+ *
+ * ── Colour ──────────────────────────────────────────────────────────────────
+ * One lit hue: `#5EBDAB`, Kali Linux's terminal green, which is the palette
+ * Mr. Robot's title sequence was built from and the reason it never reads as
+ * The Matrix — it is a desaturated teal, not a phosphor. Kali's amber
+ * `#FEA44C` is the only other colour on the page and it appears in exactly one
+ * situation: a non-nominal on-device-model state. The two are never lit at
+ * once. Ratios are measured in `src/skins/terminal/index.ts`.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ────────────────────────────────────────────────────────────────
+ *
+ * On `body`, not `html`, for the same reason coder.css is: `next/font` declares
+ * its family variables on a CLASS ON THE BODY ELEMENT, and the provider writes
+ * `--bg`, `--hc-key` and friends as INLINE STYLES ON `<html>`. A stylesheet
+ * rule can never outrank an inline style on the same element, so redefining
+ * them at `html` scope silently does nothing; redefining them on `body` shadows
+ * the inherited value for every descendant, which is every rendered pixel. */
+html[data-skin='terminal'] body {
+  /* Space Mono 700 is wired in `layout.tsx` as `--font-terminal-display`. The
+     nested fallback matters: a bare `var(--undefined)` is invalid at computed-
+     value time and would take the whole declaration down with it. */
+  --font-display: var(--font-terminal-display, var(--font-mono)), ui-monospace,
+    SFMono-Regular, Menlo, monospace;
+
+  /* `.gradient-text` and any hand-written rule reading the hue pair. The page
+     grade in `cinema.css` lights the document from `--hc-key` (upper right) and
+     `--hc-fill` (lower left); left at the hue table's purple/cyan they would put
+     two foreign hues behind a page whose whole argument is that ONE hue means
+     something. Both are now the accent family, so the frame is lit rather than
+     tinted twice. */
+  --primary: #1e7263;
+  --secondary: #5ebdab;
+  --hc-key: 94, 189, 171;
+  --hc-fill: 71, 212, 185;
+  --hc-page-key-a: 0.055;
+  --hc-page-fill-a: 0.038;
+  --hc-page-amb-a: 0.018;
+  --glow-pool-a: 0.1;
+  --glow-rim-a: 0.7;
+
+  --tm-accent: #5ebdab;
+  --tm-glow: #47d4b9;
+  /* Non-nominal machine state ONLY. Never decoration. */
+  --tm-warn: #fea44c;
+  --tm-rule: rgba(230, 230, 230, 0.08);
+  --tm-well: rgba(26, 30, 38, 0.55);
+}
+
+/* Motion vocabulary: `globals.css` now owns the curves for the whole page
+   (`--ease-out-quint`, `--ease-swift`, …), so this file references those tokens
+   rather than re-spelling the same béziers. One page, one motion language. */
+
+/* Retuned, not disabled: the scanline is coder mode's texture and this skin
+   wants it — just quieter, and in its own hue. 1px on a 4px period at 3.5%. */
+html[data-skin='terminal'] body::after {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(var(--hc-fill), 0.035) 0px,
+    rgba(var(--hc-fill), 0.035) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+/* ═══ ATMOSPHERE ════════════════════════════════════════════════════════════
+ * Three static washes inside the fixed, pointer-transparent, z-index:-1 frame
+ * `SkinAtmosphere` owns. No canvas, no loop, no frames. */
+
+html[data-skin='terminal'] .tm-atmos,
+html[data-skin='terminal'] .tm-atmos > * {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The character-cell grid. A terminal's real substrate, at the threshold of
+   visibility and masked away from the middle of the column so it never sits
+   under a line of running text. */
+html[data-skin='terminal'] .tm-atmos-grid {
+  background-image:
+    linear-gradient(to right, rgba(94, 189, 171, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(94, 189, 171, 0.04) 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: radial-gradient(
+    115vmax 95vmax at 50% 18%,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.28) 52%,
+    transparent 78%
+  );
+  mask-image: radial-gradient(
+    115vmax 95vmax at 50% 18%,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.28) 52%,
+    transparent 78%
+  );
+  opacity: 0.75;
+  /* The only thing on this layer that ever changes, and it changes because the
+     machine did — see Atmosphere.tsx. */
+  transition: opacity 900ms var(--ease-out-quint);
+}
+
+html[data-skin='terminal'] .tm-atmos[data-state='loading'] .tm-atmos-grid {
+  opacity: 1;
+}
+
+html[data-skin='terminal'] .tm-atmos-key {
+  background: radial-gradient(
+    82vmax 58vmax at 88% -12%,
+    rgba(94, 189, 171, 0.09) 0%,
+    transparent 66%
+  );
+}
+
+html[data-skin='terminal'] .tm-atmos-vignette {
+  background: radial-gradient(
+    128% 108% at 50% 42%,
+    transparent 52%,
+    rgba(2, 4, 7, 0.55) 100%
+  );
+}
+
+/* ═══ THE FOLD ══════════════════════════════════════════════════════════════ */
+
+html[data-skin='terminal'] .tm-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: inherit;
+  padding: clamp(16px, 4vw, 48px) 0 clamp(24px, 5vw, 56px);
+}
+
+html[data-skin='terminal'] .tm-console {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  /* Square, because coder mode's whole geometric argument is squareness — and
+     because a rounded terminal is a screenshot of a Mac, not a terminal. */
+  border-radius: 4px;
+  /* Translucent, so the atmosphere's key light passes through the frame rather
+     than stopping at it. The resulting ground is DARKER than `--surface`, so
+     every ratio measured against `--surface` is a floor, not a target. */
+  background: rgba(14, 18, 25, 0.72);
+  overflow: hidden;
+}
+
+/* ── The rail ── */
+html[data-skin='terminal'] .tm-rail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px clamp(14px, 2.4vw, 22px);
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+html[data-skin='terminal'] .tm-rail-path {
+  display: inline-flex;
+  gap: 6px;
+}
+html[data-skin='terminal'] .tm-rail-host {
+  color: var(--text);
+}
+html[data-skin='terminal'] .tm-rail-sep {
+  color: rgba(230, 230, 230, 0.24);
+}
+html[data-skin='terminal'] .tm-rail-spacer {
+  flex: 1;
+  height: 1px;
+  background: var(--tm-rule);
+}
+html[data-skin='terminal'] .tm-rail-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+html[data-skin='terminal'] .tm-rail-state[data-tone='ok'] {
+  color: var(--tm-accent);
+}
+html[data-skin='terminal'] .tm-rail-state[data-tone='warn'] {
+  color: var(--tm-warn);
+}
+/* A square, not a dot. 6px, no blur — the glow budget is spent on the FAB. */
+html[data-skin='terminal'] .tm-dot {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  flex: none;
+}
+
+/* ── Body grid. Detail on the left, aggregate on the right — one consistent
+   spatial logic, which is the Bloomberg lesson rather than "more density". ── */
+html[data-skin='terminal'] .tm-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.85fr);
+  gap: clamp(20px, 3vw, 40px);
+  padding: clamp(22px, 3.4vw, 44px) clamp(16px, 2.6vw, 34px);
+}
+
+@media (max-width: 900px) {
+  html[data-skin='terminal'] .tm-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── The wordmark ── */
+html[data-skin='terminal'] .tm-name {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 0.98;
+  /* Fixed advance width opens gaps at display scale; negative tracking closes
+     them. This is the difference between studio mono and `font-family: monospace`. */
+  letter-spacing: -0.035em;
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+html[data-skin='terminal'] .tm-name-line {
+  display: block;
+  font-size: clamp(2.1rem, 6.4vw, 4.4rem);
+}
+html[data-skin='terminal'] .tm-name-line--2 {
+  color: var(--tm-accent);
+  font-size: clamp(1.6rem, 4.6vw, 3.1rem);
+  letter-spacing: -0.02em;
+}
+/* Fixed advance width means a scrambling glyph can never resize the line —
+   which is the whole reason a decode is safe here and a typewriter is not. */
+html[data-skin='terminal'] .tm-char {
+  display: inline-block;
+}
+
+html[data-skin='terminal'] .tm-headline {
+  margin: 0 0 22px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: clamp(0.98rem, 1.5vw, 1.12rem);
+  line-height: 1.5;
+  color: var(--text);
+  max-width: 46ch;
+}
+
+/* ── The proof manifest ──
+   The `proof` frontmatter, split on its own separator. Nothing is reworded;
+   the numerals are simply lit, which is emphasis, not a claim. */
+html[data-skin='terminal'] .tm-proof {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  border-top: 1px solid var(--tm-rule);
+  max-width: 52ch;
+}
+
+html[data-skin='terminal'] .tm-proof-item {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--tm-rule);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.83rem;
+  line-height: 1.45;
+  color: var(--text);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+html[data-skin='terminal'] .tm-proof-idx {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  flex: none;
+  width: 2ch;
+}
+
+html[data-skin='terminal'] .tm-num {
+  color: var(--tm-accent);
+  font-weight: 700;
+}
+
+/* ── Loaded modules ── */
+html[data-skin='terminal'] .tm-modules {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 26px;
+  max-width: 52ch;
+}
+
+html[data-skin='terminal'] .tm-modules-label,
+html[data-skin='terminal'] .tm-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.65rem;
+  /* All-caps at micro sizes is unreadable at default tracking. */
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex: none;
+}
+
+html[data-skin='terminal'] .tm-modules-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html[data-skin='terminal'] .tm-module {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text);
+  background: rgba(26, 30, 38, 0.42);
+}
+
+/* ── Actions ── */
+html[data-skin='terminal'] .tm-assistant {
+  margin: 0 0 16px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 52ch;
+}
+
+html[data-skin='terminal'] .tm-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+html[data-skin='terminal'] .tm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    border-color 140ms var(--ease-swift),
+    background-color 140ms var(--ease-swift),
+    color 140ms var(--ease-swift);
+}
+
+html[data-skin='terminal'] .tm-btn--primary {
+  border-color: rgba(94, 189, 171, 0.55);
+  color: var(--tm-accent);
+}
+
+html[data-skin='terminal'] .tm-btn:hover {
+  border-color: var(--tm-accent);
+  background: rgba(94, 189, 171, 0.09);
+}
+
+html[data-skin='terminal'] .tm-btn-mark {
+  color: var(--tm-accent);
+}
+
+/* ═══ THE INSTRUMENT PANEL ══════════════════════════════════════════════════ */
+
+html[data-skin='terminal'] .tm-instruments {
+  align-self: start;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--tm-well);
+  padding: 16px;
+}
+
+/* The stat panel: one big number, one sparkline, and that is the whole
+   pattern. The number answers "what"; the trace answers "and is that fine". */
+html[data-skin='terminal'] .tm-stat-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+html[data-skin='terminal'] .tm-stat-unit {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* Two cells, equal width, so the two big numbers share a baseline and a left
+   edge apiece. `minmax(0, 1fr)` rather than `1fr`: a `ch`-reserved child would
+   otherwise force the column wider than its share and break the symmetry. */
+html[data-skin='terminal'] .tm-stat-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+html[data-skin='terminal'] .tm-stat-cell {
+  min-width: 0;
+  margin-bottom: 4px;
+}
+
+html[data-skin='terminal'] .tm-stat-num {
+  display: inline-block;
+  /* Reserved in `ch` so a four-character reading and a two-character one
+     occupy the same box. A live number that reflows its neighbours is the
+     fastest way to make an instrument look fake. */
+  min-width: 4.5ch;
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 3.2vw, 1.9rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* `live` / `last run`. Empty until the first token is measured — an unlabelled
+   gap is the honest rendering of a measurement that has not happened yet. */
+html[data-skin='terminal'] .tm-stat-tag {
+  display: block;
+  margin-top: 2px;
+  min-height: 1em;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+html[data-skin='terminal'] .tm-trace {
+  display: block;
+  width: 100%;
+  height: 38px;
+}
+
+html[data-skin='terminal'] .tm-stat-note {
+  margin: 6px 0 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.63rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+html[data-skin='terminal'] .tm-readouts {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--tm-rule);
+  display: grid;
+  gap: 0;
+}
+
+html[data-skin='terminal'] .tm-readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--tm-rule);
+}
+html[data-skin='terminal'] .tm-readout:last-child {
+  border-bottom: 0;
+}
+
+html[data-skin='terminal'] .tm-readout-value {
+  margin: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.74rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums slashed-zero;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* ── Foot ── */
+html[data-skin='terminal'] .tm-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px clamp(16px, 2.6vw, 34px) 14px;
+  border-top: 1px solid var(--border);
+}
+html[data-skin='terminal'] .tm-foot-rule {
+  width: 28px;
+  height: 1px;
+  background: var(--tm-accent);
+  flex: none;
+  transition: background-color 400ms var(--ease-swift);
+}
+
+/* The scroll cue's rule reports the same machine state the rail and the FAB
+   already do — 28×1px, zero blur, so it costs nothing against the glow budget
+   and cannot bleed into type. This is the whole use of `data-model-state` on
+   the fold: one more honest channel on one truth. */
+html[data-skin='terminal'] .tm-hero[data-model-state='loading'] .tm-foot-rule,
+html[data-skin='terminal'] .tm-hero[data-model-state='error'] .tm-foot-rule {
+  background: var(--tm-warn);
+}
+
+/* ═══ ENTRANCE ══════════════════════════════════════════════════════════════
+ *
+ * CSS only — no timeline, no JS. So JS-off, reduced motion and print all land
+ * on a complete hero rather than an empty one, and there is no second writer
+ * competing with the rAF loop for a transform.
+ *
+ * Eight elements at 55ms is a 385ms total stagger, comfortably under the ~600ms
+ * ceiling past which a stagger stops reading as one gesture and starts reading
+ * as a queue. */
+@keyframes tm-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+html[data-skin='terminal'] .tm-rail,
+html[data-skin='terminal'] .tm-name,
+html[data-skin='terminal'] .tm-headline,
+html[data-skin='terminal'] .tm-proof,
+html[data-skin='terminal'] .tm-modules,
+html[data-skin='terminal'] .tm-actions,
+html[data-skin='terminal'] .tm-instruments,
+html[data-skin='terminal'] .tm-foot {
+  animation: tm-rise 560ms var(--ease-out-quint) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+/* ═══ THE PAGE BELOW THE FOLD ═══════════════════════════════════════════════
+ * Restrained on purpose. `--font-display` already moved the wordmark, the
+ * sidebar labels and all six section headings to Space Mono in one token, so
+ * what is left is the numeric detail that makes a data column look engineered.
+ * Monospace gets tabular figures free from its fixed advance width, but the
+ * slashed zero is a separate OpenType feature and has to be asked for.
+ *   source: https://dev.to/alanwest/tabular-numbers-in-css-font-variant-numeric-vs-monospace-hacks-25cn */
+html[data-skin='terminal'] .MuiTypography-caption,
+html[data-skin='terminal'] .MuiTypography-overline,
+html[data-skin='terminal'] .MuiChip-label,
+html[data-skin='terminal'] .timeline-period {
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* Squarer than coder's 4px. The chip layer is the densest thing on the page and
+   a 4px radius at 24px tall reads as a pill; 2px reads as a cell. */
+html[data-skin='terminal'] .MuiChip-root {
+  border-radius: 2px;
+}
+
+/* Uppercase micro-labels need positive tracking or they set cramped. */
+html[data-skin='terminal'] .MuiTypography-overline {
+  letter-spacing: 0.12em;
+}
+
+/* ═══ REDUCED MOTION ════════════════════════════════════════════════════════
+ * Everything is STILLED, nothing is hidden. The entrance resolves to its
+ * resting state, the decode never starts (the final glyph is already the
+ * rendered child), and the frame-time loop never spins up — the panel keeps all
+ * eight readouts and simply stops sampling. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin='terminal'] .tm-rail,
+  html[data-skin='terminal'] .tm-name,
+  html[data-skin='terminal'] .tm-headline,
+  html[data-skin='terminal'] .tm-proof,
+  html[data-skin='terminal'] .tm-modules,
+  html[data-skin='terminal'] .tm-actions,
+  html[data-skin='terminal'] .tm-instruments,
+  html[data-skin='terminal'] .tm-foot {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  html[data-skin='terminal'] .tm-atmos-grid {
+    transition: none;
+  }
+  html[data-skin='terminal'] .tm-btn {
+    transition: none;
+  }
+}
+
+/* The same, for the in-page stillness request the appearance menu stamps. */
+html[data-skin='terminal'][data-reduce-motion] .tm-rail,
+html[data-skin='terminal'][data-reduce-motion] .tm-name,
+html[data-skin='terminal'][data-reduce-motion] .tm-headline,
+html[data-skin='terminal'][data-reduce-motion] .tm-proof,
+html[data-skin='terminal'][data-reduce-motion] .tm-modules,
+html[data-skin='terminal'][data-reduce-motion] .tm-actions,
+html[data-skin='terminal'][data-reduce-motion] .tm-instruments,
+html[data-skin='terminal'][data-reduce-motion] .tm-foot {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+html[data-skin='terminal'][data-reduce-motion] .tm-atmos-grid {
+  transition: none;
+}
+
+/* ═══ PRINT ═════════════════════════════════════════════════════════════════
+ * `globals.css` forces a light print surface and resets the tokens with
+ * `!important`, which this file does not fight. What is left is to drop the
+ * console's chrome so the fold prints as a name, a headline and a manifest —
+ * the three things that belong on paper. The instrument panel, the rail and
+ * the buttons carry `no-print`. */
+@media print {
+  html[data-skin='terminal'] .tm-console {
+    border: 0;
+    background: none;
+  }
+  html[data-skin='terminal'] .tm-body {
+    display: block;
+    padding: 0;
+  }
+  html[data-skin='terminal'] .tm-hero {
+    padding: 0;
+    min-height: 0;
+  }
+  html[data-skin='terminal'] .tm-name,
+  html[data-skin='terminal'] .tm-rail,
+  html[data-skin='terminal'] .tm-proof,
+  html[data-skin='terminal'] .tm-modules,
+  html[data-skin='terminal'] .tm-headline,
+  html[data-skin='terminal'] .tm-actions,
+  html[data-skin='terminal'] .tm-instruments,
+  html[data-skin='terminal'] .tm-foot {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  html[data-skin='terminal'] .tm-name-line--2,
+  html[data-skin='terminal'] .tm-num {
+    color: #000 !important;
+  }
+  html[data-skin='terminal'] .tm-module {
+    background: none !important;
+    border-color: #ccc !important;
+  }
+}

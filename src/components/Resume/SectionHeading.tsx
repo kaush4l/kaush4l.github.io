@@ -39,8 +39,13 @@ export default function SectionHeading({ icon, title, accent = 'primary' }: Sect
                 mb: { xs: 3, md: 4 },
             }}
         >
+            {/* The section rule. `data-section-rule` is a STYLING SEAM, not
+                state: a skin re-cuts this bar (Rōnin draws it as a brush
+                stroke), and without a stable hook it had to match this box by
+                `aria-hidden`, which is unique here only by accident. */}
             <Box
                 aria-hidden
+                data-section-rule
                 sx={{
                     flexShrink: 0,
                     width: 48,

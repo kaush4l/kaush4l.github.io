@@ -88,7 +88,9 @@ const terminal: Skin = {
         '--reveal-distance': '10px',
         '--reveal-duration': '480ms',
         '--reveal-stagger': '34ms',
-        '--reveal-ease': 'cubic-bezier(0.22, 1, 0.36, 1)',
+        // `globals.css` owns the page's curves; this references the token
+        // rather than re-spelling the bézier, so there is one motion language.
+        '--reveal-ease': 'var(--ease-out-quint)',
 
         '--skin-ink': INK,
         '--skin-accent': ACCENT,
@@ -117,17 +119,29 @@ const terminal: Skin = {
             ...base,
             palette: {
                 ...base.palette,
+                /**
+                 * The two FILLS are darker than they look like they want to
+                 * be, and that is a focus-ring measurement rather than taste.
+                 * `--focus-ring` is the bright accent `#47D4B9`, and the
+                 * contract asks it to clear 3:1 against every fill it can land
+                 * on — which includes the chat FAB and every contained button.
+                 * A mid-tone `#3FA894` fill put the ring at 1.57:1 and would
+                 * have made keyboard focus invisible on the single most
+                 * important control on the page. These land the ring at 3.18:1
+                 * and 3.13:1 while keeping white labels above 5.7:1 and the
+                 * fills themselves above 3:1 on the ground.
+                 */
                 primary: {
-                    main: '#3FA894',
-                    light: ACCENT, // 8.77:1 on the ground — the text channel
-                    dark: '#2A6F62',
-                    contrastText: '#04201B', // 8.6:1 on #3FA894
+                    main: '#1E7263', // ring 3.13:1 · white label 5.77:1 · 3.42:1 on ground
+                    light: ACCENT, // 8.77:1 on the ground — the TEXT channel
+                    dark: '#14544A',
+                    contrastText: '#FFFFFF',
                 },
                 secondary: {
-                    main: '#5B7A93',
+                    main: '#4A6880', // ring 3.18:1 · white label 5.86:1 · 3.36:1 on ground
                     light: '#93A1B0', // 7.47:1 on the ground
-                    dark: '#33485A',
-                    contrastText: '#050A10',
+                    dark: '#2F4455',
+                    contrastText: '#FFFFFF',
                 },
             },
         };

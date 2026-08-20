@@ -147,7 +147,7 @@ export default function TerminalHero({ about }: HeroProps) {
     const rootRef = useRef<HTMLElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-    const { llm, modelName, resumeCorpus } = useModelContext();
+    const { llm, modelName, resumeCorpus, llmWorker } = useModelContext();
 
     const title = text(about?.title);
     const [given, family] = splitName(about?.title);
@@ -220,6 +220,101 @@ export default function TerminalHero({ about }: HeroProps) {
             alive = false;
         };
     }, []);
+
+    /**
+     * ── The decode rate. The strongest number available on this page. ───────
+     *
+     * `ModelContext` already exposes the raw worker (`llmWorker`, "exposed for
+     * consumption by Chat Widget"), and `llm.worker.js` builds its `TextStreamer`
+     * with `callback_function: (text) => report({ status: 'stream', … })`. So
+     * every decoded chunk the model produces posts exactly one message to this
+     * tab, as it is produced. Counting those messages against wall time is a
+     * genuine measurement of real work — the same standard every other readout
+     * on this panel is held to — and it needs no file outside this one.
+     *
+     * (One `TextStreamer` chunk is one decoded token for this model, which is
+     * why the unit is honest as tok/s rather than "chunks/s".)
+     *
+     * Four properties this deliberately has:
+     *
+     *   · It is UNAVAILABLE until the first stream message ever arrives. A `0.0`
+     *     placeholder is not an absent value, it is a claim that the machine
+     *     decoded nothing — and it would be a false one.
+     *   · It measures a ~2s ROLLING WINDOW, so it reports what the machine is
+     *     doing now rather than an average dragged down by the prefill pause at
+     *     the start of the turn.
+     *   · It LATCHES when the stream stops. The interesting number is what this
+     *     machine does under load; a rate decaying toward zero while the model
+     *     sits idle would be misleading in the opposite direction. The tag next
+     *     to it says which of the two it is showing.
+     *   · It costs NOTHING at rest: there is no timer. The only code that runs
+     *     is a message handler, and it only runs because the model is producing
+     *     tokens. The listener detaches on unmount and whenever the worker is
+     *     replaced.
+     *
+     * It writes straight to the DOM rather than through state for the same
+     * reason the frame readout does — a `setState` per token would re-render the
+     * fold dozens of times a second — and it is deliberately NOT gated on
+     * reduced motion. A number is information; only the trace beside it is
+     * animation, and stillness never subtracts content.
+     */
+    useEffect(() => {
+        if (!llmWorker) return;
+
+        const root = rootRef.current;
+        if (!root) return;
+        const valueEl = root.querySelector<HTMLElement>('[data-live="tokrate"]');
+        const tagEl = root.querySelector<HTMLElement>('[data-live="tokrate-tag"]');
+
+        /** Timestamps of the stream messages inside the rolling window. */
+        let stamps: number[] = [];
+        const WINDOW_MS = 2000;
+        /** Rate changes faster than the eye resolves; write at most ~8Hz. */
+        let lastPaint = 0;
+        let everMeasured = false;
+
+        const paint = (rate: number, live: boolean) => {
+            if (valueEl) valueEl.textContent = rate.toFixed(1);
+            if (tagEl) tagEl.textContent = live ? 'live' : 'last run';
+        };
+
+        const latch = () => {
+            stamps = [];
+            if (everMeasured && tagEl) tagEl.textContent = 'last run';
+        };
+
+        const onMessage = (event: MessageEvent) => {
+            const { type, data } = event.data ?? {};
+
+            if (type === 'complete' || type === 'error') {
+                latch();
+                return;
+            }
+            if (type !== 'progress' || data?.status !== 'stream') return;
+
+            const now = performance.now();
+            stamps.push(now);
+            const cutoff = now - WINDOW_MS;
+            while (stamps.length && stamps[0] < cutoff) stamps.shift();
+
+            // n timestamps bound n-1 intervals. Dividing by n would inflate the
+            // rate by a whole token on a short window.
+            if (stamps.length < 2) return;
+            const span = (stamps[stamps.length - 1] - stamps[0]) / 1000;
+            if (span <= 0) return;
+
+            everMeasured = true;
+            if (now - lastPaint < 120) return;
+            lastPaint = now;
+            paint((stamps.length - 1) / span, true);
+        };
+
+        llmWorker.addEventListener('message', onMessage);
+        return () => {
+            llmWorker.removeEventListener('message', onMessage);
+            latch();
+        };
+    }, [llmWorker]);
 
     /**
      * The model readout, derived from the SAME state the FAB's halo is bound to
@@ -364,7 +459,11 @@ export default function TerminalHero({ about }: HeroProps) {
                             }
                             remaining = true;
                             if (local < 0) {
-                                el.textContent = ' ';
+                                // A non-breaking space, not a plain one: a
+                                // leading space in an inline-block collapses to
+                                // zero width, and the line would then jitter
+                                // sideways as each character resolved.
+                                el.textContent = '\u00A0';
                                 return;
                             }
                             if (swap) {
@@ -560,18 +659,38 @@ export default function TerminalHero({ about }: HeroProps) {
                         of the printed résumé, so it does not print. ── */}
                     <aside className="tm-instruments no-print" style={rise()}>
                         <div className="tm-stat">
-                            <div className="tm-stat-head">
-                                <span className="tm-label">frame time</span>
-                                <span className="tm-stat-unit">ms</span>
-                            </div>
-                            <div className="tm-stat-value">
-                                <span data-live="frame" className="tm-stat-num">
-                                    —
-                                </span>
+                            {/* Two numbers, one instrument: how fast this machine
+                                DRAWS, and how fast it THINKS. */}
+                            <div className="tm-stat-row">
+                                <div className="tm-stat-cell">
+                                    <div className="tm-stat-head">
+                                        <span className="tm-label">frame time</span>
+                                        <span className="tm-stat-unit">ms</span>
+                                    </div>
+                                    <span data-live="frame" className="tm-stat-num">
+                                        —
+                                    </span>
+                                </div>
+                                <div className="tm-stat-cell">
+                                    <div className="tm-stat-head">
+                                        <span className="tm-label">decode</span>
+                                        <span className="tm-stat-unit">tok/s</span>
+                                    </div>
+                                    <span data-live="tokrate" className="tm-stat-num">
+                                        —
+                                    </span>
+                                    {/* Empty until the first token is counted:
+                                        an absent measurement says nothing, and
+                                        that is the correct thing for it to say. */}
+                                    <span className="tm-stat-tag" data-live="tokrate-tag" />
+                                </div>
                             </div>
                             <canvas ref={canvasRef} className="tm-trace" aria-hidden />
                             <p className="tm-stat-note">
-                                your machine, sampled 4× a second. the band is the 60fps budget.
+                                frame time is your machine, sampled 4× a second; the band is
+                                the 60fps budget. decode is counted off the model worker as it
+                                produces tokens, over a two-second window, and holds the last
+                                run&rsquo;s rate between answers.
                             </p>
                         </div>
 

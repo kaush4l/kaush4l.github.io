@@ -160,7 +160,7 @@ const jetbrainsMono = JetBrains_Mono({
 // page read as a costume.
 const shipporiMincho = Shippori_Mincho_B1({
   subsets: ["latin"],
-  weight: ["700", "800"],
+  weight: ["400", "700", "800"],
   display: "swap",
   preload: false,
   variable: "--font-ronin-display",

@@ -3,4 +3,1132 @@
  * `html[data-skin="sanctum"]`, so this file is inert under every other skin.
  *
  * INVARIANT: deleting this file must leave a complete, readable résumé.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THE ARC
+ * Ten years read as one sustained act of service: a lamp is lit, carried up a
+ * colonnade of engagements, thrown across an ocean, and finally handed to
+ * whoever is reading.
+ *
+ * THE DISCIPLINE — three colours, one job each
+ *   GOLD    #C9A227  is LINE    hairlines, rules, stroked geometry. Never fill.
+ *   SAFFRON #FF9933  is LIGHT   the lamp, links, the lit edge. Never a surface.
+ *   SINDOOR #C2410C  is MASS    the one filled control. Weight, not accent.
+ * The moment gold becomes a fill or a gradient this page is a wedding
+ * invitation, so every gold rule below is a stroke or a 1px edge and nothing
+ * else.
+ *
+ * THE MOTION BUDGET — deliberately tiny, and that is the design
+ *   · the fold plays one CSS timeline, once, and then costs zero frames;
+ *   · each section fires ONE ~1.3s glimpse the first time it enters the frame,
+ *     bound to what that section actually says, and then holds as a still;
+ *   · one diya breathes page-wide at ≤5% opacity;
+ *   · one gold arc is drawn by the scroll position and nothing else.
+ * Nothing loops in the reader's periphery. A visitor who scrolls fast should
+ * feel they missed something.
+ *
+ * DEPTH WITHOUT LIGHT POLLUTION — the specific techniques, and where from
+ *   · a warm near-black (#0A0806) with a three-step surface ramp, because
+ *     elevation in a dark UI is carried by surface luminance, never by a drop
+ *     shadow — a shadow on this ground has nothing left to darken;
+ *   · a STATIC tiled grain at 4.5%, which is what stops a large dark field from
+ *     reading as an unpainted div (the standard "keep it tactile" fix in dark
+ *     UI practice, and the reason near-black beats #000);
+ *   · ONE aperture of light rather than corner lamps — Turrell's Space Division
+ *     Constructions: a single aperture against a dark field reads as flat and
+ *     as infinitely deep at the same time, and two lights resolve the ambiguity
+ *     and kill the depth;
+ *   · gold-leaf-on-black surface logic (Tanjore): the drawing is in the LINE.
+ *     Structure at almost no luminance is what a near-black page needs — more
+ *     brightness is what it never needs;
+ *   · content emerging FROM darkness rather than sitting on a lit ground — the
+ *     museum-wall reading of dark portfolio work (Isabel Moranta, Awwwards SOTD;
+ *     the Pahari and Himachal Awwwards entries make the same ember-on-dark pair
+ *     jury-legible).
+ * ═══════════════════════════════════════════════════════════════════════════
  */
+
+html[data-skin='sanctum'] {
+  --sx-gold: #c9a227;
+  --sx-gold-ch: 201, 162, 39;
+  --sx-saffron: #ff9933;
+  --sx-saffron-ch: 255, 153, 51;
+  --sx-sindoor: #c2410c;
+  --sx-glow: #ffc46b;
+
+  --sx-line: rgba(201, 162, 39, 0.3);
+  --sx-line-faint: rgba(201, 162, 39, 0.14);
+
+  /* The niche every per-section glimpse is drawn inside. Both pseudo-elements
+     share this box, so one pair of numbers scales the whole set — and because
+     every glimpse animates in PERCENTAGES of its own box, the mobile size below
+     needs no second set of keyframes. */
+  --sx-niche-w: 128px;
+  --sx-niche-h: 92px;
+
+  /* `globals.css` resolves these from the violet/cyan hue table, and they reach
+     the list markers, the scrollbar and the section heading rules. Left alone,
+     a devotional black page grows lavender bullets. */
+  --primary: #ff9933;
+  --secondary: #c9a227;
+  --scrollbar-thumb: rgba(201, 162, 39, 0.28);
+  --scrollbar-hover: rgba(255, 153, 51, 0.55);
+
+  /* `cinema.css` paints ONE fixed page grade from these two channel pairs, and
+     it is the layer that carries the light past the fold. It is not deleted
+     here — it is re-aimed, at a fraction of its shipped strength, because this
+     page's light budget is one lamp. KEY is the light (saffron); FILL is the
+     lit edge (gold), which is also what the pointer glow's rim resolves to. */
+  --hc-key: 255, 153, 51;
+  --hc-fill: 201, 162, 39;
+  --hc-page-key-a: 0.05;
+  --hc-page-fill-a: 0.035;
+  --hc-page-amb-a: 0.018;
+  --glow-pool-a: 0.05;
+  --glow-rim-a: 0.5;
+}
+
+/* ─── Typographic voice ───────────────────────────────────────────────────── */
+
+/**
+ * `skins.css` already maps this skin's three faces onto `--font-display`,
+ * `--font-sans` and `--font-label`, and it does so on `body` because that is
+ * where next/font declares its variables. This file must not restate that.
+ *
+ * What it MUST do is stop the display face from becoming the body face.
+ * `globals.css` sets `body { font-family: var(--font-display), … }` — correct
+ * for Amarante, fatal for Rozha One, which is a high-contrast Didone display
+ * cut and turns a paragraph of résumé prose into a wall. Headings keep the
+ * display face (MUI resolves it through the theme); running text takes Martel.
+ */
+html[data-skin='sanctum'] body {
+  font-family: var(--font-sans), Georgia, 'Times New Roman', serif;
+}
+
+html[data-skin='sanctum'] .sx-label {
+  font-family: var(--font-label), 'Oswald', 'Arial Narrow', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ─── Atmosphere ──────────────────────────────────────────────────────────── */
+
+html[data-skin='sanctum'] .sx-atmos {
+  position: absolute;
+  inset: 0;
+}
+
+/**
+ * The aperture. A soft plane, not a corner lamp, and no `filter: blur()` — the
+ * falloff is in the gradient stops, so a full-viewport layer costs one paint
+ * instead of a radius² × area blur.
+ */
+html[data-skin='sanctum'] .sx-atmos-aperture {
+  position: absolute;
+  top: -14vh;
+  left: 50%;
+  width: min(900px, 84vw);
+  height: 78vh;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    50% 46% at 50% 30%,
+    rgba(255, 153, 51, 0.075) 0%,
+    rgba(255, 153, 51, 0.028) 44%,
+    rgba(194, 65, 12, 0.014) 66%,
+    transparent 82%
+  );
+}
+
+/**
+ * The diya. The only thing on this page that moves without being asked.
+ *
+ * A 260px element is blurred and then scaled up 3.2×, rather than a 830px
+ * element being blurred — same optical result, ~10× less filter work, and the
+ * blur itself is static. Only `opacity` and `transform` are keyframed.
+ */
+html[data-skin='sanctum'] .sx-atmos-diya {
+  position: absolute;
+  top: 16%;
+  left: 50%;
+  width: 260px;
+  height: 260px;
+  margin-left: -130px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 196, 107, 0.9) 0%,
+    rgba(255, 153, 51, 0.4) 42%,
+    transparent 70%
+  );
+  filter: blur(38px);
+  opacity: var(--skin-atmos-a, 0.05);
+  transform: scale(3.2);
+  animation: sx-breathe 8s var(--ease-in-out-quart) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes sx-breathe {
+  0%,
+  100% {
+    transform: scale(3.2);
+    opacity: calc(var(--skin-atmos-a, 0.05) * 0.7);
+  }
+  50% {
+    transform: scale(3.42);
+    opacity: var(--skin-atmos-a, 0.05);
+  }
+}
+
+/**
+ * Grain. A static, tiled, data-URI turbulence — rasterised once per 160px tile,
+ * never re-filtered, never animated. `soft-light` rather than `overlay`: on a
+ * ground this dark, `overlay` only ever adds, and the point of the grain is
+ * tooth, not brightness. At 4.5% it cannot move any text pair by a measurable
+ * amount (the ink/ground pair below measures 16.33:1 with it in place).
+ */
+html[data-skin='sanctum'] .sx-atmos-grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  opacity: 0.045;
+  mix-blend-mode: soft-light;
+}
+
+html[data-skin='sanctum'] .sx-atmos-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    130% 105% at 50% 34%,
+    transparent 38%,
+    rgba(0, 0, 0, 0.34) 74%,
+    rgba(0, 0, 0, 0.62) 100%
+  );
+}
+
+/**
+ * The yantra rail.
+ *
+ * `pathLength="1"` normalises every path so the dash geometry is one pair of
+ * numbers regardless of radius. The arc's only input is scroll position, via
+ * `animation-timeline`, which runs on the COMPOSITOR — load-bearing on a page
+ * that also runs ONNX inference on the main thread, where anything scroll-bound
+ * would visibly stutter.
+ */
+html[data-skin='sanctum'] .sx-atmos-yantra {
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  width: 118px;
+  height: 118px;
+  margin-top: -59px;
+  overflow: visible;
+}
+
+html[data-skin='sanctum'] .sx-yantra-still > * {
+  fill: none;
+  stroke: var(--sx-gold);
+  stroke-width: 0.6;
+  opacity: 0.16;
+}
+
+html[data-skin='sanctum'] .sx-yantra-arc {
+  fill: none;
+  stroke: var(--sx-saffron);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  opacity: 0.5;
+  stroke-dasharray: 1;
+  /* Fallback for a browser without scroll-driven animations: the figure is
+     COMPLETE, never hidden. `@supports` below hands it to the scroller. */
+  stroke-dashoffset: 0;
+}
+
+@supports (animation-timeline: scroll(root block)) {
+  html[data-skin='sanctum'] .sx-yantra-arc {
+    animation: sx-yantra-draw linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@keyframes sx-yantra-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The rail is a marginal ornament, and below ~900px there is no margin. */
+@media (max-width: 899px) {
+  html[data-skin='sanctum'] .sx-atmos-yantra {
+    display: none;
+  }
+}
+
+/* ─── The fold ────────────────────────────────────────────────────────────── */
+
+html[data-skin='sanctum'] .sx-hero-aperture,
+html[data-skin='sanctum'] .sx-hero-floor,
+html[data-skin='sanctum'] .sx-hero-vignette,
+html[data-skin='sanctum'] .sx-hero-fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The shaft the lamp throws down the hall. Narrow, on the axis, and it stops
+   well above the copy — this is the light, not a backdrop for text. */
+html[data-skin='sanctum'] .sx-hero-aperture {
+  background: radial-gradient(
+    34% 44% at 50% 6%,
+    rgba(255, 196, 107, 0.16) 0%,
+    rgba(255, 153, 51, 0.07) 38%,
+    transparent 74%
+  );
+}
+
+/* Where the light lands. A lit subject with nothing receiving the light is the
+   single reason a dark hero reads flat. */
+html[data-skin='sanctum'] .sx-hero-floor {
+  background: radial-gradient(
+    46% 22% at 50% 92%,
+    rgba(255, 153, 51, 0.05) 0%,
+    transparent 72%
+  );
+}
+
+html[data-skin='sanctum'] .sx-hero-vignette {
+  background: radial-gradient(
+    110% 92% at 50% 40%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.42) 78%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+
+html[data-skin='sanctum'] .sx-hero-fade {
+  top: auto;
+  height: 24%;
+  background: linear-gradient(to bottom, transparent, var(--bg) 94%);
+}
+
+html[data-skin='sanctum'] .sx-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── The torana ──────────────────────────────────────────────────────────── */
+
+/**
+ * The gateway stands ABOVE the copy rather than behind it, and that is a
+ * correctness decision as much as a compositional one: an arch pulled down over
+ * the wordmark by a negative margin puts its two legs exactly where the
+ * headline's last words land at some viewport width, and "no text over a busy
+ * background" has no width exemption. You pass through a torana; you do not
+ * read through one.
+ */
+html[data-skin='sanctum'] .sx-torana-wrap {
+  position: relative;
+  width: min(520px, 84%);
+  margin: 0 auto 10px;
+  pointer-events: none;
+}
+
+html[data-skin='sanctum'] .sx-torana {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+html[data-skin='sanctum'] .sx-torana path {
+  fill: none;
+  stroke: var(--sx-gold);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.34;
+}
+
+html[data-skin='sanctum'] .sx-torana-inner {
+  stroke-width: 0.7;
+  opacity: 0.18;
+}
+
+html[data-skin='sanctum'] .sx-torana-sill {
+  opacity: 0.14;
+}
+
+/* ── The lamp ────────────────────────────────────────────────────────────── */
+
+/* Hung inside the opening, on the axis, clear of both springing lines. */
+html[data-skin='sanctum'] .sx-lamp {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 64px;
+  height: 40px;
+  margin-left: -32px;
+}
+
+@media (max-width: 599px) {
+  html[data-skin='sanctum'] .sx-lamp {
+    width: 44px;
+    height: 28px;
+    margin-left: -22px;
+    top: 40%;
+  }
+}
+
+html[data-skin='sanctum'] .sx-lamp-body {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+html[data-skin='sanctum'] .sx-lamp-body path {
+  fill: none;
+  stroke: var(--sx-gold);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+/* The flame is the ONE lit fill in the fold, because it is not an object — it
+   is the light source the whole page is graded from. Blur radius 3px on a 22px
+   element: cheap, and static. */
+html[data-skin='sanctum'] .sx-lamp-flame {
+  position: absolute;
+  left: 50%;
+  bottom: 62%;
+  width: 20px;
+  height: 34px;
+  margin-left: -10px;
+  border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%;
+  background: radial-gradient(
+    58% 62% at 50% 74%,
+    rgba(255, 244, 214, 0.95) 0%,
+    rgba(255, 196, 107, 0.8) 34%,
+    rgba(255, 153, 51, 0.42) 62%,
+    rgba(255, 153, 51, 0) 84%
+  );
+  filter: blur(3px);
+  transform-origin: 50% 100%;
+}
+
+/* ── The fold's one timeline ─────────────────────────────────────────────── */
+
+/**
+ * `is-lit` is added by the hero in a layout effect, and only when motion is
+ * allowed. Every animation below is `both`, so during its delay it holds its
+ * own from-state — which is what lets the hero delete `data-motion` in the same
+ * commit without a frame of finished-then-hidden content.
+ */
+
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-torana path {
+  stroke-dasharray: 1;
+  animation: sx-draw 1400ms var(--ease-out-expo) both;
+}
+
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-torana-outer {
+  animation-delay: 120ms;
+}
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-torana-inner {
+  animation-delay: 260ms;
+}
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-torana-finial {
+  animation-delay: 520ms;
+  animation-duration: 900ms;
+}
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-torana-sill {
+  animation-delay: 0ms;
+  animation-duration: 1100ms;
+}
+
+@keyframes sx-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-lamp-body path {
+  stroke-dasharray: 1;
+  animation: sx-draw 900ms var(--ease-out-expo) both;
+  animation-delay: 300ms;
+}
+
+/* The lamp catches: a spark, an overshoot, a settle. One gesture, 900ms. */
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-lamp-flame {
+  animation: sx-catch 900ms var(--ease-out-quint) both;
+  animation-delay: 480ms;
+}
+
+@keyframes sx-catch {
+  0% {
+    transform: scale(0.18, 0.04);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.16, 1.1);
+    opacity: 1;
+  }
+  72% {
+    transform: scale(0.94, 0.96);
+    opacity: 0.86;
+  }
+  100% {
+    transform: scale(1, 1);
+    opacity: 1;
+  }
+}
+
+/* The name rises out of the clip as one word per line — not per character. A
+   letter ripple is a flourish; a name lifting whole out of the dark is the
+   gesture this fold is actually making. */
+html[data-skin='sanctum'] .sx-hero.is-lit .hc-char {
+  animation: sx-rise 1000ms var(--ease-out-expo) both;
+}
+
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-line--given .hc-char {
+  animation-delay: 560ms;
+}
+html[data-skin='sanctum'] .sx-hero.is-lit .sx-line--family .hc-char {
+  animation-delay: 660ms;
+}
+
+@keyframes sx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(108%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+html[data-skin='sanctum'] .sx-hero.is-lit [data-hc-rise] {
+  animation: sx-rise-soft 620ms var(--ease-out-quint) both;
+  animation-delay: var(--sx-d, 0ms);
+}
+
+@keyframes sx-rise-soft {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── The wordmark ────────────────────────────────────────────────────────── */
+
+/**
+ * The name is INK, not gold. A gold-gradient wordmark is the single most
+ * tempting move in this palette and it is the wrong one twice over: it breaks
+ * the gold-is-line rule, and it puts a low-luminance fill under the one string
+ * on the page that has to be unmissable. So the name is #F3E7D0 at 16.33:1 and
+ * the SURNAME is lit warm — light falling on it, rather than the letters being
+ * made of metal.
+ */
+html[data-skin='sanctum'] .sx-line--given .hc-char {
+  color: var(--text);
+}
+
+html[data-skin='sanctum'] .sx-line--family .hc-char {
+  color: var(--skin-accent-soft, #ffc46b);
+}
+
+html[data-skin='sanctum'] .sx-headline {
+  max-width: 46ch;
+  letter-spacing: 0.005em;
+}
+
+/* ── Chips and controls ──────────────────────────────────────────────────── */
+
+/* Outlined, never filled: a highlight tag is a label, and labels are line. */
+html[data-skin='sanctum'] .sx-chip {
+  background: transparent;
+  border: 1px solid var(--sx-line);
+  color: var(--text-muted);
+  font-family: var(--font-label), 'Oswald', 'Arial Narrow', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 140ms var(--ease-swift),
+    border-color 140ms var(--ease-swift);
+}
+
+html[data-skin='sanctum'] .sx-chip:hover {
+  color: var(--sx-saffron);
+  border-color: rgba(255, 153, 51, 0.55);
+}
+
+html[data-skin='sanctum'] .sx-quiet-btn {
+  color: var(--sx-saffron);
+  font-weight: 500;
+}
+
+html[data-skin='sanctum'] .sx-cta {
+  font-family: var(--font-label), 'Oswald', 'Arial Narrow', sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+html[data-skin='sanctum'] .sx-cta:hover {
+  box-shadow: none;
+}
+
+/* MASS: the one filled control on the page, in sindoor. */
+html[data-skin='sanctum'] .sx-cta:not(.sx-cta--line) {
+  background-color: var(--sx-sindoor);
+  color: #fff3e0;
+}
+
+html[data-skin='sanctum'] .sx-cta:not(.sx-cta--line):hover {
+  background-color: #d2490e;
+}
+
+/* LINE: the secondary control is a gold hairline and saffron text. */
+html[data-skin='sanctum'] .sx-cta--line {
+  border-color: var(--sx-line);
+  color: var(--sx-saffron);
+  background: transparent;
+}
+
+html[data-skin='sanctum'] .sx-cta--line:hover {
+  border-color: rgba(255, 153, 51, 0.6);
+  background: rgba(255, 153, 51, 0.06);
+}
+
+html[data-skin='sanctum'] .sx-cue .hc-cue-track {
+  height: 42px;
+}
+
+/* ─── Surfaces ────────────────────────────────────────────────────────────── */
+
+/**
+ * Cards are separated from the ground by TWO luminance steps and one gold
+ * hairline, and by nothing else. No shadow: on #0A0806 a drop shadow has
+ * nothing left to darken, so it renders as a grey halo — the classic tell of a
+ * light-mode component dropped onto a dark page.
+ */
+html[data-skin='sanctum'] .MuiPaper-root {
+  box-shadow: none;
+}
+
+html[data-skin='sanctum'] .prose-content li::marker {
+  color: var(--sx-gold);
+}
+
+/* ─── Beat 5 · ember hover ────────────────────────────────────────────────── */
+
+/**
+ * A link rests as text and lights on approach. The rest colour is the muted ink
+ * (5.72:1 on the ground, 5.41:1 on a card) with a gold hairline underline, so
+ * the affordance is carried by the LINE at rest and by the LIGHT on hover —
+ * which is the same division of labour as the rest of the palette.
+ *
+ * This also fixes a real contrast bug: `ContactSection` colours its card links
+ * `primary.main`, and `primary.main` here is sindoor at 3.65:1 on a card. The
+ * override below is what keeps those three cards at AA.
+ */
+html[data-skin='sanctum'] section[id] a {
+  position: relative;
+  color: var(--text-muted);
+  text-decoration-color: rgba(201, 162, 39, 0.45);
+  text-underline-offset: 0.18em;
+  transition: color 140ms var(--ease-swift);
+}
+
+html[data-skin='sanctum'] section[id] a:hover,
+html[data-skin='sanctum'] section[id] a:focus-visible {
+  color: var(--sx-saffron);
+}
+
+/* The sindoor bar wipes in on transform only. */
+html[data-skin='sanctum'] section[id] a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  background: var(--sx-sindoor);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 140ms var(--ease-swift);
+  pointer-events: none;
+}
+
+html[data-skin='sanctum'] section[id] a:hover::after,
+html[data-skin='sanctum'] section[id] a:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* ─── Beat 2 · the torana section title ───────────────────────────────────── */
+
+/**
+ * Every section title enters through the same gateway the fold does. The arch
+ * is a gold hairline drawn behind the heading row, revealed by a `clip-path`
+ * opening from the centre outward over 1000ms — the arch is not painted onto
+ * the title, the title is standing inside it.
+ *
+ * `div:first-of-type` is `SectionHeading`'s row in all four section layouts.
+ * The RESTING state is the complete arch, so a section that is never armed
+ * (reduced motion, or already on screen at mount) shows the finished gateway
+ * rather than nothing.
+ */
+html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type {
+  position: relative;
+}
+
+html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: -26px;
+  width: min(330px, 100%);
+  height: 62px;
+  pointer-events: none;
+  opacity: 0.22;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  /* Same depressed geometry as the fold's gateway (r = 287 on a 318 chord), so
+     the section arch is the fold's arch seen small — not a second arch. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 330 62' fill='none'%3E%3Cg stroke='%23C9A227' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M6 62 L6 56 A 287 287 0 0 1 324 56 L324 62'/%3E%3Cpath d='M165 14 C159 22 159 28 165 33 C171 28 171 22 165 14 Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+html[data-skin='sanctum'] .reveal.is-in > section[id] > div:first-of-type::before {
+  animation: sx-gate 1000ms var(--ease-out-expo) both;
+}
+
+@keyframes sx-gate {
+  from {
+    clip-path: inset(0 50% 0 50%);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 0.22;
+  }
+}
+
+/* ─── Beat 1 · the six glimpses ───────────────────────────────────────────── */
+
+/**
+ * ONE small movement per section, thematically bound to what that section
+ * actually says, fired once when the section enters the frame, then still.
+ *
+ *   About        the lamp is lit          — the diya catches and holds
+ *   Skills       the yantra resolves      — a figure turns into register
+ *   Experience   the colonnade            — a light carried up seven columns
+ *   Projects     the leap                 — an ember thrown across a gap
+ *   Education    the crossing             — a meridian drawn between two points
+ *   Contact      the lamp offered         — the flame advances and is handed on
+ *
+ * The pair of pseudo-elements has a fixed division of labour, and it is what
+ * makes reduced motion correct by construction rather than by a second set of
+ * rules: `::before` is the STILL (gold line, always painted, never animated),
+ * `::after` is the LIGHT (saffron, animated once, and its keyframes END on its
+ * own resting declaration so no `forwards` is needed and nothing is left
+ * mid-gesture). Kill every animation on the page and six stills remain.
+ *
+ * Both live in the section's top padding — 92px tall against 80px of `py` plus
+ * a 40px heading row — so no glimpse is ever behind text, and no scrim is
+ * needed because nothing is over one.
+ */
+
+html[data-skin='sanctum'] .reveal > section[id] {
+  position: relative;
+}
+
+html[data-skin='sanctum'] .reveal > section#about::before,
+html[data-skin='sanctum'] .reveal > section#about::after,
+html[data-skin='sanctum'] .reveal > section#skills::before,
+html[data-skin='sanctum'] .reveal > section#skills::after,
+html[data-skin='sanctum'] .reveal > section#experience::before,
+html[data-skin='sanctum'] .reveal > section#experience::after,
+html[data-skin='sanctum'] .reveal > section#projects::before,
+html[data-skin='sanctum'] .reveal > section#projects::after,
+html[data-skin='sanctum'] .reveal > section#education::before,
+html[data-skin='sanctum'] .reveal > section#education::after,
+html[data-skin='sanctum'] .reveal > section#contact::before,
+html[data-skin='sanctum'] .reveal > section#contact::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 0;
+  width: var(--sx-niche-w);
+  height: var(--sx-niche-h);
+  pointer-events: none;
+  z-index: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+}
+
+/* The still is always gold line, always at rest. */
+html[data-skin='sanctum'] .reveal > section#about::before,
+html[data-skin='sanctum'] .reveal > section#skills::before,
+html[data-skin='sanctum'] .reveal > section#experience::before,
+html[data-skin='sanctum'] .reveal > section#projects::before,
+html[data-skin='sanctum'] .reveal > section#education::before,
+html[data-skin='sanctum'] .reveal > section#contact::before {
+  opacity: 0.32;
+}
+
+@media (max-width: 599px) {
+  html[data-skin='sanctum'] {
+    --sx-niche-w: 84px;
+    --sx-niche-h: 60px;
+  }
+}
+
+/* ── 1 · About — the lamp is lit ─────────────────────────────────────────── */
+/* "Full-stack engineer with 10 years…" — the beginning of the service. */
+
+html[data-skin='sanctum'] .reveal > section#about::before,
+html[data-skin='sanctum'] .reveal > section#contact::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 92' fill='none'%3E%3Cg stroke='%23C9A227' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M40 62 h48'/%3E%3Cpath d='M44 62 c4 15 36 15 40 0'/%3E%3Cpath d='M64 62 v-10'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+html[data-skin='sanctum'] .reveal > section#about::after {
+  background: radial-gradient(
+    7px 13px at 50% 45%,
+    rgba(255, 244, 214, 0.95) 0%,
+    rgba(255, 196, 107, 0.7) 36%,
+    rgba(255, 153, 51, 0.35) 62%,
+    rgba(255, 153, 51, 0) 82%
+  );
+  transform-origin: 50% 57%;
+  opacity: 0.34;
+}
+
+html[data-skin='sanctum'] .reveal.is-in > section#about::after {
+  animation: sx-ignite 1300ms var(--ease-out-quint) both;
+}
+
+@keyframes sx-ignite {
+  0% {
+    transform: scale(0.16, 0.04);
+    opacity: 0;
+  }
+  32% {
+    transform: scale(1.18, 1.12);
+    opacity: 1;
+  }
+  64% {
+    transform: scale(0.95, 0.97);
+    opacity: 0.72;
+  }
+  100% {
+    transform: scale(1, 1);
+    opacity: 0.34;
+  }
+}
+
+/* ── 2 · Skills — the yantra resolves ────────────────────────────────────── */
+/* Five categories — languages, frameworks, cloud, AI — as one figure. */
+
+html[data-skin='sanctum'] .reveal > section#skills::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 92' fill='none'%3E%3Cg stroke='%23C9A227' stroke-width='1.1'%3E%3Ccircle cx='64' cy='46' r='32'/%3E%3Cpath d='M64 18 L92 66 L36 66 Z'/%3E%3Cpath d='M64 74 L36 26 L92 26 Z'/%3E%3Ccircle cx='64' cy='46' r='8'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+html[data-skin='sanctum'] .reveal > section#skills::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 92' fill='none'%3E%3Cg stroke='%23FF9933' stroke-width='1.1'%3E%3Ccircle cx='64' cy='46' r='32'/%3E%3Cpath d='M64 18 L92 66 L36 66 Z'/%3E%3Cpath d='M64 74 L36 26 L92 26 Z'/%3E%3Ccircle cx='64' cy='46' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  transform-origin: 50% 50%;
+  opacity: 0.16;
+}
+
+html[data-skin='sanctum'] .reveal.is-in > section#skills::after {
+  animation: sx-register 1300ms var(--ease-out-expo) both;
+}
+
+@keyframes sx-register {
+  0% {
+    transform: rotate(-16deg) scale(0.82);
+    opacity: 0;
+  }
+  46% {
+    transform: rotate(0deg) scale(1.03);
+    opacity: 0.6;
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.16;
+  }
+}
+
+/* ── 3 · Experience — the colonnade ──────────────────────────────────────── */
+/* Seven engagements. The timeline is sorted newest-first, so the light travels
+   UP the column: Esystems at the foot, Fidelity Charitable at the top. */
+
+html[data-skin='sanctum'] .reveal > section#experience::before {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--sx-gold) 0 1px,
+    transparent 1px calc(100% / 7)
+  );
+  background-size: 100% 100%;
+  -webkit-mask-image: linear-gradient(to top, #000 34%, rgba(0, 0, 0, 0.15) 100%);
+  mask-image: linear-gradient(to top, #000 34%, rgba(0, 0, 0, 0.15) 100%);
+}
+
+html[data-skin='sanctum'] .reveal > section#experience::after {
+  background: radial-gradient(
+    6px 6px at 50% 94%,
+    rgba(255, 244, 214, 0.95) 0%,
+    rgba(255, 153, 51, 0.55) 42%,
+    rgba(255, 153, 51, 0) 74%
+  );
+  transform: translateY(-84%);
+  opacity: 0.34;
+}
+
+html[data-skin='sanctum'] .reveal.is-in > section#experience::after {
+  animation: sx-carry 1400ms var(--ease-in-out-quart) both;
+}
+
+@keyframes sx-carry {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  86% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-84%);
+    opacity: 0.34;
+  }
+}
+
+/* ── 4 · Projects — the leap ─────────────────────────────────────────────── */
+/* "Run the model where the data already is." Every project is the same throw:
+   off the server, onto the machine in front of the person. */
+
+html[data-skin='sanctum'] .reveal > section#projects::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 92' fill='none'%3E%3Cg stroke='%23C9A227' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M20 72 Q64 4 108 44' stroke-dasharray='2 6' opacity='.7'/%3E%3Ccircle cx='20' cy='72' r='3'/%3E%3Ccircle cx='108' cy='44' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+html[data-skin='sanctum'] .reveal > section#projects::after {
+  background: radial-gradient(
+    5px 5px at 15.6% 78%,
+    rgba(255, 244, 214, 1) 0%,
+    rgba(255, 153, 51, 0.6) 40%,
+    rgba(255, 153, 51, 0) 74%
+  );
+  transform: translate(68.7%, -30.4%);
+  opacity: 0.4;
+}
+
+html[data-skin='sanctum'] .reveal.is-in > section#projects::after {
+  animation: sx-leap 1500ms var(--ease-swift) both;
+}
+
+@keyframes sx-leap {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  25% {
+    transform: translate(17%, -30%) scale(1);
+  }
+  50% {
+    transform: translate(34.4%, -44.6%) scale(1);
+  }
+  75% {
+    transform: translate(52%, -42%) scale(1);
+  }
+  100% {
+    transform: translate(68.7%, -30.4%) scale(1);
+    opacity: 0.4;
+  }
+}
+
+/* ── 5 · Education — the crossing ────────────────────────────────────────── */
+/* SRM, Chennai (2011–2015) → UNC Charlotte (2016–2017). One ocean, one line. */
+
+html[data-skin='sanctum'] .reveal > section#education::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 92' fill='none'%3E%3Cg stroke='%23C9A227' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M14 70 Q64 34 114 70' stroke-dasharray='2 7' opacity='.55'/%3E%3Ccircle cx='14' cy='70' r='3.2'/%3E%3Ccircle cx='114' cy='70' r='3.2'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+html[data-skin='sanctum'] .reveal > section#education::after {
+  background-image: linear-gradient(
+    90deg,
+    rgba(201, 162, 39, 0) 0%,
+    rgba(255, 153, 51, 0.95) 14%,
+    rgba(255, 153, 51, 0.95) 86%,
+    rgba(201, 162, 39, 0) 100%
+  );
+  background-size: 78% 1.5px;
+  background-position: left 14px top 76%;
+  transform-origin: 14px 76%;
+  transform: scaleX(1);
+  opacity: 0.3;
+}
+
+html[data-skin='sanctum'] .reveal.is-in > section#education::after {
+  animation: sx-cross 1200ms var(--ease-out-quint) both;
+}
+
+@keyframes sx-cross {
+  0% {
+    transform: scaleX(0);
+    opacity: 0.9;
+  }
+  72% {
+    transform: scaleX(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0.3;
+  }
+}
+
+/* ── 6 · Contact — the lamp offered ──────────────────────────────────────── */
+/* "Email is the fastest route." The arc closes: the light the About section lit
+   comes forward and is handed over. */
+
+html[data-skin='sanctum'] .reveal > section#contact::after {
+  background: radial-gradient(
+    7px 13px at 50% 45%,
+    rgba(255, 244, 214, 0.95) 0%,
+    rgba(255, 196, 107, 0.7) 36%,
+    rgba(255, 153, 51, 0.35) 62%,
+    rgba(255, 153, 51, 0) 82%
+  );
+  transform-origin: 50% 57%;
+  transform: scale(1.34) translateY(-8%);
+  opacity: 0.22;
+}
+
+html[data-skin='sanctum'] .reveal.is-in > section#contact::after {
+  animation: sx-offer 1500ms var(--ease-out-quint) both;
+}
+
+@keyframes sx-offer {
+  0% {
+    transform: scale(0.5) translateY(0);
+    opacity: 0;
+  }
+  34% {
+    transform: scale(1) translateY(-2%);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.34) translateY(-8%);
+    opacity: 0.22;
+  }
+}
+
+/* ─── Reduced motion ──────────────────────────────────────────────────────── */
+
+/**
+ * Two triggers, not one: the OS media query, and the in-page stillness control
+ * (`data-reduce-motion`) — a visitor on a managed or borrowed machine often
+ * cannot reach the former.
+ *
+ * NOTHING here is hidden. Every glimpse's `::before` still is untouched, every
+ * `::after` sits at its resting declaration (which is where its keyframes ended
+ * anyway), the torana arch stands complete, the fold's `is-lit` class is never
+ * added so the hero renders at rest, and the yantra rail shows its full ring.
+ * The page loses its motion and keeps its whole drawing.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin='sanctum'] .sx-atmos-diya,
+  html[data-skin='sanctum'] .sx-yantra-arc,
+  html[data-skin='sanctum'] .sx-hero .sx-torana path,
+  html[data-skin='sanctum'] .sx-hero .sx-lamp-body path,
+  html[data-skin='sanctum'] .sx-hero .sx-lamp-flame,
+  html[data-skin='sanctum'] .sx-hero .hc-char,
+  html[data-skin='sanctum'] .sx-hero [data-hc-rise],
+  html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before,
+  html[data-skin='sanctum'] .reveal > section[id]::after {
+    animation: none !important;
+  }
+
+  html[data-skin='sanctum'] .sx-torana path,
+  html[data-skin='sanctum'] .sx-lamp-body path,
+  html[data-skin='sanctum'] .sx-yantra-arc {
+    stroke-dashoffset: 0 !important;
+  }
+
+  html[data-skin='sanctum'] section[id] a,
+  html[data-skin='sanctum'] section[id] a::after,
+  html[data-skin='sanctum'] .sx-chip {
+    transition: none;
+  }
+}
+
+html[data-reduce-motion][data-skin='sanctum'] .sx-atmos-diya,
+html[data-reduce-motion][data-skin='sanctum'] .sx-yantra-arc,
+html[data-reduce-motion][data-skin='sanctum'] .sx-hero .sx-torana path,
+html[data-reduce-motion][data-skin='sanctum'] .sx-hero .sx-lamp-body path,
+html[data-reduce-motion][data-skin='sanctum'] .sx-hero .sx-lamp-flame,
+html[data-reduce-motion][data-skin='sanctum'] .sx-hero .hc-char,
+html[data-reduce-motion][data-skin='sanctum'] .sx-hero [data-hc-rise],
+html[data-reduce-motion][data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before,
+html[data-reduce-motion][data-skin='sanctum'] .reveal > section[id]::after {
+  animation: none !important;
+}
+
+html[data-reduce-motion][data-skin='sanctum'] .sx-torana path,
+html[data-reduce-motion][data-skin='sanctum'] .sx-lamp-body path,
+html[data-reduce-motion][data-skin='sanctum'] .sx-yantra-arc {
+  stroke-dashoffset: 0 !important;
+}
+
+/* ─── Print ───────────────────────────────────────────────────────────────── */
+
+/**
+ * `globals.css` forces a light print surface, and gold hairlines on white are
+ * invisible while saffron flames are ink the reader did not ask for. So every
+ * mark this skin makes is dropped, and the résumé prints as the résumé.
+ */
+@media print {
+  html[data-skin='sanctum'] .sx-atmos,
+  html[data-skin='sanctum'] .sx-torana-wrap,
+  html[data-skin='sanctum'] .sx-hero-aperture,
+  html[data-skin='sanctum'] .sx-hero-floor,
+  html[data-skin='sanctum'] .sx-hero-vignette,
+  html[data-skin='sanctum'] .sx-hero-fade {
+    display: none !important;
+  }
+
+  html[data-skin='sanctum'] .reveal > section[id]::before,
+  html[data-skin='sanctum'] .reveal > section[id]::after,
+  html[data-skin='sanctum'] .reveal > section[id] > div:first-of-type::before,
+  html[data-skin='sanctum'] section[id] a::after {
+    display: none !important;
+  }
+
+  html[data-skin='sanctum'] .sx-hero .hc-char,
+  html[data-skin='sanctum'] .sx-hero [data-hc-rise] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
