@@ -93,6 +93,7 @@ export type { Appearance, ThemeVariant, ThemePalette, ModeSurfaces };
 // The third axis. See `src/skins/types.ts` for what a skin is allowed to own.
 import { SKINS, DEFAULT_SKIN, isSkinId } from "@/skins/registry";
 import { SKIN_TOKEN_KEYS, type Skin, type SkinId } from "@/skins/types";
+import { REDUCE_MOTION_ATTR, REDUCED_MOTION_QUERY } from "@/lib/motion";
 export type { SkinId };
 
 
@@ -336,6 +337,16 @@ export interface ThemeContextType {
      * explains why it is currently owned by something else.
      */
     appearancePinned: boolean;
+    /**
+     * The visitor's in-page request for stillness. This is a REQUEST, not the
+     * resolved state: someone whose OS already says "reduce" gets a still page
+     * whether or not this is set, and turning it off never gives them motion
+     * back. Read `prefersReducedMotion()` for the resolved answer.
+     */
+    reduceMotion: boolean;
+    setReduceMotion: (v: boolean) => void;
+    /** True when the OS is asking for reduced motion, so the control can say so. */
+    systemReducedMotion: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -349,6 +360,9 @@ const ThemeContext = createContext<ThemeContextType>({
     setSkin: () => {},
     skinDef: SKINS[DEFAULT_SKIN],
     appearancePinned: false,
+    reduceMotion: false,
+    setReduceMotion: () => {},
+    systemReducedMotion: false,
 });
 
 export function useThemeContext(): ThemeContextType {
@@ -364,6 +378,8 @@ const APPEARANCE_STORAGE_KEY = 'kk-appearance';
 const LEGACY_COLOR_STORAGE_KEY = 'kk-color-mode';
 /** The perspective skin. Absent ⇒ `professional`, the identity skin. */
 const SKIN_STORAGE_KEY = 'kk-skin';
+/** The in-page stillness request. Only ever stores `'1'`, or is absent. */
+const REDUCE_MOTION_STORAGE_KEY = 'kk-reduce-motion';
 
 function isAppearance(v: string | null): v is Appearance {
     return v === 'light' || v === 'dark' || v === 'coder';
@@ -604,6 +620,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
      * one; what this costs is one frame of default chrome.
      */
     const [skinId, setSkinState] = useState<SkinId>(DEFAULT_SKIN);
+    // Same M41 rule: server value first, storage adopted in an effect.
+    const [reduceMotion, setReduceMotionState] = useState(false);
+    const [systemReducedMotion, setSystemReducedMotion] = useState(false);
 
     // Load persisted state. The blocking script has already resolved storage +
     // media query and painted; adopt what it stamped so the static markup and
@@ -623,8 +642,36 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         } catch {
             /* private mode */
         }
+        try {
+            setReduceMotionState(localStorage.getItem(REDUCE_MOTION_STORAGE_KEY) === '1');
+        } catch {
+            /* private mode */
+        }
         setAppearanceState(readStoredAppearance() ?? readStampedAppearance());
     }, []);
+
+    // The OS preference is watched rather than read once: it is toggleable
+    // while the page is open, and the control's copy changes when it flips.
+    useEffect(() => {
+        if (typeof window === 'undefined' || !window.matchMedia) return;
+        const mq = window.matchMedia(REDUCED_MOTION_QUERY);
+        const sync = () => setSystemReducedMotion(mq.matches);
+        sync();
+        mq.addEventListener('change', sync);
+        return () => mq.removeEventListener('change', sync);
+    }, []);
+
+    // The attribute is the single channel every consumer reads — the CSS kill
+    // switch in `globals.css`, and `prefersReducedMotion()` for the JS loops.
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const el = document.documentElement;
+        if (reduceMotion) {
+            el.setAttribute(REDUCE_MOTION_ATTR, '');
+        } else {
+            el.removeAttribute(REDUCE_MOTION_ATTR);
+        }
+    }, [reduceMotion]);
 
     const setVariant = useCallback((v: ThemeVariant) => {
         setVariantState(v);
@@ -638,6 +685,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Pure updater — no DOM, no storage. The effect below owns those (M32).
     const setAppearance = useCallback((a: Appearance) => setAppearanceState(a), []);
     const setSkin = useCallback((next: SkinId) => setSkinState(next), []);
+    const setReduceMotion = useCallback((v: boolean) => {
+        setReduceMotionState(v);
+        try {
+            if (v) localStorage.setItem(REDUCE_MOTION_STORAGE_KEY, '1');
+            else localStorage.removeItem(REDUCE_MOTION_STORAGE_KEY);
+        } catch {
+            /* private mode — the in-memory state still holds */
+        }
+    }, []);
 
     const skinDef = SKINS[skinId];
     /**
@@ -669,8 +725,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             setSkin,
             skinDef,
             appearancePinned: skinDef.pinAppearance !== undefined,
+            reduceMotion,
+            setReduceMotion,
+            systemReducedMotion,
         }),
-        [effectiveAppearance, setAppearance, variant, setVariant, skinId, setSkin, skinDef],
+        [
+            effectiveAppearance,
+            setAppearance,
+            variant,
+            setVariant,
+            skinId,
+            setSkin,
+            skinDef,
+            reduceMotion,
+            setReduceMotion,
+            systemReducedMotion,
+        ],
     );
 
     return (

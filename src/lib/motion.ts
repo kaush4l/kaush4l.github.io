@@ -28,9 +28,31 @@ export const EASE_UI_CSS = 'cubic-bezier(0.2, 0, 0, 1)';
 
 export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
+/**
+ * The in-page opt-out, stamped on `<html>` when the visitor has asked for
+ * stillness from the appearance menu.
+ *
+ * WCAG 2.2 SC 2.3.3 asks that interaction-triggered motion be disableable, and
+ * the OS setting does not satisfy that on its own: a visitor on a managed,
+ * shared, or borrowed machine frequently cannot reach it, and one on a desktop
+ * OS that has no such setting never could. Since the perspective skins are the
+ * most motion-heavy thing on this site, an in-page control is a requirement
+ * rather than a courtesy.
+ *
+ * It is an OVERRIDE IN ONE DIRECTION ONLY: it can ask for stillness, never for
+ * motion. A visitor whose OS says "reduce" is never given animation back by a
+ * stored preference — including one they set on a different machine.
+ */
+export const REDUCE_MOTION_ATTR = 'data-reduce-motion';
+
+function reduceMotionStamped(): boolean {
+    if (typeof document === 'undefined') return false;
+    return document.documentElement.hasAttribute(REDUCE_MOTION_ATTR);
+}
+
 export function prefersReducedMotion(): boolean {
     if (typeof window === 'undefined' || !window.matchMedia) return false;
-    return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+    return reduceMotionStamped() || window.matchMedia(REDUCED_MOTION_QUERY).matches;
 }
 
 /**
@@ -41,9 +63,26 @@ export function prefersReducedMotion(): boolean {
 export function onReducedMotionChange(fn: (reduced: boolean) => void): () => void {
     if (typeof window === 'undefined' || !window.matchMedia) return () => { };
     const mq = window.matchMedia(REDUCED_MOTION_QUERY);
-    const handler = (e: MediaQueryListEvent) => fn(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    // Report the RESOLVED preference, never the media query alone — a caller
+    // that trusted `e.matches` would restart its loop the moment the OS setting
+    // flipped off, silently discarding an in-page request for stillness.
+    const emit = () => fn(prefersReducedMotion());
+    mq.addEventListener('change', emit);
+    // The attribute is toggled by the appearance menu while the page is open,
+    // so a one-shot read leaves loops running for a visitor who just asked them
+    // to stop — the same reason the media query is subscribed to at all.
+    const observer =
+        typeof MutationObserver === 'undefined'
+            ? null
+            : new MutationObserver(emit);
+    observer?.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: [REDUCE_MOTION_ATTR],
+    });
+    return () => {
+        mq.removeEventListener('change', emit);
+        observer?.disconnect();
+    };
 }
 
 /**

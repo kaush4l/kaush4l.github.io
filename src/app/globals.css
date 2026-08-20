@@ -262,6 +262,26 @@ section[id] {
   }
 }
 
+/**
+ * The in-page opt-out (WCAG 2.2 SC 2.3.3). Identical consequences to the media
+ * query above, deliberately duplicated rather than merged into one selector
+ * list: `html[data-reduce-motion] *` inside the same rule as the media query
+ * would make the whole block depend on the attribute, and the OS preference
+ * would stop working for everyone who never touches the control.
+ *
+ * Nothing here HIDES anything. Reduced motion stills the page; it never
+ * subtracts content, and a skin whose meaning depends on a loop has to carry
+ * that meaning in its resting frame instead.
+ */
+html[data-reduce-motion] { scroll-behavior: auto; }
+html[data-reduce-motion] *,
+html[data-reduce-motion] *::before,
+html[data-reduce-motion] *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+}
+
 /* ─── High contrast ───────────────────────────────────────────────────────── */
 /* M19 — the other axis. A bright resting halo is a documented discomfort
    trigger for photophobia and migraine independently of motion, so here glow

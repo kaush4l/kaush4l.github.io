@@ -21,11 +21,13 @@
 import { useState } from 'react';
 import {
     Box,
+    Divider,
     IconButton,
     ListItemIcon,
     ListItemText,
     Menu,
     MenuItem,
+    Switch,
     Tooltip,
     Typography,
 } from '@mui/material';
@@ -33,6 +35,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import CheckIcon from '@mui/icons-material/Check';
+import MotionPhotosOffIcon from '@mui/icons-material/MotionPhotosOff';
 import { useThemeContext, APPEARANCES, RADIUS } from '@/theme/ThemeProvider';
 import type { Appearance } from '@/theme/ThemeProvider';
 
@@ -44,7 +47,15 @@ const ICONS: Record<Appearance, typeof LightModeIcon> = {
 };
 
 export default function AppearanceMenu() {
-    const { appearance, setAppearance } = useThemeContext();
+    const {
+        appearance,
+        setAppearance,
+        appearancePinned,
+        skinDef,
+        reduceMotion,
+        setReduceMotion,
+        systemReducedMotion,
+    } = useThemeContext();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
 
@@ -97,6 +108,28 @@ export default function AppearanceMenu() {
                     Appearance
                 </Typography>
 
+                {/* When a skin pins the appearance, say so rather than offering
+                    three rows two of which do nothing. A control that visibly
+                    fails to work teaches the visitor that this page's controls
+                    are unreliable — after which they stop touching the chat FAB
+                    too. Naming the owner also makes the fix discoverable: the
+                    perspective menu is right next door. */}
+                {appearancePinned && (
+                    <Typography
+                        sx={{
+                            display: 'block',
+                            px: 1.5,
+                            pb: 1,
+                            fontSize: '0.75rem',
+                            color: 'text.secondary',
+                            whiteSpace: 'normal',
+                        }}
+                    >
+                        The {skinDef.label} perspective sets its own light. Switch perspective to
+                        choose again.
+                    </Typography>
+                )}
+
                 {APPEARANCES.map(({ value, label, hint }) => {
                     const isActive = value === appearance;
                     const Icon = ICONS[value] ?? LightModeIcon;
@@ -109,6 +142,7 @@ export default function AppearanceMenu() {
                             role="menuitemradio"
                             aria-checked={isActive}
                             selected={isActive}
+                            disabled={appearancePinned}
                             onClick={() => {
                                 setAppearance(value);
                                 setAnchorEl(null);
@@ -148,6 +182,61 @@ export default function AppearanceMenu() {
                         </MenuItem>
                     );
                 })}
+
+                <Divider sx={{ my: 0.75 }} />
+
+                {/* WCAG 2.2 SC 2.3.3. The OS setting does not satisfy this on
+                    its own: a visitor on a managed, shared or borrowed machine
+                    often cannot reach it. The perspective skins are the most
+                    motion-heavy thing on this site, which makes an in-page
+                    control a requirement rather than a courtesy.
+
+                    It only ever asks for LESS. When the OS already says reduce,
+                    the switch is on, disabled, and explains why — turning it off
+                    would be a promise the page has no intention of keeping. */}
+                <MenuItem
+                    role="menuitemcheckbox"
+                    aria-checked={reduceMotion || systemReducedMotion}
+                    disabled={systemReducedMotion}
+                    onClick={() => setReduceMotion(!reduceMotion)}
+                    sx={{
+                        borderRadius: RADIUS.chip,
+                        gap: 1.5,
+                        mx: 0.5,
+                        my: 0.25,
+                        minHeight: 44,
+                        alignItems: 'flex-start',
+                        py: 1,
+                    }}
+                >
+                    <ListItemIcon sx={{ minWidth: 0, mt: 0.25, color: 'primary.main' }}>
+                        <MotionPhotosOffIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                        primary="Reduce motion"
+                        secondary={
+                            systemReducedMotion
+                                ? 'Already on, from your system settings'
+                                : 'Still the page. Nothing is hidden.'
+                        }
+                        slotProps={{
+                            primary: { fontSize: '0.9rem' },
+                            secondary: { fontSize: '0.75rem', sx: { whiteSpace: 'normal' } },
+                        }}
+                    />
+                    {/* The switch is the receipt, and the row already carries
+                        `aria-checked`, so it is hidden from AT rather than
+                        announced a second time. */}
+                    <Switch
+                        aria-hidden
+                        tabIndex={-1}
+                        size="small"
+                        edge="end"
+                        checked={reduceMotion || systemReducedMotion}
+                        disabled={systemReducedMotion}
+                        sx={{ mt: 0.25, flexShrink: 0, pointerEvents: 'none' }}
+                    />
+                </MenuItem>
             </Menu>
         </>
     );
