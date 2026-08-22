@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid slice" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="ghost-live-grad" gradientUnits="userSpaceOnUse" x1="28" y1="0" x2="292" y2="0">
+      <stop offset="0" stop-color="#7FA9B4"/>
+      <stop offset="0.55" stop-color="#4AC7D8"/>
+      <stop offset="1" stop-color="#50D1E0"/>
+    </linearGradient>
+    <linearGradient id="ghost-atmos-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="240">
+      <stop offset="0" stop-color="#4FD1E0" stop-opacity="0.10"/>
+      <stop offset="0.52" stop-color="#4FD1E0" stop-opacity="0.02"/>
+      <stop offset="1" stop-color="#071119" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ghost-scrim-grad" gradientUnits="userSpaceOnUse" x1="0" y1="156" x2="0" y2="212">
+      <stop offset="0" stop-color="#071119" stop-opacity="0"/>
+      <stop offset="1" stop-color="#071119" stop-opacity="1"/>
+    </linearGradient>
+    <pattern id="ghost-grid-pat" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M16 0V16M0 16H16" fill="none" stroke="#DCE9F0" stroke-opacity="0.045" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+
+  <rect width="320" height="240" fill="#071119"/>
+  <rect width="320" height="240" fill="url(#ghost-grid-pat)"/>
+  <rect width="320" height="240" fill="url(#ghost-atmos-grad)"/>
+
+  <!-- gate rules: nine thin verticals, the plate's stops -->
+  <g stroke="#DCE9F0" stroke-opacity="0.09" stroke-width="0.75">
+    <path d="M28 58V168M61 58V168M94 58V168M127 58V168M160 58V168M193 58V168M259 58V168M292 58V168"/>
+  </g>
+  <!-- the convergence gate, the one rule that is lit -->
+  <path d="M226 52V172" stroke="#4FD1E0" stroke-opacity="0.26" stroke-width="0.9"/>
+
+  <!-- datum axis and baseline -->
+  <path d="M18 58V168M18 168H302" fill="none" stroke="#DCE9F0" stroke-opacity="0.11" stroke-width="0.75"/>
+
+  <!-- the delta: the area between the reference run and the current one, drawn -->
+  <path d="M28 158 61 150 94 147 127 132 160 116 193 78 226 96 259 86 292 80 292 88 259 92 226 96 193 120 160 138 127 146 94 150 61 152 28 158Z" fill="#4FD1E0" fill-opacity="0.075"/>
+
+  <!-- dimension ticks: the gap between the two traces, measured rather than claimed -->
+  <g stroke="#89A2B0" stroke-opacity="0.7" stroke-width="0.9">
+    <path d="M127 132V146M124.5 132h5M124.5 146h5"/>
+    <path d="M160 116V138M157.5 116h5M157.5 138h5"/>
+    <path d="M193 78V120M190.5 78h5M190.5 120h5"/>
+    <path d="M259 86V92M256.5 86h5M256.5 92h5"/>
+    <path d="M292 80V88M289.5 80h5M289.5 88h5"/>
+  </g>
+
+  <!-- the ghost: the 2017 line, the same run drawn faint -->
+  <polyline points="28,158 61,152 94,150 127,146 160,138 193,120 226,96 259,92 292,88" fill="none" stroke="#4FD1E0" stroke-opacity="0.34" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+  <g fill="none" stroke="#4FD1E0" stroke-opacity="0.34" stroke-width="0.8">
+    <circle cx="61" cy="152" r="1.8"/><circle cx="94" cy="150" r="1.8"/><circle cx="127" cy="146" r="1.8"/>
+    <circle cx="160" cy="138" r="1.8"/><circle cx="193" cy="120" r="1.8"/><circle cx="259" cy="92" r="1.8"/>
+    <circle cx="292" cy="88" r="1.8"/>
+  </g>
+
+  <!-- the live trace: the 2025 line -->
+  <polyline points="28,158 61,150 94,147 127,132 160,116 193,78 226,96 259,86 292,80" fill="none" stroke="url(#ghost-live-grad)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+  <g fill="#4FD1E0">
+    <rect x="26.5" y="156.5" width="3" height="3"/><rect x="59.5" y="148.5" width="3" height="3"/>
+    <rect x="92.5" y="145.5" width="3" height="3"/><rect x="125.5" y="130.5" width="3" height="3"/>
+    <rect x="158.5" y="114.5" width="3" height="3"/><rect x="191.5" y="76.5" width="3" height="3"/>
+    <rect x="257.5" y="84.5" width="3" height="3"/><rect x="290.5" y="78.5" width="3" height="3"/>
+  </g>
+
+  <!-- the convergence: one warm mark on a cold plate, and the only one -->
+  <circle cx="226" cy="96" r="4.2" fill="none" stroke="#F0C367" stroke-opacity="0.85" stroke-width="1"/>
+  <circle cx="226" cy="96" r="1.4" fill="#F0C367"/>
+
+  <!-- the caption's ground: the lower band is held quiet -->
+  <rect y="156" width="320" height="84" fill="url(#ghost-scrim-grad)"/>
+</svg>
