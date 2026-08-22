@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid slice" role="img" aria-label="An ascent through a dawn: nine graduations rising along a single gold line over a night coastline.">
+<defs>
+<linearGradient id="crossing-poster-sky" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#0A0705"/>
+<stop offset=".28" stop-color="#100A06"/>
+<stop offset=".46" stop-color="#1C120C"/>
+<stop offset=".55" stop-color="#33200F"/>
+<stop offset=".60" stop-color="#6E4318"/>
+<stop offset=".635" stop-color="#C98A3A"/>
+<stop offset=".66" stop-color="#E8B44A"/>
+<stop offset=".72" stop-color="#7A4C1E"/>
+<stop offset="1" stop-color="#100A06"/>
+</linearGradient>
+<radialGradient id="crossing-poster-glow" cx=".5" cy=".5" r=".5">
+<stop offset="0" stop-color="#F6D488" stop-opacity=".28"/>
+<stop offset=".55" stop-color="#E8B44A" stop-opacity=".12"/>
+<stop offset="1" stop-color="#E8B44A" stop-opacity="0"/>
+</radialGradient>
+<linearGradient id="crossing-poster-arc" x1="0" y1="1" x2="1" y2="0">
+<stop offset="0" stop-color="#85969F"/>
+<stop offset=".38" stop-color="#BDAD75"/>
+<stop offset=".72" stop-color="#E8B44A"/>
+<stop offset="1" stop-color="#F6D488"/>
+</linearGradient>
+</defs>
+<rect width="320" height="240" fill="url(#crossing-poster-sky)"/>
+<ellipse cx="236" cy="154" rx="104" ry="52" fill="url(#crossing-poster-glow)"/>
+<circle cx="236" cy="155" r="22" fill="#F6D488"/>
+<path d="M0 150 34 142 62 147 96 136 128 145 162 138 196 146 224 148 258 141 292 147 320 142 320 240 0 240Z" fill="#3E2A1C"/>
+<path d="M0 160 28 154 58 161 90 150 120 158 152 152 184 160 216 155 248 162 282 154 320 159 320 240 0 240Z" fill="#2C1E16"/>
+<path d="M0 172 36 166 70 174 104 164 140 172 176 166 212 174 246 167 282 175 320 169 320 240 0 240Z" fill="#221711"/>
+<path d="M0 186 40 180 78 188 118 179 158 187 198 181 238 189 278 182 320 188 320 240 0 240Z" fill="#17100A"/>
+<path d="M0 204 60 198 130 206 200 197 268 205 320 200 320 240 0 240Z" fill="#0B0705"/>
+<path d="M-6 180C80 170 150 117 326 57" fill="none" stroke="#E8B44A" stroke-opacity=".14" stroke-width="9" stroke-linecap="round"/>
+<path d="M-6 180C80 170 150 117 326 57" fill="none" stroke="url(#crossing-poster-arc)" stroke-width="2.4" stroke-linecap="round"/>
+<g stroke-linecap="round">
+<line x1="29.5" y1="173.4" x2="28" y2="167.6" stroke="#85969F" stroke-width="1.30" opacity="0.58"/>
+<line x1="54.8" y1="165.9" x2="52.6" y2="159" stroke="#959F90" stroke-width="1.43" opacity="0.63"/>
+<line x1="81" y1="156.3" x2="77.9" y2="148.5" stroke="#AAA686" stroke-width="1.56" opacity="0.67"/>
+<line x1="108.6" y1="144.9" x2="104.8" y2="136.1" stroke="#BDAD75" stroke-width="1.69" opacity="0.72"/>
+<line x1="138.5" y1="131.9" x2="134.2" y2="122" stroke="#CFB569" stroke-width="1.82" opacity="0.77"/>
+<line x1="171.4" y1="117.4" x2="166.6" y2="106.4" stroke="#E2BA5A" stroke-width="1.95" opacity="0.81"/>
+<line x1="208.1" y1="101.7" x2="203" y2="89.6" stroke="#F0C04E" stroke-width="2.08" opacity="0.86"/>
+<line x1="249.2" y1="85.1" x2="243.9" y2="71.7" stroke="#F6D488" stroke-width="2.21" opacity="0.91"/>
+<line x1="295.4" y1="67.7" x2="290.1" y2="53" stroke="#F6D488" stroke-width="2.34" opacity="0.96"/>
+</g>
+</svg>

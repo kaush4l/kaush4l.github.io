@@ -1,0 +1,4743 @@
+/**
+ * The experience layer — the effects channel for `/experience/<id>/`.
+ *
+ * Every rule in this file requires `body[data-experience]`. That attribute is
+ * written by `applyExperienceTokens` (and, on a cold deep link, by the route
+ * segment's pre-paint script) and is *deleted* by `clearExperienceTokens`, so
+ * it is absent on `/` — always, in every appearance, under every skin. This
+ * whole file is therefore inert on the default route, exactly as `skins.css`
+ * and `coder.css` are inert by default.
+ *
+ * ── INVARIANT ───────────────────────────────────────────────────────────────
+ * Delete this file and every world must still be a complete, readable,
+ * correctly-graded telling of the résumé. Nothing here may be the sole carrier
+ * of a boundary, a state, or a level of hierarchy: what is here is the ground
+ * paint, the token defaults, and the entrance choreography — and the entrance
+ * is authored so that its RESTING frame is the visible one (see `.xp-beat`), so
+ * removing it leaves the beats where they already were rather than blank.
+ *
+ * ── Why ONE file, and not one per experience ────────────────────────────────
+ * The skins do it the other way — `skin-ronin.css` and its four siblings, each
+ * with its own import line in `layout.tsx`. That buys deletability, which is
+ * real, and it costs an UNGUARDED edit point: the compiler cannot notice a
+ * missing `@import`, so a sixth world whose author forgot the line renders with
+ * no effects layer and simply looks broken. Adding a world must not depend on
+ * remembering a line in a file the author was told not to open (`layout.tsx` has
+ * exactly one owner). Deletability can be recovered by convention — the
+ * delimited per-world blocks at the bottom of this file, in registry order —
+ * and a convention that a reviewer enforces is worth more than a property no
+ * signal enforces. Trade an enforced property for an unenforceable one only
+ * when the enforced one is worth more; a stylesheet block is deleted about once
+ * per never, and an experience is added on purpose.
+ *
+ * ── What is allowed in here, and what is not ────────────────────────────────
+ * The token map in `<id>/index.ts` is the DEFAULT channel. Thirty-seven keys
+ * cover ground, the ramp, the peak, the focus pair, atmosphere, voice,
+ * choreography and geometry; anything expressible as a custom property belongs
+ * there, where it is data a world author can write with no other file open.
+ * This file holds only what a custom property cannot express:
+ * `@keyframes`, pseudo-elements, `@supports`, `prefers-reduced-motion` stills,
+ * `forced-colors`, print, and selector-dependent rules.
+ *
+ * In particular there are no layout media queries here and there must not be.
+ * If it is a number it is a token (`tokens()` receives `tier`); if it is a
+ * structure it is `telling`. The only media queries in this file are the
+ * accessibility and output ones above.
+ *
+ * If a world's block ever genuinely outgrows ~150 lines, the escape is
+ * `@import './experience-<id>.css';` at the TOP of this file — which keeps the
+ * edit inside the CSS layer instead of pushing it back into `layout.tsx`.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. TOKEN DEFAULTS — what an experience gets for declaring nothing
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Every `--xp-*` key in `EXPERIENCE_TOKEN_KEYS` resolves here first, to the
+   document's own token of the same meaning. Two consequences, both deliberate:
+
+   • An experience with an EMPTY token map is legible in every appearance and
+     under every skin, because it is wearing the appearance the visitor already
+     chose. That is what makes `plain` a real experience rather than a stub, and
+     `plain` is in turn the only thing that continuously proves these defaults
+     are legible — a default nobody renders is a default nobody has checked.
+
+   • `applyExperienceTokens` clears this entire key list before writing the
+     incoming map (the M29 discipline), so a key world A sets and world B omits
+     falls back to THIS block rather than surviving the crossing. These defaults
+     are not decoration; they are the floor that clear pass lands on, and they
+     are exercised on every world-to-world navigation.
+
+   They are declared on `body`, not on `:root`, and that is load-bearing rather
+   than stylistic: `next/font` declares its `--font-*` variables on a class it
+   puts on the BODY element (the same reason `skins.css` scopes its font block
+   to `html[data-skin='…'] body`). Stamping the experience on the same element
+   that owns the font variables means one element, one stamp, one style target —
+   `document.body.style` — with the faces already in scope. A `--xp-font-*`
+   default declared on `html` would resolve against variables that are not in
+   scope yet and would silently fall through to the fallback stack. */
+body[data-experience] {
+  /* ── Ground. `--xp-bg` is also what the segment's pre-paint script writes on
+     a cold deep link, which is why the ground below reads it rather than
+     `--bg`: the frame that paints before React exists and the frame hydration
+     settles on are then one value by construction.
+
+     `--xp-surface-alt` and `--xp-link` join the ground set because the contrast
+     floors MEASURE against them — every text slot is graded on `--xp-bg` and on
+     the deepest card a world paints, and a link colour that is not a token is a
+     link colour nobody measured. */
+  --xp-bg: var(--bg);
+  --xp-bg-alt: var(--bg-alt);
+  --xp-surface: var(--surface);
+  --xp-surface-alt: var(--surface-alt);
+  --xp-text: var(--text);
+  --xp-text-muted: var(--text-muted);
+  --xp-border: var(--border);
+  --xp-link: var(--link);
+
+  /* ── The lit hue, its suppressed twin, the non-text ordinal channel, and the
+     glow budget.
+
+     `--xp-counter` defaults to the accent rather than to a second hue: a world
+     that has not thought about its decorative channel should not be handed one
+     it did not choose. `--xp-glow-strength` is a bare number so every glow in
+     the feature can be multiplied by it and driven to zero from one place —
+     print, reduced motion and forced-colors all do exactly that below. */
+  --xp-accent: var(--primary);
+  --xp-accent-soft: var(--secondary);
+  --xp-counter: var(--primary);
+  --xp-glow-strength: 0;
+
+  /* ── The double focus ring.
+     A single light ring is invisible on exactly the controls that matter most:
+     `#FFFFFF` on `#FFC53D` measures 1.58:1. `ink` is the world's ground and
+     `halo` is its text, so one half of the pair always clears 3:1 no matter
+     what fill the control is standing on. */
+  --xp-focus-ink: var(--focus-ring);
+  --xp-focus-halo: var(--bg);
+
+  /* ── The ramp. Seven stops, luminance-monotonic, every one able to carry a
+     role title. The default collapses the whole ramp onto the document's own
+     muted text — a legible, deliberately uninteresting grey — because a world
+     with no ramp should read as having none rather than as having a broken one. */
+  --xp-stage-1: var(--text-muted);
+  --xp-stage-2: var(--text-muted);
+  --xp-stage-3: var(--text-muted);
+  --xp-stage-4: var(--text-muted);
+  --xp-stage-5: var(--text-muted);
+  --xp-stage-6: var(--text-muted);
+  --xp-stage-7: var(--text-muted);
+
+  /* Referenced exactly once per world. It defaults to the accent so a world
+     that has not declared a peak simply has no peak, rather than a stray hue. */
+  --xp-beat-peak: var(--xp-accent);
+
+  /* ── Atmosphere. Fully transparent by default: an `Atmosphere` is opt-in and
+     a world that declares none must paint nothing at all. */
+  --xp-atmos-a: transparent;
+  --xp-atmos-b: transparent;
+
+  /* ── Typographic voice. The document's own faces, so a world that declares no
+     `fontVariables` adds not one byte to what the browser fetches. `--font-label`
+     is declared only by the skins that want cut signage, so it carries its own
+     fallback here rather than being assumed. */
+  --xp-font-display: var(--font-display), var(--font-sans), Georgia, serif;
+  --xp-font-body: var(--font-sans), system-ui, -apple-system, sans-serif;
+  --xp-font-label: var(--font-label, var(--font-mono)), ui-monospace, monospace;
+  --xp-font-mono: var(--font-mono), ui-monospace, monospace;
+
+  /* ── Narrative choreography. Consumed by `.xp-beat` below and by `Stage`.
+     The distance is small on purpose: an entrance that travels far reads as a
+     slide show, and it is also the setting most likely to provoke the vestibular
+     discomfort `prefers-reduced-motion` exists to prevent — so the default is
+     restrained and the still (§4) is total rather than merely shorter. */
+  --xp-beat-distance: 16px;
+  --xp-beat-duration: 560ms;
+  --xp-beat-stagger: 60ms;
+  --xp-beat-ease: var(--xp-ease-cinema);
+
+  /* ── Stage geometry. `--xp-measure` is a reading measure, not a container
+     width: ~65 characters is the line length prose research keeps landing on,
+     and a story read at 120 characters is a story nobody finishes. A world
+     retunes these per tier from `tokens({ tier })` — as data, never as a media
+     query somebody has to find in here later.
+
+     `--xp-nav-h` is the RESERVED BOTTOM BAND. It is 0 by default and a world
+     raises it at compact; the existing chat FAB offsets from it, because a
+     control sitting under the home indicator undoes every other piece of craft
+     on the page. `--xp-density` is "how much detail at this width" as a bare
+     number, so complexity scales with the viewport instead of being hidden by
+     overflow. */
+  --xp-rail-width: 220px;
+  --xp-gutter: clamp(20px, 5vw, 64px);
+  --xp-measure: 65ch;
+  --xp-nav-h: 0px;
+  --xp-density: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1b. THE SHARED DESIGN SYSTEM — world-agnostic, declared once
+   ═══════════════════════════════════════════════════════════════════════════
+
+   This block is what keeps five worlds from becoming five websites. Every value
+   here is world-agnostic and a world may NOT redeclare any of it: a world that
+   needs a different number changes the number through a token the schema already
+   defines, or it does not get the number. None of these names is in
+   `EXPERIENCE_TOKEN_KEYS`, which is the enforcement — `applyExperienceTokens`
+   cannot write them, so a world cannot reach them from config either.
+
+   ── Why `body[data-experience]` and not `:root` ────────────────────────────
+   CREATIVE-SPEC §2 says ":root in experiences.css", and the intent behind that
+   word is SINGULARITY: declared once, world-agnostic, not per world. This
+   selector is equally singular and additionally keeps the file inert on `/`,
+   which is the invariant at the top of this file — *delete this file and `/` is
+   bit-identical*. Forty custom properties on `:root` would apply to the default
+   route, which is a behavioural no-op and a contract violation, and the contract
+   is the thing that makes this feature safe to land. Singularity is preserved;
+   reach is not extended. */
+body[data-experience] {
+  /* ── Spacing. One scale, 4px base, 8px working rhythm, extending the MUI
+     `spacing(1) = 8` the site already uses. `--xp-sp-5` is `spacing(3)`. */
+  --xp-sp-1: 4px;
+  --xp-sp-2: 8px;
+  --xp-sp-3: 12px;
+  --xp-sp-4: 16px;
+  --xp-sp-5: 24px;
+  --xp-sp-6: 32px;
+  --xp-sp-7: 48px;
+  --xp-sp-8: 64px;
+  --xp-sp-9: 96px;
+  --xp-sp-10: 128px;
+  --xp-sp-11: 192px;
+
+  /* Hairlines are 1px, ALWAYS. Never 2px, never 0.5px — 0.5 rounds to 0 on some
+     Android and the hairline silently disappears, which is the worst kind of
+     defect: invisible to the author and invisible to the reader. */
+  --xp-hairline: 1px;
+
+  /* ── Motion: six durations, three exits, five curves.
+
+     `--xp-ease-cinema` and `--xp-dur-section` are byte-identical to
+     `EASE_CINEMA_CSS` and the shipped `--reveal-duration: 560ms`. The default
+     route's entrance must not change by a millisecond when this feature lands,
+     and stating the values here rather than aliasing `var(--reveal-duration)` is
+     what keeps that true in both directions: the experience layer cannot drift
+     if the résumé retunes, and the résumé cannot be retuned by a world. */
+  --xp-dur-micro: 120ms;      /* hover, focus ring, chip, icon state */
+  --xp-dur-ui: 200ms;         /* toggle, button press                */
+  --xp-dur-element: 320ms;    /* a card, a caption, a row posting    */
+  --xp-dur-section: 560ms;    /* a beat's content arriving           */
+  --xp-dur-scene: 720ms;      /* dissolve between chapters           */
+  --xp-dur-establish: 1100ms; /* the opening shot of a world, only   */
+
+  /* Exits are always 0.6x their entrance. The reader has already decided to
+     leave; a symmetric exit is latency by design. */
+  --xp-dur-exit-ui: 120ms;
+  --xp-dur-exit-element: 190ms;
+  --xp-dur-exit-scene: 430ms;
+
+  /* `ease-in-out` is BANNED on entrances — slow at both ends reads as lag. */
+  --xp-ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);     /* arrivals            */
+  --xp-ease-ui: cubic-bezier(0.2, 0, 0, 1);            /* pressed controls    */
+  --xp-ease-exit: cubic-bezier(0.4, 0, 1, 1);          /* anything leaving    */
+  --xp-ease-camera: cubic-bezier(0.22, 0.61, 0.36, 1); /* push-in / pull-back */
+  --xp-ease-dissolve: linear;                          /* opacity crossfades  */
+
+  /* A deliberate jump is a CUT — out, hold, in — and never an auto-scroll
+     through four chapters. 560ms total, which is also why input is locked for
+     exactly that long after one. */
+  --xp-cut-out: 180ms;
+  --xp-cut-hold: 60ms;
+  --xp-cut-in: 320ms;
+
+  /* ── Typography: two ladders with a deliberate void.
+
+     Body ladder, ratio 1.200: 12 / 13 / 14 / 16 / 19 / 23 / 28px. Nothing in the
+     résumé body ever exceeds 28px. Display ladder, ratio 1.500: 44 / 66 / 99 /
+     145px. NOTHING LIVES BETWEEN 28 AND 44 — that gap is the effect. It is what
+     reads as a title card rather than as a blog `h1`, and a design that wants
+     34px gets 28px with more space around it. */
+  --xp-fs-1: 0.75rem;    /* 12 */
+  --xp-fs-2: 0.8125rem;  /* 13 */
+  --xp-fs-3: 0.875rem;   /* 14 */
+  --xp-fs-4: 1rem;       /* 16 */
+  --xp-fs-5: 1.1875rem;  /* 19 */
+  --xp-fs-6: 1.4375rem;  /* 23 */
+  --xp-fs-7: 1.75rem;    /* 28 — the ceiling */
+  --xp-fs-base: clamp(1rem, 0.94rem + 0.30vw, 1.1875rem);   /* 16 → 19 */
+  --xp-fs-display-1: clamp(2.75rem, 0.5rem + 9.5vw, 9.0625rem); /* 44 → 145 */
+  --xp-fs-display-2: clamp(2rem, 0.75rem + 5.6vw, 4.125rem);    /* 32 → 66  */
+
+  /* Tracking is non-negotiable and is stated as a ladder rather than left to
+     each author's eye, because optical tracking is exactly the thing five
+     parallel authors will each get slightly differently. */
+  --xp-track-display: -0.03em;  /* >= 64px  */
+  --xp-track-large: -0.022em;   /* 40–63px  */
+  --xp-track-mid: -0.012em;     /* 28–39px  */
+  --xp-track-body: 0;           /* 16–27px  */
+  --xp-track-caps: 0.08em;      /* all-caps <= 13px */
+
+  --xp-lh-display: 0.94;
+  --xp-lh-title: 1.15;
+  --xp-lh-body: 1.55;
+  --xp-lh-caption: 1.45;
+
+  /* ── Beat rhythm is SPACING, not time.
+
+     A weight-1.6 chapter arrives after 154px of silence where a weight-0.7
+     chapter gets 67px. This is the mechanism by which pacing survives
+     `prefers-reduced-motion` and print — media in which time does not exist. It
+     is not an enhancement; it is how the shape of the career is preserved at
+     zero motion. `--beat-weight` is set per chapter by the Stage from the
+     spine's own `weight`, and it is deliberately NOT an `--xp-` token: it is
+     per-element state, not a world's configuration. */
+  --beat-weight: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1c. THE TWO-PLANE LAW
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Every world, at every viewport, is exactly two planes and never three.
+
+     .xp-plane-stage  full-bleed, sticky, owns SPECTACLE. Carries no fact that
+                      is not also in the flow, and says so to assistive tech.
+     .xp-plane-flow   ordinary document flow, owns MEANING. Never full-bleed.
+
+   `svh`, never `vh`, never `dvh`. `vh` overflows behind mobile browser chrome;
+   `dvh` re-measures when the URL bar hides and visibly re-lays-out a sticky
+   stage mid-scroll. That is the single most common failure of hand-rolled
+   scrollytelling, and it is banned here by unit choice rather than by review. */
+body[data-experience] .xp-plane-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  z-index: 0;
+  /* The stage is spectacle and its subtree is large; containment is what stops
+     one world's repaint from costing a layout pass over the whole story. */
+  contain: layout paint;
+}
+
+body[data-experience] .xp-plane-flow {
+  position: relative;
+  z-index: 1;
+  width: min(68ch, 640px);
+  max-width: 100%;
+}
+
+/* Prose over a stage ALWAYS gets a scrim.
+
+   Any moving background can push a passing ratio below 4.5:1 within one frame.
+   The scrim is what makes the measured ratio the true ratio, and it is a
+   gradient of the world's own ground so it never introduces a colour the world
+   did not declare. `color-mix` degrades to the unmixed ground where unsupported,
+   which is more opaque, not less — the safe direction. */
+body[data-experience] .xp-scrim {
+  background-image: linear-gradient(
+    to top,
+    color-mix(in oklab, var(--xp-bg) 88%, transparent) 0%,
+    color-mix(in oklab, var(--xp-bg) 74%, transparent) 55%,
+    transparent 100%
+  );
+}
+
+/* Metrics are the skimmer's landing lights.
+
+   `4s -> under 100ms`, `10M+ events per hour`, `3x throughput`, `85% coverage`,
+   `WCAG 2.1 AA`. Set in mono at 600 with tabular figures, in the accent, in
+   EVERY world identically — which is what lets a hostile skimmer skip narration
+   in peripheral vision without reading it. `0.95em` rather than a step down the
+   ladder so it optically matches the body face it interrupts. */
+body[data-experience] .xp-metric {
+  font-family: var(--xp-font-mono);
+  font-weight: 600;
+  font-size: 0.95em;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--xp-accent);
+}
+
+/* Every stacked date column, every stat and every animated counter.
+   A proportional counter visibly jitters each frame; seven date ranges in a
+   column is the most tabular surface on this site and it is tabular in every
+   world without exception. */
+body[data-experience] .xp-tnum {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. THE GROUND — the only paint this file applies unconditionally
+   ═══════════════════════════════════════════════════════════════════════════
+
+   A world that declares a `ground` has its `--xp-bg` written twice before React
+   exists: once by the segment's blocking pre-paint script, once by the token
+   map on mount. Neither of those PAINTS anything — they set a custom property.
+   Something has to read it, and it has to be a stylesheet rule, because the
+   pre-paint script runs before any component exists. That rule is this one, and
+   this is the reason it lives here rather than in the frame's `sx`.
+
+   `min-height: 100svh` (small viewport height — the conservative one, so a
+   mobile browser's collapsing URL bar cannot open a strip of the old ground at
+   the bottom) guarantees the paint covers the fold even for a world whose
+   telling is shorter than the screen. */
+body[data-experience] {
+  background-color: var(--xp-bg);
+  color: var(--xp-text);
+  min-height: 100svh;
+}
+
+/* The canvas, for a world whose ground differs from the visitor's appearance.
+ *
+ * `globals.css` paints `html { background-color: var(--bg) }`, and the CANVAS —
+ * the surface behind an overscroll rubber-band, and the one the browser paints
+ * outside the body box — takes the root's background, not the body's. Without
+ * this rule a dark world opened by a light-appearance visitor shows a light band
+ * on every elastic scroll.
+ *
+ * The subject of this selector is `html`, which is the one place in this file
+ * where it is not `body`. It is still strictly experience-scoped, and that is
+ * the property that matters: the rule cannot match a document whose body has no
+ * `data-experience`, so it cannot reach `/` even in principle. `:has()` is
+ * feature-detected because the failure mode without it is a cosmetic overscroll
+ * band, and a cosmetic defect is not worth a hard dependency. */
+@supports selector(html:has(body)) {
+  html:has(body[data-experience]) {
+    background-color: var(--xp-bg, var(--bg));
+  }
+}
+
+/* The focus ring, re-grounded.
+ *
+ * `globals.css` paints the ring's separating halo with `box-shadow: 0 0 0 4px
+ * var(--bg)` — the page ground — so the outline reads against whatever it sits
+ * on. Inside a world the ground is `--xp-bg`, so the unmodified rule would paint
+ * a halo of the RÉSUMÉ's ground around a control standing on the world's, which
+ * is visible as a bright rectangle on any world that pins a dark ground. Same
+ * geometry, same instant appearance (a focus indicator that fades in is absent
+ * exactly when it is needed); only the two colours are redirected. */
+body[data-experience] :focus-visible {
+  outline: 2px solid var(--xp-focus-ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--xp-focus-halo);
+  border-radius: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. BEAT ENTRANCE — the shared choreography, authored resting-frame-first
+   ═══════════════════════════════════════════════════════════════════════════
+
+   `Stage` puts `.xp-beat` on each beat and sets `--xp-beat-index` inline to the
+   beat's position within the current view, which is what the stagger multiplies.
+
+   `animation-fill-mode: backwards`, NOT `both`, and not a JS-applied `is-armed`
+   class. The distinction is the whole safety argument of this block:
+
+     • The element's own declared state — no opacity, no transform — is the
+       VISIBLE resting state. The keyframes supply the hidden pre-state only for
+       the duration of the animation's delay and run.
+     • So if this file is deleted, if the animation never starts, if the bundle
+       never executes, or if the browser does not support something here, the
+       beat is simply *there*. Nothing in this feature can leave content
+       permanently invisible, which is the failure mode a `.is-armed` pattern
+       (hide first in CSS, unhide from JS) trades for smoother arming.
+     • It is also pure CSS, so it costs zero rAF loops and it works identically
+       in the static export before hydration. */
+@keyframes xp-beat-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--xp-beat-distance), 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+body[data-experience] .xp-beat {
+  animation: xp-beat-in var(--xp-beat-duration) var(--xp-beat-ease) backwards;
+  animation-delay: calc(var(--xp-beat-index, 0) * var(--xp-beat-stagger));
+  /* The transform is composited and the opacity is not layout-affecting, so the
+     entrance never reflows a beat's neighbours. `will-change` is deliberately
+     absent: it would promote every beat in the story to its own layer for the
+     lifetime of the page to buy half a frame once. */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. REDUCED MOTION — a hard gate, not a shorter duration
+   ═══════════════════════════════════════════════════════════════════════════
+
+   `globals.css` already collapses every animation to .01ms under both the OS
+   preference and the in-page control. That is NOT sufficient here, and the
+   reason is specific: it collapses `animation-duration` and leaves
+   `animation-delay` alone. With `backwards` fill and a 70ms stagger, a beat
+   twelve places down the view would still spend most of a second in the
+   keyframes' hidden pre-state — content withheld from precisely the visitor who
+   asked for less movement. So the animation is removed outright rather than
+   shortened, and the element falls back to its declared resting state, which is
+   the visible one.
+
+   Nothing here HIDES anything. Reduced motion stills the page; it never
+   subtracts content, and QA asserts exactly that — the beat count and the
+   heading visibility checks are re-run with the still applied.
+
+   The two selectors are duplicated rather than merged into one list for the
+   reason `globals.css` gives: putting `html[data-reduce-motion] …` inside the
+   media query's rule would make the whole block depend on the attribute, and
+   the OS preference would stop working for everyone who never opens the
+   control. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-experience] .xp-beat {
+    animation: none;
+  }
+
+  body[data-experience] {
+    /* 1ms, NOT 0s. A zero-duration transition never fires `transitionend`, and a
+       state machine waiting on that event hangs forever — the reader who asked
+       for stillness gets a page that has stopped in a different sense. 1ms is
+       imperceptible and still dispatches. */
+    --xp-dur-micro: 1ms;
+    --xp-dur-ui: 1ms;
+    --xp-dur-element: 1ms;
+    --xp-dur-section: 1ms;
+    --xp-dur-scene: 1ms;
+    --xp-dur-establish: 1ms;
+    --xp-dur-exit-ui: 1ms;
+    --xp-dur-exit-element: 1ms;
+    --xp-dur-exit-scene: 1ms;
+    --xp-cut-out: 1ms;
+    --xp-cut-hold: 1ms;
+    --xp-cut-in: 1ms;
+    /* A bright resting halo is a discomfort trigger independently of motion. */
+    --xp-glow-strength: 0;
+  }
+
+  /* Every scroll-linked binding is DROPPED so the authored default is what
+     paints — and the authored default is required to be the FINAL state, which
+     is the rule that makes this safe. A world that authored its initial state as
+     the default would go blank here, and that is the review-blocking defect. */
+  body[data-experience] .xp-plane-stage,
+  body[data-experience] [style*='animation-timeline'],
+  body[data-experience] .xp-scroll-linked {
+    animation-timeline: none;
+  }
+
+  /* Sticky un-pins and runways collapse: a pinned stage with no motion behind it
+     is a dead band the reader has to scroll past twice. */
+  body[data-experience] .xp-plane-stage {
+    position: static;
+    height: auto;
+  }
+
+  /* Snap plus reduced motion is itself a sickness trigger, so the snap goes —
+     not the scrolling, and never the content. */
+  body[data-experience] [data-xp-stage],
+  body[data-experience] [data-xp-stage] * {
+    scroll-snap-type: none;
+  }
+}
+
+html[data-reduce-motion] body[data-experience] .xp-beat {
+  animation: none;
+}
+
+html[data-reduce-motion] body[data-experience] {
+  --xp-dur-micro: 1ms;
+  --xp-dur-ui: 1ms;
+  --xp-dur-element: 1ms;
+  --xp-dur-section: 1ms;
+  --xp-dur-scene: 1ms;
+  --xp-dur-establish: 1ms;
+  --xp-dur-exit-ui: 1ms;
+  --xp-dur-exit-element: 1ms;
+  --xp-dur-exit-scene: 1ms;
+  --xp-cut-out: 1ms;
+  --xp-cut-hold: 1ms;
+  --xp-cut-in: 1ms;
+  --xp-glow-strength: 0;
+}
+
+html[data-reduce-motion] body[data-experience] .xp-plane-stage,
+html[data-reduce-motion] body[data-experience] .xp-scroll-linked {
+  animation-timeline: none;
+}
+
+html[data-reduce-motion] body[data-experience] .xp-plane-stage {
+  position: static;
+  height: auto;
+}
+
+html[data-reduce-motion] body[data-experience] [data-xp-stage],
+html[data-reduce-motion] body[data-experience] [data-xp-stage] * {
+  scroll-snap-type: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. FORCED COLORS + HIGH CONTRAST
+   ═══════════════════════════════════════════════════════════════════════════
+
+   In forced-colors mode the OS owns every colour and the `--xp-*` ground is
+   ignored by the UA anyway; what survives is geometry. The one thing a world
+   can lose is a boundary it drew with a background difference rather than a
+   border, so boundaries are restated in system colours. `!important` is
+   load-bearing for the same reason it is in `globals.css`'s contrast block:
+   these properties are written as INLINE styles on `document.body` by
+   `applyExperienceTokens`, and a normal declaration in a stylesheet loses to an
+   inline one. */
+@media (forced-colors: active) {
+  body[data-experience] {
+    --xp-bg: Canvas !important;
+    --xp-bg-alt: Canvas !important;
+    --xp-surface: Canvas !important;
+    --xp-surface-alt: Canvas !important;
+    --xp-text: CanvasText !important;
+    --xp-text-muted: CanvasText !important;
+    --xp-border: CanvasText !important;
+    --xp-link: LinkText !important;
+    --xp-accent: LinkText !important;
+    --xp-accent-soft: LinkText !important;
+    --xp-counter: CanvasText !important;
+    --xp-glow-strength: 0 !important;
+    --xp-focus-ink: Highlight !important;
+    --xp-focus-halo: Canvas !important;
+
+    /* The ramp collapses to one system colour, which is CORRECT rather than a
+       loss: the OS has taken the palette, so the ramp can no longer carry
+       meaning and must not pretend to. Every stage marker also carries an
+       ordinal, a fixed rail position and a distinct glyph — colour is never the
+       sole carrier — so the story reads unchanged here. */
+    --xp-stage-1: CanvasText !important;
+    --xp-stage-2: CanvasText !important;
+    --xp-stage-3: CanvasText !important;
+    --xp-stage-4: CanvasText !important;
+    --xp-stage-5: CanvasText !important;
+    --xp-stage-6: CanvasText !important;
+    --xp-stage-7: CanvasText !important;
+    --xp-beat-peak: Highlight !important;
+
+    --xp-atmos-a: transparent !important;
+    --xp-atmos-b: transparent !important;
+  }
+
+  /* Decoration drawn as an image cannot be re-coloured by the UA, so it goes
+     rather than surviving as an unreadable smear over system-coloured text. */
+  body[data-experience] .xp-plane-stage,
+  body[data-experience] .xp-scrim,
+  body[data-experience] .xp-atmosphere {
+    background-image: none !important;
+  }
+}
+
+/* A bright resting halo is a documented discomfort trigger for photophobia and
+   migraine independently of motion (M19), so the soft accent — the channel a
+   world's atmosphere is most likely to glow with — is collapsed onto the solid
+   one rather than merely stopped. */
+@media (prefers-contrast: more) {
+  body[data-experience] {
+    --xp-accent-soft: var(--xp-accent) !important;
+    --xp-border: var(--xp-text-muted) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. PRINT
+   ═══════════════════════════════════════════════════════════════════════════
+
+   M21's rule, applied one axis over: print always renders the light surface
+   set, regardless of the world's ground. A world that pins near-black would
+   otherwise put a full-bleed black page on paper — and the tokens have to be
+   reset rather than just the elements, because they are inline styles on `body`
+   that outlive the media query.
+
+   The beats themselves are NOT touched beyond stilling the entrance: a print is
+   a telling of the same story, so nothing may be dropped from it. The escape
+   hatch and any world chrome carry `.no-print`, which `globals.css` already
+   removes. */
+@media print {
+  body[data-experience] {
+    /* The one light palette, shared by all five worlds, and it IS the print
+       palette (CREATIVE-SPEC §2.8): one editorial paper ground rather than five
+       bespoke ones, because nobody reads a mythic ascent in daylight mode and
+       five light palettes is five times the contrast surface for no narrative
+       gain. Measured on paper: text #14181F is 17.05:1 on #FBFAF7 and 16.05:1
+       on #F5F3EE; muted #5A6472 is 5.75:1 and 5.41:1. */
+    --xp-bg: #FBFAF7 !important;
+    --xp-bg-alt: #F2F0EA !important;
+    --xp-surface: #FFFFFF !important;
+    --xp-surface-alt: #F5F3EE !important;
+    --xp-text: #14181F !important;
+    --xp-text-muted: #5A6472 !important;
+    --xp-border: #CCCCCC !important;
+    --xp-link: #1D4ED8 !important;
+    --xp-accent: #14181F !important;
+    --xp-accent-soft: #14181F !important;
+    --xp-counter: #5A6472 !important;
+    --xp-glow-strength: 0 !important;
+
+    /* Every stage token collapses to the ink. A printed ramp is a grey smear;
+       the ORDINAL is the actual information, and the Stage prints it as text. */
+    --xp-stage-1: #14181F !important;
+    --xp-stage-2: #14181F !important;
+    --xp-stage-3: #14181F !important;
+    --xp-stage-4: #14181F !important;
+    --xp-stage-5: #14181F !important;
+    --xp-stage-6: #14181F !important;
+    --xp-stage-7: #14181F !important;
+    --xp-beat-peak: #14181F !important;
+
+    --xp-atmos-a: transparent !important;
+    --xp-atmos-b: transparent !important;
+
+    /* Display faces reset to the document's own. A display serif at 10.5pt is
+       not what a recruiter should be carrying into a room. */
+    --xp-font-display: var(--font-sans), Georgia, serif !important;
+    --xp-font-body: var(--font-sans), system-ui, sans-serif !important;
+
+    font-size: 11pt;
+    line-height: 1.42;
+    min-height: 0;
+  }
+
+  /* Spectacle, chrome and atmosphere are not the story. Everything below is
+     `display: none` on paper; the FLOW carries every fact, which is the whole
+     point of the two-plane law. */
+  body[data-experience] .xp-plane-stage,
+  body[data-experience] .xp-atmosphere,
+  body[data-experience] .xp-scrim {
+    display: none !important;
+  }
+
+  /* The flow stops being a column inside a stage and becomes the page. */
+  body[data-experience] .xp-plane-flow {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  body[data-experience] .xp-beat {
+    animation: none;
+    /* A beat is a narrative unit; splitting one across a page break turns a
+       heading and its evidence into two unrelated fragments. */
+    break-inside: avoid;
+  }
+
+  /* A heading orphaned at the foot of a page is a heading for nothing. */
+  body[data-experience] h2,
+  body[data-experience] h3 {
+    break-after: avoid;
+  }
+
+  /* Anything a world collapsed behind a disclosure is forced open: a printed
+     page has no affordance to expand, so a closed drawer on paper is content
+     that was silently dropped. */
+  body[data-experience] details {
+    display: block;
+  }
+
+  body[data-experience] details > summary {
+    display: none;
+  }
+
+  /* REVERSE-CHRONOLOGICAL on paper, and only on paper.
+     On screen the story is an arc and it runs forwards. On paper it is a résumé,
+     and a recruiter reads the most recent engagement first — `order` flips the
+     visual sequence without touching the DOM, so the reading order assistive
+     tech and the exported HTML see is unchanged. */
+  body[data-experience] [data-xp-chapters] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  body[data-experience] [data-xp-chapter] {
+    order: calc(100 - var(--xp-chapter-index, 0));
+  }
+
+  /* A printed link that does not say where it goes is a dead end. */
+  body[data-experience] a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    color: var(--xp-text-muted);
+    word-break: break-all;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. PER-WORLD BLOCKS — one delimited block each, in registry order
+   ═══════════════════════════════════════════════════════════════════════════
+
+   The convention that makes one shared file as deletable as five separate ones,
+   and it is the only thing standing in for a compiler here, so it is not
+   optional:
+
+     • One block per experience, opened by a banner comment in the shape below,
+       ordered exactly as `EXPERIENCE_LIST` orders the array.
+     • Every selector inside begins `body[data-experience='<id>']`. An unscoped
+       rule in this file is a review-blocking defect — it is the one way this
+       feature could reach `/`, which the QA gate also checks empirically (a
+       run of the default route asserts `body` carries no `style` attribute and
+       no `data-experience` after a full sweep of every world).
+     • Nothing goes in a block that could have been a token. A world whose whole
+       argument fits in `tokens()` contributes zero lines here, and that is the
+       ideal outcome rather than a sign of an unfinished world.
+
+   ── The shape ───────────────────────────────────────────────────────────────
+
+   /· ── <id> ────────────────────────────────────────────────────────────────
+    · One line on what this world's effects layer does that a custom property
+    · could not express — and, if it is not obvious, why. ·/
+
+   `plain` has no block, on purpose: it is the entry that proves the defaults in
+   §1 are a complete telling on their own. */
+
+/* ── ghost ──────────────────────────────────────────────────────────────────
+ * Owner: `src/experiences/ghost/`. EMPTY, and empty is a valid finished state.
+ *
+ * Expected to hold, and nothing else: the registered `@property --p` and the
+ * `@supports (animation-timeline: scroll())` block that positions the live trace
+ * and the ghost trace from one scroll timeline; the compiled per-chapter
+ * `ghostOffset` keyframe stops, which are what make the gap between the two
+ * traces pure DATA rather than bespoke animation code; the 8px grid as a
+ * repeating background-image; and the gate-4 lane ambient loop (4s period, 0.12
+ * opacity delta, suppressed while prose is on screen).
+ *
+ * Every rule below this banner MUST begin `body[data-experience='ghost']`. An
+ * unscoped rule here is the one way this feature could reach `/`.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+@property --xp-ghost-p {
+  syntax: '<number>';
+  inherits: true;
+  /* 1 = FULLY DRAWN, and the initial value is the whole safety argument of this
+     world's motion. Every reveal below is authored as `final state minus
+     progress`, so with no scroll-timeline support, with JavaScript disabled,
+     inside a crawler, on paper, and under `prefers-reduced-motion`, the plate
+     paints COMPLETE. There is no frame in which a trace is missing because
+     something failed to start. */
+  initial-value: 1;
+}
+
+body[data-experience='ghost'] .xp-ghost {
+  /* Clearance for the frame's fixed door. Stated once and used by the page
+     padding and by every scroll target: when those two disagree the link works,
+     the reader arrives, and the heading they came for is behind a button. */
+  --ghost-door: calc(var(--xp-sp-9) + var(--xp-sp-4));
+  --ghost-plate-h: 120px;
+  --ghost-pull: 0px;
+  /* Parallax travel for the single plane, ratio 0.16. Absolute travel is
+     clamped ±120px at cinema, ±48px at medium and ZERO at compact, per the hard
+     motion ceilings — a phone gets no parallax at all. */
+  --ghost-parallax: 0px;
+  --ghost-veil: transparent;
+
+  display: block;
+  font-family: var(--xp-font-body);
+  font-size: var(--xp-fs-base);
+  line-height: var(--xp-lh-body);
+  color: var(--xp-text);
+  padding-inline: var(--xp-gutter);
+  padding-block-start: var(--ghost-door);
+  /* The reserved bottom band, plus breathing room. The chat FAB offsets from the
+     same token, so nothing can stack on the home indicator. */
+  padding-block-end: calc(var(--xp-nav-h) + var(--xp-sp-9));
+}
+
+body[data-experience='ghost'] .xp-ghost[data-tier='medium'] {
+  --ghost-plate-h: 40svh;
+  --ghost-parallax: 96px;
+}
+
+body[data-experience='ghost'] .xp-ghost[data-tier='cinema'] {
+  --ghost-plate-h: 100svh;
+  /* Only at cinema does the reading scroll OVER the plate, so only here is the
+     flow pulled up onto it and only here does it need a veil. */
+  --ghost-pull: 100svh;
+  --ghost-parallax: 240px;
+  --ghost-veil: color-mix(in oklab, var(--xp-bg) 88%, transparent);
+}
+
+body[data-experience='ghost'] .xp-ghost-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── The plate ─────────────────────────────────────────────────────────────
+   `.xp-plane-stage` is kept on the element so every shared rule that governs a
+   stage plane still reaches it — containment, z-index, the print removal, the
+   forced-colors image strip and the reduced-motion timeline drop. Only the
+   HEIGHT is this world's own, because §4.1 gives the plate three heights: a
+   120px instrument strip at compact, a 40svh band at medium, the full side
+   elevation at cinema. That override out-specifies the shared reduced-motion
+   rules as a side effect, so both of them are restated at the foot of this
+   block; the alternative is a still that silently keeps a 100svh pinned band. */
+body[data-experience='ghost'] .xp-ghost-plate {
+  position: sticky;
+  top: 0;
+  height: var(--ghost-plate-h);
+  margin-inline: calc(var(--xp-gutter) * -1);
+  overflow: hidden;
+  border-block-end: var(--xp-hairline) solid var(--xp-border);
+  background-color: var(--xp-bg);
+  /* The 8px grid, and a 64px major division over it. A repeating gradient rather
+     than an SVG pattern so it stays exactly 8px at every aspect ratio the
+     stretched drawing is scaled to. */
+  background-image:
+    repeating-linear-gradient(to right, color-mix(in oklab, var(--xp-text) 14%, transparent) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(to bottom, color-mix(in oklab, var(--xp-text) 14%, transparent) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(to right, color-mix(in oklab, var(--xp-text) 6%, transparent) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(to bottom, color-mix(in oklab, var(--xp-text) 6%, transparent) 0 1px, transparent 1px 8px);
+}
+
+body[data-experience='ghost'] .xp-ghost-drawing,
+body[data-experience='ghost'] .xp-ghost-annotations {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* ONE plane, moved together, so a gate and its annotation can never drift
+     apart. A schematic has no depth and a five-plane parallax here would be the
+     world's most obvious lie. */
+  transform: translate3d(0, calc((var(--xp-ghost-p) - 0.5) * var(--ghost-parallax)), 0);
+}
+
+body[data-experience='ghost'] .xp-ghost-annotations {
+  pointer-events: none;
+}
+
+/* One camera move in the whole world, and it belongs to the peak: a 1.04 push
+   over 1100ms after a 120ms dead hold, from the same `echoes` field the
+   convergence itself is drawn from. */
+body[data-experience='ghost'] .xp-ghost-plate {
+  transform: scale(1);
+  transform-origin: 50% 60%;
+  transition: transform var(--xp-dur-establish) var(--xp-ease-camera) var(--xp-cut-hold);
+}
+
+body[data-experience='ghost'] .xp-ghost-plate[data-peak='on'] {
+  transform: scale(1.04);
+}
+
+/* ── The traces ────────────────────────────────────────────────────────────
+   Four strokes and one timeline. The two `-ahead` strokes are the track drawn
+   COMPLETE at low alpha from the first frame — you can read every gate before
+   you move — and the two lit strokes are the same paths revealed against
+   `--xp-ghost-p`. `pathLength="1000"` normalises both, so the dash arithmetic
+   below never has to know a measured length and cannot go stale when a date in
+   `content/` changes and the path is regenerated. */
+body[data-experience='ghost'] .xp-ghost-trace {
+  fill: none;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body[data-experience='ghost'] .xp-ghost-trace-ahead {
+  stroke: color-mix(in oklab, var(--xp-text) 22%, transparent);
+}
+
+body[data-experience='ghost'] .xp-ghost-trace-trail {
+  stroke: color-mix(in oklab, var(--xp-text) 14%, transparent);
+  stroke-dasharray: 2 7;
+}
+
+/* THE REFERENCE RUN. `--xp-text` at 0.38 alpha and never a colour of its own,
+   so it can never fight the live trace for attention. */
+body[data-experience='ghost'] .xp-ghost-trace-ghost {
+  stroke: color-mix(in oklab, var(--xp-text) 38%, transparent);
+  stroke-dasharray: 1000;
+  stroke-dashoffset: calc(1000 * (1 - var(--xp-ghost-p)));
+}
+
+body[data-experience='ghost'] .xp-ghost-trace-live {
+  stroke: var(--xp-accent);
+  stroke-dasharray: 1000;
+  stroke-dashoffset: calc(1000 * (1 - var(--xp-ghost-p)));
+  /* The entire glow budget of the world, spent here and nowhere else: one lit
+     element, under 2px of blur at the declared 0.18 strength, and forced to zero
+     by the shared sheet in print, in forced-colors and under reduced motion. */
+  filter: drop-shadow(0 0 calc(10px * var(--xp-glow-strength)) var(--xp-accent-soft));
+}
+
+body[data-experience='ghost'] .xp-ghost-baseline {
+  stroke: color-mix(in oklab, var(--xp-text) 24%, transparent);
+  stroke-width: 1;
+}
+
+body[data-experience='ghost'] .xp-ghost-rule {
+  stroke: var(--xp-border);
+  stroke-width: 1;
+  transition: stroke var(--xp-dur-element) var(--xp-ease-ui);
+}
+
+body[data-experience='ghost'] .xp-ghost-rule[data-active] {
+  stroke: var(--xp-accent);
+}
+
+body[data-experience='ghost'] .xp-ghost-finish {
+  stroke: color-mix(in oklab, var(--xp-text) 34%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 6 5;
+}
+
+/* The multi-lane section: forty hairlines, one gate wide, and the world's single
+   ambient loop — 4s period, 0.12 opacity delta, and only while the reader is in
+   that chapter, so it is absent from every screen that is not about it. */
+body[data-experience='ghost'] .xp-ghost-lanes line {
+  stroke: var(--xp-text);
+  stroke-width: 1;
+  opacity: 0.06;
+}
+
+@keyframes xp-ghost-lane-drift {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.18; }
+}
+
+body[data-experience='ghost'] .xp-ghost-plate[data-lanes='on'] .xp-ghost-lanes line {
+  animation: xp-ghost-lane-drift 4s var(--xp-ease-dissolve) infinite;
+}
+
+/* ── The scroll timeline ───────────────────────────────────────────────────
+   ONE registered property, ONE timeline, four consumers. Inside `@supports`
+   because the unconditional default is already the final state; a browser
+   without scroll-driven animation gets a complete plate and loses nothing but
+   the drawing-on. `scroll(root block)` and not a `view()` timeline: the traces
+   are a function of how far through the STORY the reader is, not of where the
+   plate is in the viewport — the plate is pinned and never moves. */
+@supports (animation-timeline: scroll(root block)) {
+  @media (prefers-reduced-motion: no-preference) {
+    body[data-experience='ghost'] .xp-ghost {
+      /* Longhands, never the shorthand. `animation: xp-ghost-run linear` resets
+         `animation-duration` to 0s, and a scroll-driven animation with a zero
+         duration never progresses — the single most common way a scroll timeline
+         ships looking like it was never wired up. `auto` is what binds the
+         keyframes to the full range of the timeline. */
+      animation-name: xp-ghost-run;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@keyframes xp-ghost-run {
+  from { --xp-ghost-p: 0; }
+  to { --xp-ghost-p: 1; }
+}
+
+/* ── Gate annotations ──────────────────────────────────────────────────────
+   HTML positioned in percentages of the drawing's own coordinate space, never
+   `<text>` inside it: the drawing is stretched with `preserveAspectRatio="none"`
+   and type in a non-uniformly scaled SVG is type that has been squashed. */
+body[data-experience='ghost'] .xp-ghost-gate {
+  position: absolute;
+  inset-block: 0;
+  transform: translateX(-50%);
+  color: var(--ghost-stage, var(--xp-stage-7));
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+}
+
+body[data-experience='ghost'] .xp-ghost-gate-glyph {
+  position: absolute;
+  top: var(--ghost-gate-top);
+  left: 0;
+  width: 20px;
+  height: 20px;
+  translate: -50% -50%;
+}
+
+body[data-experience='ghost'] .xp-ghost-gate-glyph svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The one warm mark on a cold plate: the "you are here" tick, non-text, one
+   appearance, and it may never carry a word. */
+body[data-experience='ghost'] .xp-ghost-gate[data-symbol='here'] {
+  color: var(--xp-counter);
+}
+
+/* The peak, referenced ONCE — one declaration, two selectors: the convergence
+   gate on the plate and the Then/Now pair in the reading. */
+body[data-experience='ghost'] .xp-ghost-peak,
+body[data-experience='ghost'] .xp-ghost-gate[data-echo] {
+  color: var(--xp-beat-peak);
+}
+
+/* The dimension line: the measured gap between the two traces at this gate,
+   drawn the way a schematic calls out a tolerance. It is present at every tier
+   and in every motion state, which is what makes the still telling COMPLETE
+   rather than merely stopped — the ghost survives as a measurement with a number
+   on it rather than as an animation. */
+body[data-experience='ghost'] .xp-ghost-dim {
+  position: absolute;
+  left: 0;
+  display: block;
+  width: 0;
+  border-inline-start: var(--xp-hairline) dashed color-mix(in oklab, var(--xp-text) 30%, transparent);
+}
+
+body[data-experience='ghost'] .xp-ghost-dim-value {
+  position: absolute;
+  top: 50%;
+  left: var(--xp-sp-2);
+  transform: translateY(-50%);
+  color: var(--xp-text-muted);
+  white-space: nowrap;
+}
+
+body[data-experience='ghost'] .xp-ghost-gate-stack {
+  position: absolute;
+  inset-block-end: var(--xp-sp-3);
+  left: var(--xp-sp-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 15ch;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-gate-ordinal {
+  color: currentColor;
+  font-weight: 600;
+}
+
+body[data-experience='ghost'] .xp-ghost-gate-year {
+  color: var(--xp-text);
+}
+
+body[data-experience='ghost'] .xp-ghost-gate[data-active] .xp-ghost-gate-stack {
+  color: var(--xp-text);
+}
+
+body[data-experience='ghost'] .xp-ghost-gate-label,
+body[data-experience='ghost'] .xp-ghost-gate-signal,
+body[data-experience='ghost'] .xp-ghost-gate-ref {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* At compact the strip has room for one gate's call-out, so only the gate the
+   reader is standing at is annotated. Nothing is lost: every one of these
+   strings is also a cell in the table directly below and a heading in the
+   reading below that. */
+body[data-experience='ghost'] .xp-ghost-plate[data-tier='compact'] .xp-ghost-gate-stack {
+  opacity: 0;
+}
+
+body[data-experience='ghost'] .xp-ghost-plate[data-tier='compact'] .xp-ghost-gate[data-active] .xp-ghost-gate-stack {
+  opacity: 1;
+}
+
+/* ── The body grid ─────────────────────────────────────────────────────────
+   One DOM order at every tier — plate, table, reading — and two arrangements.
+   The table comes before the reading in the document at every width because
+   that IS this world's argument: the first thing under the plate is a complete
+   employment history. Above compact the grid docks the same markup to the right
+   without re-ordering a single node, so tab order and reading order stay one
+   thing. */
+body[data-experience='ghost'] .xp-ghost-body {
+  position: relative;
+  margin-block-start: calc(var(--ghost-pull) * -1);
+  display: grid;
+  /* `minmax(0, 1fr)`, never the implicit `auto` track. QA-2026-08-22/G1: with an
+     implicit track this grid measured 640px wide inside a 390px viewport and the
+     whole world scrolled sideways by 266px. The cause is the grid blowout every
+     `auto` track has — the track takes its floor from the widest item's
+     min-content contribution, `.xp-ghost-flow` states a DEFINITE
+     `width: min(68ch, 640px)`, and that item's `max-width: 100%` cannot rescue
+     it because a percentage against an indefinite track resolves to `auto`
+     during intrinsic sizing. `minmax(0, 1fr)` gives the track a zero floor and a
+     definite size, which is also what makes the flow's own `max-width: 100%`
+     mean "the viewport" again. The medium/cinema rule below restates the two
+     columns and is unaffected. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--xp-gutter);
+  max-width: 1400px;
+  margin-inline: auto;
+}
+
+body[data-experience='ghost'] .xp-ghost[data-tier='medium'] .xp-ghost-body,
+body[data-experience='ghost'] .xp-ghost[data-tier='cinema'] .xp-ghost-body {
+  grid-template-columns: minmax(0, 1fr) var(--xp-rail-width);
+  align-items: start;
+}
+
+body[data-experience='ghost'] .xp-ghost[data-tier='medium'] .xp-ghost-table,
+body[data-experience='ghost'] .xp-ghost[data-tier='cinema'] .xp-ghost-table {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: var(--ghost-door);
+  max-height: calc(100svh - var(--ghost-door) - var(--xp-sp-6));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body[data-experience='ghost'] .xp-ghost[data-tier='medium'] .xp-ghost-flow,
+body[data-experience='ghost'] .xp-ghost[data-tier='cinema'] .xp-ghost-flow {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+body[data-experience='ghost'] .xp-ghost-flow {
+  width: min(68ch, 640px);
+  max-width: 100%;
+  padding-inline: var(--xp-sp-4);
+  /* The veil. Prose over a stage always gets one: any moving background can push
+     a passing ratio below 4.5:1 within one frame, and 88% of the world's own
+     ground is what makes the measured ratio the true ratio. Only cinema sets it
+     — at the other two tiers the plate is a band above the reading, not behind
+     it, so there is nothing to veil. */
+  background-color: var(--ghost-veil);
+}
+
+/* ── The table ─────────────────────────────────────────────────────────────— */
+body[data-experience='ghost'] .xp-ghost-table {
+  background-color: var(--ghost-veil);
+  border: var(--xp-hairline) solid var(--xp-border);
+  border-radius: 8px;
+  padding: var(--xp-sp-4);
+}
+
+body[data-experience='ghost'] .xp-ghost-table-head {
+  position: relative;
+  padding-block-end: var(--xp-sp-3);
+}
+
+body[data-experience='ghost'] .xp-ghost-table-title {
+  margin: 0;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text);
+}
+
+body[data-experience='ghost'] .xp-ghost-table-sub {
+  margin: var(--xp-sp-1) 0 0;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  color: var(--xp-text-muted);
+}
+
+/* The fill is the TRUE fraction of beats completed, handed in as a number and
+   drawn as one composited `scaleX`. A progress affordance that lies once makes
+   everything else on the page suspect. */
+body[data-experience='ghost'] .xp-ghost-table-fill {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  height: 2px;
+  background-color: var(--xp-accent);
+  transform-origin: left;
+  transform: scaleX(var(--ghost-progress, 0));
+  transition: transform var(--xp-dur-element) var(--xp-ease-ui);
+}
+
+body[data-experience='ghost'] .xp-ghost-table-fill[data-still] {
+  transition: none;
+}
+
+body[data-experience='ghost'] .xp-ghost-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-2);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+body[data-experience='ghost'] .xp-ghost-caption {
+  caption-side: top;
+  text-align: start;
+  padding-block: var(--xp-sp-2);
+  font-size: var(--xp-fs-1);
+  line-height: var(--xp-lh-caption);
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-grid th,
+body[data-experience='ghost'] .xp-ghost-grid td {
+  padding: var(--xp-sp-2) var(--xp-sp-2);
+  text-align: start;
+  vertical-align: baseline;
+  border-block-end: var(--xp-hairline) solid var(--xp-border);
+}
+
+body[data-experience='ghost'] .xp-ghost-grid thead th {
+  font-weight: 500;
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+  background-color: var(--xp-bg);
+}
+
+/* Added at compact and needed nowhere else: column labels must survive
+   scrolling on a phone, because at this width the table IS the page. */
+body[data-experience='ghost'] .xp-ghost-table[data-tier='compact'] thead th {
+  position: sticky;
+  top: var(--ghost-plate-h);
+  z-index: 1;
+}
+
+body[data-experience='ghost'] .xp-ghost-grid tbody th,
+body[data-experience='ghost'] .xp-ghost-grid tbody td {
+  color: var(--xp-text-muted);
+  transition: color var(--xp-dur-element) var(--xp-ease-ui);
+}
+
+/* A row the reader has reached is set in the text token; a row ahead of them in
+   the muted one. Both clear their floor (15.37:1 and 7.12:1 on the ground) — the
+   distinction is colour and weight, NEVER legibility, because a row nobody can
+   read yet is a row that was hidden. */
+body[data-experience='ghost'] .xp-ghost-grid tbody tr[data-posted] th,
+body[data-experience='ghost'] .xp-ghost-grid tbody tr[data-posted] td {
+  color: var(--xp-text);
+}
+
+body[data-experience='ghost'] .xp-ghost-grid tbody tr[data-active] {
+  background-color: var(--xp-surface-alt);
+}
+
+body[data-experience='ghost'] .xp-ghost-grid tbody a {
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  border-block-end: var(--xp-hairline) solid transparent;
+  /* 44px minimum target, the house rule for every pointer control on this site;
+     the row is 56px at compact for the same reason. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+body[data-experience='ghost'] .xp-ghost-grid tbody a:hover,
+body[data-experience='ghost'] .xp-ghost-grid tbody a:focus-visible {
+  border-block-end-color: var(--xp-accent);
+}
+
+body[data-experience='ghost'] .xp-ghost-grid tbody tr[data-active] a {
+  color: var(--xp-accent);
+}
+
+body[data-experience='ghost'] .xp-ghost-col-ordinal {
+  width: 3ch;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-col-signal {
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-stacked-dates {
+  display: block;
+  font-size: var(--xp-fs-1);
+  color: var(--xp-text-muted);
+}
+
+/* ── The reading ───────────────────────────────────────────────────────────— */
+body[data-experience='ghost'] .xp-ghost-overture {
+  max-width: var(--xp-measure);
+  margin-block-end: var(--xp-sp-9);
+  padding-block-start: var(--xp-sp-7);
+}
+
+body[data-experience='ghost'] .xp-ghost-title {
+  margin: 0;
+  font-family: var(--xp-font-display);
+  /* The display ladder, at this world's own flattest-of-five ratio: a schematic
+     earns hierarchy from rule weight and position, not from size jumps. The void
+     between 28 and 44px is intact — nothing here lands in it. */
+  font-size: var(--xp-fs-display-2);
+  line-height: var(--xp-lh-display);
+  letter-spacing: var(--xp-track-large);
+  font-weight: 700;
+  font-stretch: 112%;
+  color: var(--xp-text);
+  text-wrap: balance;
+}
+
+body[data-experience='ghost'] .xp-ghost-overture-meta {
+  margin: var(--xp-sp-3) 0 0;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-2);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-chapter {
+  /* Beat rhythm is SPACING, not time: a weight-1.6 chapter arrives after 154px
+     of silence where a weight-0.7 chapter gets 67px, which is how the shape of
+     this career survives print and a full still. */
+  margin-block-start: calc(var(--xp-sp-9) * var(--beat-weight));
+  scroll-margin-top: var(--ghost-door);
+}
+
+/* The two deliberately quiet chapters. Flat intensity across nine chapters
+   yields no peak and therefore no memory; these are what buy the convergence its
+   brightness. A desaturation and an alpha step — never a size change, and never
+   less content. */
+body[data-experience='ghost'] .xp-ghost-chapter[data-quiet] {
+  filter: saturate(0.65);
+}
+
+body[data-experience='ghost'] .xp-ghost-chapter-head {
+  padding-block-end: var(--xp-sp-3);
+  margin-block-end: var(--xp-sp-6);
+  border-block-end: var(--xp-hairline) solid var(--xp-border);
+}
+
+body[data-experience='ghost'] .xp-ghost-chapter-rule {
+  display: flex;
+  align-items: baseline;
+  gap: var(--xp-sp-3);
+  margin: 0 0 var(--xp-sp-2);
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-chapter-ordinal {
+  /* Drawn from the ramp so a reader can see where in the arc they are without
+     reading a number — and it is ALSO a number, because colour is never the sole
+     carrier of anything here. */
+  color: var(--ghost-stage, var(--xp-stage-7));
+  font-weight: 600;
+}
+
+body[data-experience='ghost'] .xp-ghost-eyebrow {
+  margin: 0 0 var(--xp-sp-1);
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-heading {
+  margin: 0;
+  font-family: var(--xp-font-display);
+  font-size: var(--xp-fs-7);
+  line-height: var(--xp-lh-title);
+  letter-spacing: var(--xp-track-mid);
+  font-weight: 700;
+  font-stretch: 112%;
+  color: var(--xp-text);
+  text-wrap: balance;
+}
+
+body[data-experience='ghost'] .xp-ghost-heading:focus-visible {
+  outline-offset: 4px;
+}
+
+body[data-experience='ghost'] .xp-ghost-narration {
+  margin: var(--xp-sp-3) 0 0;
+  max-width: var(--xp-measure);
+  font-size: var(--xp-fs-4);
+  line-height: var(--xp-lh-caption);
+  color: var(--xp-text-muted);
+  text-wrap: pretty;
+}
+
+/* ── The convergence: one field, two columns, no peak-shaped code ──────────— */
+body[data-experience='ghost'] .xp-ghost-echo {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--xp-sp-4);
+  margin-block-end: var(--xp-sp-6);
+  padding: var(--xp-sp-4);
+  border: var(--xp-hairline) solid currentColor;
+  border-radius: 8px;
+}
+
+body[data-experience='ghost'] .xp-ghost-echo p {
+  margin: 0;
+}
+
+body[data-experience='ghost'] .xp-ghost-echo-label {
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: currentColor;
+}
+
+body[data-experience='ghost'] .xp-ghost-echo-org {
+  margin-block-start: var(--xp-sp-1) !important;
+  font-size: var(--xp-fs-5);
+  font-weight: 600;
+  color: var(--xp-text);
+}
+
+body[data-experience='ghost'] .xp-ghost-echo-dates,
+body[data-experience='ghost'] .xp-ghost-echo-name {
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-echo-rule {
+  position: relative;
+  align-self: stretch;
+  min-width: 6ch;
+  display: grid;
+  place-items: center;
+  border-inline-start: var(--xp-hairline) dashed currentColor;
+  border-inline-end: var(--xp-hairline) dashed currentColor;
+}
+
+body[data-experience='ghost'] .xp-ghost-echo-span {
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: currentColor;
+}
+
+body[data-experience='ghost'] .xp-ghost-echo-shared {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--xp-sp-2);
+  padding-block-start: var(--xp-sp-3);
+  border-block-start: var(--xp-hairline) solid var(--xp-border);
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-echo-tag {
+  padding: var(--xp-sp-1) var(--xp-sp-2);
+  border: var(--xp-hairline) solid currentColor;
+  border-radius: 8px;
+  color: var(--xp-text);
+}
+
+/* ── Beats ─────────────────────────────────────────────────────────────────— */
+body[data-experience='ghost'] .xp-ghost-beats {
+  display: grid;
+  gap: var(--xp-gutter);
+  align-items: start;
+}
+
+/* ONE column at every tier, and `beatsInView` deliberately does NOT become a
+   column count here. The two-plane law caps the flow at `min(68ch, 640px)`, and
+   two beats side by side inside that is two 40-character measures — a narrower
+   line than the compact telling gets on a phone. So `beatsInView` does what it
+   says at this world's proportions: how many beats fit on screen at once down
+   the page, which is also exactly what it drives in the entrance stagger. A
+   column count that halved the measure would be a layout obeying a number
+   against the reader's interest. */
+body[data-experience='ghost'] .xp-ghost-beats {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body[data-experience='ghost'] .xp-ghost-beat {
+  max-width: var(--xp-measure);
+  min-width: 0;
+  /* A featured beat is marked with a rule, not with a colour on its text: the
+     accent is a FILL channel, and small text set in it is the reliable way to
+     fail 4.5:1 in a world nobody re-measured. */
+  border-inline-start: 2px solid transparent;
+  padding-inline-start: var(--xp-sp-4);
+  margin-inline-start: calc(var(--xp-sp-4) * -1);
+}
+
+body[data-experience='ghost'] .xp-ghost-beat[data-featured] {
+  border-inline-start-color: var(--xp-accent);
+}
+
+body[data-experience='ghost'] .xp-ghost-beat-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--xp-sp-3);
+  margin: 0;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-present {
+  color: var(--xp-text);
+  font-weight: 600;
+}
+
+body[data-experience='ghost'] .xp-ghost-beat-title {
+  margin: var(--xp-sp-2) 0 0;
+  font-family: var(--xp-font-display);
+  font-size: var(--xp-fs-6);
+  line-height: var(--xp-lh-title);
+  letter-spacing: var(--xp-track-mid);
+  font-weight: 700;
+  font-stretch: 112%;
+  color: var(--xp-text);
+  text-wrap: balance;
+}
+
+body[data-experience='ghost'] .xp-ghost-beat-link {
+  color: inherit;
+  text-decoration: none;
+  border-block-end: var(--xp-hairline) solid var(--xp-accent);
+}
+
+body[data-experience='ghost'] .xp-ghost-beat-link:hover {
+  border-block-end-width: 2px;
+}
+
+body[data-experience='ghost'] .xp-ghost-beat-org {
+  margin: var(--xp-sp-1) 0 0;
+  font-size: var(--xp-fs-3);
+  font-weight: 500;
+  color: var(--xp-text);
+}
+
+body[data-experience='ghost'] .xp-ghost-via {
+  color: var(--xp-text-muted);
+  font-weight: 400;
+}
+
+body[data-experience='ghost'] .xp-ghost-beat-dates {
+  margin: var(--xp-sp-1) 0 0;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-2);
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='ghost'] .xp-ghost-summary {
+  margin: var(--xp-sp-3) 0 0;
+  font-size: var(--xp-fs-base);
+  line-height: var(--xp-lh-body);
+  color: var(--xp-text);
+  text-wrap: pretty;
+}
+
+body[data-experience='ghost'] .xp-ghost-bullets {
+  margin: var(--xp-sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+body[data-experience='ghost'] .xp-ghost-bullets li {
+  position: relative;
+  padding-inline-start: var(--xp-sp-5);
+  margin-block-end: var(--xp-sp-2);
+  line-height: var(--xp-lh-body);
+  color: var(--xp-text);
+  text-wrap: pretty;
+}
+
+/* A drawn marker rather than a list-style glyph, because the glyph inherits the
+   font and every world would get a different one. 1px, like every other rule on
+   this plate. */
+body[data-experience='ghost'] .xp-ghost-bullets li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.62em;
+  width: var(--xp-sp-3);
+  height: var(--xp-hairline);
+  background-color: var(--xp-accent);
+}
+
+/* The compact telling's disclosure. The SAME nodes as the inline list, one tap
+   away, in the DOM, findable by find-in-page, and forced open by the shared
+   print sheet — a shorter telling of the beat, never the beat with its evidence
+   deleted. */
+body[data-experience='ghost'] .xp-ghost-more {
+  margin-block-start: var(--xp-sp-3);
+}
+
+body[data-experience='ghost'] .xp-ghost-more > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-accent);
+}
+
+body[data-experience='ghost'] .xp-ghost-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--xp-sp-2);
+  margin: var(--xp-sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+body[data-experience='ghost'] .xp-ghost-tags li {
+  padding: var(--xp-sp-1) var(--xp-sp-2);
+  border: var(--xp-hairline) solid var(--xp-border);
+  border-radius: 8px;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  color: var(--xp-text-muted);
+  white-space: nowrap;
+}
+
+body[data-experience='ghost'] .xp-ghost-coda {
+  margin: var(--xp-sp-8) 0 0;
+  max-width: var(--xp-measure);
+  font-family: var(--xp-font-display);
+  font-size: var(--xp-fs-7);
+  line-height: var(--xp-lh-title);
+  letter-spacing: var(--xp-track-mid);
+  font-weight: 700;
+  font-stretch: 112%;
+  color: var(--xp-text);
+  text-wrap: balance;
+}
+
+/* ── The still ─────────────────────────────────────────────────────────────
+   Restated for this world's own class because the per-tier plate height above
+   out-specifies the shared reduced-motion rules; without these two blocks a
+   reader who asked for stillness would keep a pinned 100svh band. Nothing here
+   HIDES anything: the plate stays, complete and drawn, with every dimension
+   line and every number on it. It simply stops. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-experience='ghost'] .xp-ghost {
+    --ghost-pull: 0px;
+    --ghost-parallax: 0px;
+    --xp-ghost-p: 1;
+    /* The animation, not merely its timeline: a running keyframe out-ranks
+       the declaration above, so the still has to stop it rather than reset it. */
+    animation-name: none;
+  }
+
+  body[data-experience='ghost'] .xp-ghost[data-tier='cinema'],
+  body[data-experience='ghost'] .xp-ghost[data-tier='medium'] {
+    --ghost-plate-h: 44svh;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-plate {
+    position: static;
+    transition: none;
+    transform: none;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-plate[data-lanes='on'] .xp-ghost-lanes line {
+    animation: none;
+  }
+}
+
+html[data-reduce-motion] body[data-experience='ghost'] .xp-ghost {
+  --ghost-pull: 0px;
+  --ghost-parallax: 0px;
+  --xp-ghost-p: 1;
+  animation-name: none;
+}
+
+html[data-reduce-motion] body[data-experience='ghost'] .xp-ghost[data-tier='cinema'],
+html[data-reduce-motion] body[data-experience='ghost'] .xp-ghost[data-tier='medium'] {
+  --ghost-plate-h: 44svh;
+}
+
+html[data-reduce-motion] body[data-experience='ghost'] .xp-ghost-plate {
+  position: static;
+  transition: none;
+  transform: none;
+}
+
+html[data-reduce-motion] body[data-experience='ghost'] .xp-ghost-plate[data-lanes='on'] .xp-ghost-lanes line {
+  animation: none;
+}
+
+/* ── Paper ─────────────────────────────────────────────────────────────────
+   The plate is removed by the shared sheet (`.xp-plane-stage`). What is left is
+   this world's whole argument and the reason it prints better than any of the
+   other four: a split employment table on white paper is simply a well-set
+   employment history. It keeps its columns, loses its dock, and stops being a
+   navigation nobody can click on paper. */
+@media print {
+  body[data-experience='ghost'] .xp-ghost {
+    padding: 0;
+    --ghost-pull: 0px;
+    --ghost-veil: transparent;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-body {
+    display: block;
+    margin-block-start: 0;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-table {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    margin-block-end: var(--xp-sp-6);
+    break-inside: avoid;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-table-fill {
+    display: none;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-grid tbody th,
+  body[data-experience='ghost'] .xp-ghost-grid tbody td,
+  body[data-experience='ghost'] .xp-ghost-col-ordinal,
+  body[data-experience='ghost'] .xp-ghost-col-signal {
+    color: var(--xp-text);
+  }
+
+  body[data-experience='ghost'] .xp-ghost-grid tbody a {
+    min-height: 0;
+    border: 0;
+  }
+
+  /* A row link printing its own fragment after every employer would put nine
+     `(#beat-…)` strings down the middle of the table. The shared sheet prints
+     external links only, and this keeps the in-page ones quiet. */
+  body[data-experience='ghost'] .xp-ghost-grid a[href^='#']::after {
+    content: none;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-flow {
+    width: 100%;
+    padding: 0;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-chapter[data-quiet] {
+    filter: none;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-beats {
+    display: block;
+  }
+
+  body[data-experience='ghost'] .xp-ghost-chapter {
+    break-inside: avoid;
+  }
+}
+
+
+/* ── trunk ──────────────────────────────────────────────────────────────────
+ * Owner: `src/experiences/trunk/`.
+ *
+ * ONE registered scroll timeline, five consumers, zero JS and zero rAF. What is
+ * here is exactly what a custom property cannot express — `@property`
+ * registrations, `@keyframes`, an `@supports` gate — and nothing else: every
+ * colour, every lane width and every geometry number this world has lives in
+ * `src/experiences/trunk/`, not in here.
+ *
+ * Every rule below this banner MUST begin `body[data-experience='trunk']`, with
+ * the two unavoidable exceptions immediately following: an `@property` and a
+ * `@keyframes` are NAMED at-rules and cannot be scoped to a selector. Neither
+ * paints anything on its own — a registration declares a type and an initial
+ * value, and a keyframe list that no rule references is inert — so `/` is
+ * untouched by both, and both names are `--xp-trunk-*` / `xp-trunk-*` prefixed
+ * so they cannot collide with another world's.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* The walk: 0 at the first commit, 1 at HEAD.
+ *
+ * `initial-value: 1` — THE FINAL STATE — and that is the rule that makes every
+ * fallback path in this world safe rather than blank. Where scroll timelines are
+ * unsupported, where reduced motion drops the binding, in print, and in the
+ * static export before hydration, this is the value that paints: the whole log,
+ * walked, with the cherry-pick arc drawn and amber. A world that had authored
+ * its INITIAL state as the default would go blank in exactly those four places,
+ * and that is the review-blocking defect §4 of this file is written against. */
+@property --xp-trunk-walk {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+/* The camera, 0 → 1 along the graph's own height.
+ *
+ * A SECOND property rather than a reuse of the walk, because the two want
+ * opposite defaults: the still frame is fully WALKED (1) and not PANNED (0). One
+ * property could only have given one of those, and the version that got it wrong
+ * would have parked a reduced-motion reader at the bottom of a graph they never
+ * scrolled. Two registrations is the cost of stating both defaults honestly. */
+@property --xp-trunk-pan {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@keyframes xp-trunk-log {
+  from {
+    --xp-trunk-walk: 0;
+    --xp-trunk-pan: 0;
+  }
+  to {
+    --xp-trunk-walk: 1;
+    --xp-trunk-pan: 1;
+  }
+}
+
+/* ── The pane ────────────────────────────────────────────────────────────────
+ * The DEFAULT is the un-pinned, un-clipped, complete frame. Sticky and clipping
+ * are added back only inside `@supports (animation-timeline: scroll())`, which
+ * is the one place they make sense: a 2500px graph clipped to a viewport by a
+ * camera that cannot move is a graph with its second half thrown away. This is
+ * the same authored-resting-frame-first discipline as `@property` above, applied
+ * to layout instead of to colour. */
+body[data-experience='trunk'] .xp-trunk-pane {
+  position: static;
+  height: auto;
+  align-self: stretch;
+}
+
+body[data-experience='trunk'] .xp-trunk-window {
+  position: relative;
+  height: auto;
+}
+
+body[data-experience='trunk'] .xp-trunk-graph {
+  display: block;
+  /* The camera. Transform only, composited, no layout — and the travel is the
+     graph's own height minus the window, so a taller career pans further and
+     nobody has to retune a magic number. `100svh` and never `dvh`: `dvh`
+     re-measures when a mobile URL bar hides, which would re-lay-out a sticky
+     stage mid-scroll. */
+  transform: translate3d(0, calc(var(--xp-trunk-pan) * (100svh - var(--xp-trunk-h))), 0);
+}
+
+/* Plane 0.16 — the unwalked graph, moving fractionally slower than the camera.
+   `--xp-trunk-para` is 0 at compact, 48px at medium, 120px at cinema, which are
+   the §2.3 absolute travel clamps stated as data by `Graph.tsx` rather than as a
+   media query nobody can find in here. */
+body[data-experience='trunk'] .xp-trunk-future {
+  transform: translate3d(0, calc(var(--xp-trunk-pan) * var(--xp-trunk-para) * -1), 0);
+}
+
+/* The one lit element in the world: the reading line.
+ *
+ * A resting radial gradient the graph pans BENEATH, rather than a bloom attached
+ * to whichever node is "active" — which would have needed a scroll observer, a
+ * rAF loop, or a per-node shadow, and this world declares `rafLoops: 0`. It is
+ * multiplied by `--xp-glow-strength`, so print, reduced motion and forced-colors
+ * extinguish it from one declaration each, up in §4, §5 and §6. */
+body[data-experience='trunk'] .xp-trunk-bloom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 64px;
+  margin-top: -32px;
+  pointer-events: none;
+  background-image: radial-gradient(
+    32px 32px at var(--xp-trunk-eye, 22px) 50%,
+    var(--xp-accent) 0%,
+    transparent 70%
+  );
+  opacity: var(--xp-glow-strength);
+}
+
+@supports (animation-timeline: scroll()) {
+  body[data-experience='trunk'] .xp-trunk-pane {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+  }
+
+  body[data-experience='trunk'] .xp-trunk-window {
+    height: 100%;
+    /* `clip`, not `hidden`: an overhanging decorative layer still contributes to
+       the document's scroll width under `hidden`, and iOS Safari renders that as
+       real horizontal scroll. */
+    overflow: clip;
+  }
+
+  body[data-experience='trunk'] .xp-trunk-graph {
+    animation: xp-trunk-log linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+/* ── The graph ───────────────────────────────────────────────────────────────
+ * Hairlines, 6px filled nodes, no fills and no gradients anywhere except the one
+ * bloom above. Only the walked path emits; unwalked graph sits at 34%. */
+body[data-experience='trunk'] .xp-trunk-edge {
+  fill: none;
+  stroke: var(--xp-text-muted);
+  stroke-width: 1;
+  opacity: 0.34;
+}
+
+/* The one branch this career turns on: 2px instead of a hairline. */
+body[data-experience='trunk'] .xp-trunk-edge.is-lit {
+  stroke: var(--xp-accent);
+  stroke-width: 2;
+  opacity: 0.5;
+}
+
+/* The two deliberately quiet chapters. Flat intensity across nine chapters
+   yields no peak and therefore no memory; these are what buy `return` its
+   brightness. */
+body[data-experience='trunk'] .xp-trunk-edge.is-quiet {
+  filter: saturate(0.65);
+  opacity: 0.24;
+}
+
+/* A quiet chapter's COMMITS are desaturated, not dimmed to nothing. The
+   difference matters: an edge at 0.24 still reads as a line, but a node at 0.24
+   reads as a node that is missing, and `trials` and `mastery` are quiet
+   chapters, not absent ones. 0.86 is the same alpha the spec gives their text. */
+body[data-experience='trunk'] .xp-trunk-node.is-quiet {
+  filter: saturate(0.65);
+  opacity: 0.86;
+}
+
+/* The `scale` fan: five parallel lines that split and merge inside one screen.
+   Dashed and dimmest, because it is the only geometry in the graph that is a
+   rhyme rather than a fact, and it must not read as five branches nobody named. */
+body[data-experience='trunk'] .xp-trunk-edge.is-ornament {
+  /* The ONE use of `--xp-counter` in this world, and the only correct one: the
+     fan is the single piece of geometry here that carries no fact, so it is the
+     single piece that belongs on the decorative ordinal channel — the one token
+     in the vocabulary graded at 3.0:1 rather than 4.5:1 because it may never
+     carry text. Dashed, so it reads as a rhyme rather than as five branches
+     nobody named. */
+  stroke: var(--xp-counter);
+  opacity: 0.34;
+  stroke-dasharray: 2 3;
+}
+
+/* The walked trunk, drawn over its own dim copy. `pathLength="1"` on the element
+   normalises the dash arithmetic to 0 → 1, so nothing has to call
+   `getTotalLength()` and there is no JS in this draw at all. */
+body[data-experience='trunk'] .xp-trunk-walked {
+  fill: none;
+  stroke: var(--xp-accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--xp-trunk-walk));
+}
+
+/* THE PEAK, and the only reference to `--xp-beat-peak` in this world.
+ *
+ * `--xp-trunk-at` is where down the graph the echo LANDS, published by
+ * `Graph.tsx` from the spine's own `echoes` field. The arc is fully retracted
+ * while the walk is more than 1/12 of the graph above that point and fully drawn
+ * once the walk reaches it, so it draws itself as the reader arrives at the
+ * chapter and needs no observer to tell it when.
+ *
+ * DEVIATION, stated plainly: CREATIVE-SPEC §4.2 asks for a ONE-SHOT draw that
+ * fires on chapter entry and never on re-scroll. A latch is state, state here
+ * means JS, and the same section requires zero JS and zero rAF for this world's
+ * motion. Both cannot hold. Zero JS won, so scrolling back up retracts the arc
+ * and scrolling down redraws it — reversible rather than one-shot. */
+body[data-experience='trunk'] .xp-trunk-pick {
+  fill: none;
+  stroke: var(--xp-beat-peak);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: clamp(0, calc((var(--xp-trunk-at) - var(--xp-trunk-walk)) * 12), 1);
+}
+
+/* A commit. 34% until the reader has passed it, then full — the emission is a
+   pure function of the walk and this node's own position, so every one of the
+   twenty-four lights independently with no per-node rule and no observer. */
+body[data-experience='trunk'] .xp-trunk-node circle {
+  fill: var(--xp-text-muted);
+  fill-opacity: clamp(0.34, calc((var(--xp-trunk-walk) - var(--xp-trunk-t)) * 40 + 0.34), 1);
+}
+
+body[data-experience='trunk'] .xp-trunk-node.is-lead circle {
+  fill: var(--xp-accent);
+}
+
+/* HEAD is a POINTER, not a commit, so it is a ring and never a fill. */
+body[data-experience='trunk'] .xp-trunk-node.is-head circle {
+  fill: none;
+  stroke: var(--xp-accent);
+  stroke-width: 2;
+  stroke-opacity: clamp(0.34, calc((var(--xp-trunk-walk) - var(--xp-trunk-t)) * 40 + 0.34), 1);
+}
+
+/* Labels: cinema only, mono, tabular. Branch names are content slugs, hashes are
+   real hashes of real beat ids, and the dates are the authored period strings —
+   there is no sentence anywhere in this graph, which is the whole craft signal. */
+body[data-experience='trunk'] .xp-trunk-graph text {
+  font-family: var(--xp-font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums lining-nums;
+  fill: var(--xp-text-muted);
+}
+
+body[data-experience='trunk'] .xp-trunk-meta {
+  opacity: 0.8;
+}
+
+body[data-experience='trunk'] .xp-trunk-branch {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body[data-experience='trunk'] .xp-trunk-branch.is-lit,
+body[data-experience='trunk'] .xp-trunk-tag {
+  fill: var(--xp-accent);
+}
+
+/* ── Reduced motion: the still frame, restated for this world ────────────────
+ * §4 above already drops the timeline on `.xp-scroll-linked` and un-pins
+ * `.xp-plane-stage`. Both are restated here for one reason each, and neither is
+ * belt-and-braces:
+ *
+ *   • `animation-timeline: none` alone leaves the animation bound to the
+ *     document timeline with a 0s duration and `both` fill, which snaps to the
+ *     `to` frame — walk 1 (right) and pan 1 (WRONG: it would park a
+ *     reduced-motion reader at the bottom of a graph they never scrolled).
+ *     `animation: none` is what lets the registered initial values paint.
+ *   • The `@supports` block above re-declares the pane sticky at equal
+ *     specificity and LATER in the file, so §4's un-pinning would lose. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-experience='trunk'] .xp-trunk-graph {
+    animation: none;
+  }
+
+  body[data-experience='trunk'] .xp-trunk-pane {
+    position: static;
+    height: auto;
+  }
+
+  body[data-experience='trunk'] .xp-trunk-window {
+    height: auto;
+    overflow: visible;
+  }
+}
+
+html[data-reduce-motion] body[data-experience='trunk'] .xp-trunk-graph {
+  animation: none;
+}
+
+html[data-reduce-motion] body[data-experience='trunk'] .xp-trunk-pane {
+  position: static;
+  height: auto;
+}
+
+html[data-reduce-motion] body[data-experience='trunk'] .xp-trunk-window {
+  height: auto;
+  overflow: visible;
+}
+
+
+/* ── timecode ───────────────────────────────────────────────────────────────
+ * Owner: `src/experiences/timecode/`.
+ *
+ * The editing suite, as an effects layer. Everything here is one of the four
+ * things §5.4.3 says a custom property cannot express — `@keyframes`,
+ * pseudo-elements, per-tier structural geometry, and the two `@media` gates the
+ * file is allowed — plus the composition of the four-slot title card, which is
+ * the one thing this world lives or dies on and therefore the one thing that
+ * belongs in a stylesheet a reviewer can read top to bottom.
+ *
+ * ── Three things this block deliberately does NOT contain ──────────────────
+ *   • No registered `@property --p`. Nothing here interpolates a custom
+ *     property: the playhead is a `transform` driven by an inline `--tc-p` that
+ *     changes only when the sequence changes, and a plain transition on
+ *     `transform` interpolates the resolved value without the property ever
+ *     needing a type. A registered property that no rule animates is ceremony.
+ *   • No `document.startViewTransition`. CREATIVE-SPEC §4.3 asks for the match
+ *     cut "via View Transitions at 520ms behind `@supports` with a 320ms
+ *     crossfade fallback". The fallback is what is authored here, at 520ms, and
+ *     it is authored as the UNCONDITIONAL path rather than as a fallback:
+ *     the API needs a JS-orchestrated DOM swap, and this world's budget is zero
+ *     rAF and zero JS motion. The reader sees the same cut; nothing degrades.
+ *   • No colour that is not a token, and no duration that is not one of the six.
+ *
+ * ── The one amber ──────────────────────────────────────────────────────────
+ * `--xp-beat-peak` appears exactly once in this world: on `.tc-echo-to`, the
+ * 2025 half of the reused shot. That is what makes amber mean "this is the
+ * peak" instead of "this is a highlight".
+ *
+ * Every rule below this banner MUST begin `body[data-experience='timecode']`.
+ * The in-page stillness twins begin `html[data-reduce-motion] body[…]`, which
+ * is the same shape §4 of this file uses for the shared block and is still
+ * strictly experience-scoped: neither selector can match a document whose body
+ * has no `data-experience`, so neither can reach `/` even in principle.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* ── 1. The shell, and the three tellings ─────────────────────────────────── */
+
+body[data-experience='timecode'] .tc-stage {
+  font-family: var(--xp-font-body);
+  font-size: var(--xp-fs-base);
+  color: var(--xp-text);
+  /* Clearance for the frame's fixed door, which would otherwise cover whatever
+     a hash link just scrolled to. The failure when this is forgotten is silent:
+     the link works, the reader arrives, and the heading they came for is behind
+     a button. */
+  padding-top: calc(var(--xp-sp-9) + var(--xp-sp-4));
+  /* The reserved bottom band the chat FAB offsets from, plus breathing room, so
+     nothing can stack on the home indicator. */
+  padding-bottom: calc(var(--xp-nav-h) + var(--xp-sp-9));
+  padding-inline: var(--xp-gutter);
+  scroll-behavior: smooth;
+}
+
+body[data-experience='timecode'] .tc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* CINEMA — frame left, evidence right, the sequence rail between them.
+   A grid rather than a flex row because the frame's column is a fraction of the
+   VIEWPORT (38vw, the film's own aspect discipline) while the evidence takes
+   what is left; `grid-template-columns` states exactly that and a flex basis
+   would have to restate it as a `flex` triple nobody can read. */
+body[data-experience='timecode'] .tc-stage[data-tier='cinema'] {
+  display: grid;
+  grid-template-columns: 38vw minmax(0, 1fr);
+  gap: var(--xp-gutter);
+  align-items: start;
+  max-width: 1600px;
+  margin-inline: auto;
+}
+
+body[data-experience='timecode'] .tc-stage[data-tier='cinema'] .tc-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--xp-gutter);
+}
+
+/* MEDIUM — a sticky 40svh band across the top, evidence beneath it, rail beside.
+   The band is shallower than the cinema frame because a 1024px-wide screen that
+   gives half its height to spectacle has given away the reading. */
+body[data-experience='timecode'] .tc-stage[data-tier='medium'] .tc-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--xp-gutter);
+  max-width: 1100px;
+  margin-inline: auto;
+}
+
+/* COMPACT — no frame at all, and that is the design rather than a subtraction.
+   A title card is already a portrait composition, so each sequence's card is a
+   solid card at the head of its own section and the reader travels through the
+   film one card at a time. A permanently pinned band on a 390px screen costs
+   42% of the reading area on every scroll, and overlaid text on a phone loses
+   contrast against anything behind it — which is why the narration is a card
+   here and never an overlay. */
+body[data-experience='timecode'] .tc-flow {
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+
+/* ── 2. The frame ─────────────────────────────────────────────────────────── */
+
+body[data-experience='timecode'] .tc-frame {
+  /* `.xp-plane-stage` already supplies `position: sticky`, `top: 0`,
+     `height: 100svh`, `z-index: 0` and `contain: layout paint`. Only the height
+     is re-stated, and only at medium, where the frame is a band. */
+  display: block;
+}
+
+body[data-experience='timecode'] .tc-stage[data-tier='medium'] .tc-frame {
+  height: 40svh;
+  min-height: 280px;
+}
+
+/* A flex column and not a grid, because the row COUNT changes: the cold open
+   burns in no timecode and only cinema docks the mix, so a fixed
+   `grid-template-rows` would silently re-seat the card into the wrong band on
+   exactly the two frames nobody re-checks. */
+body[data-experience='timecode'] .tc-frame-inner {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--xp-sp-5);
+  padding: var(--xp-sp-6) 0 var(--xp-sp-7);
+  border-inline-start: var(--xp-hairline) solid var(--xp-border);
+  padding-inline-start: var(--xp-sp-5);
+}
+
+body[data-experience='timecode'] .tc-frame-card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The burned-in timecode. Top-right, mono, tabular, and absent on the cold open
+   — chapter 0 is "the track exists; the playhead has not started", so the
+   readout does not exist yet either. */
+body[data-experience='timecode'] .tc-burn {
+  margin: 0;
+  justify-self: end;
+  display: flex;
+  align-items: baseline;
+  gap: var(--xp-sp-2);
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-2);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-burn-code {
+  font-size: var(--xp-fs-4);
+  color: var(--xp-text);
+}
+
+/* The unit beside the timecode. `opacity: 0.72` measured 3.75:1 at 11px — the
+   fourth instance of the same mistake in this world, see `.tc-chapter-name`.
+   The step down from `.tc-burn-code` is already `--xp-fs-1` against `--xp-fs-4`
+   and `--xp-text-muted` against `--xp-text`; a fifth axis was never needed. */
+body[data-experience='timecode'] .tc-burn-unit {
+  font-size: var(--xp-fs-1);
+}
+
+/* The companion's ember: 10px, dormant at 0.22 alpha, lit from the sequence
+   where he learned to build agentic systems. The glow is the world's ENTIRE
+   glow budget (`--xp-glow-strength: 0.22`) and it is the only lit thing in the
+   room, which is what makes it read as a light rather than as a style. */
+body[data-experience='timecode'] .tc-ember {
+  position: absolute;
+  right: 0;
+  bottom: var(--xp-sp-9);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--xp-accent);
+  opacity: 0.22;
+  transition: opacity var(--xp-dur-establish) var(--xp-ease-camera);
+}
+
+body[data-experience='timecode'] .tc-ember[data-lit] {
+  opacity: 1;
+  /* One lit element, one shadow, well inside the ≤48px / ≤0.35 alpha ceiling —
+     and scaled by the world's declared glow budget so print, reduced motion and
+     forced-colors extinguish it from one token rather than from a hunt. */
+  box-shadow: 0 0 calc(24px * var(--xp-glow-strength)) var(--xp-accent-soft);
+}
+
+/* ── 3. THE CARD — four slots, one composition, nine sequences ─────────────── */
+
+body[data-experience='timecode'] .tc-card {
+  display: grid;
+  gap: var(--xp-sp-3);
+  min-width: 0;
+}
+
+/* 1. EYEBROW — `SEQ 03 · THE DISSOLVE`. */
+body[data-experience='timecode'] .tc-eyebrow {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--xp-sp-3);
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+/* The ordinal takes its rung of the candle-count ramp — and states the same
+   thing in words beside it, because colour is never the sole carrier of
+   anything in this feature. Every stop is graded ≥ 5.0:1 on both grounds, so a
+   sequence number is legal text in the ramp at any rung. */
+body[data-experience='timecode'] .tc-seq {
+  color: var(--tc-stage-color, var(--xp-text-muted));
+  font-weight: 600;
+}
+
+/* NO `opacity` here, and the omission is the point — QA-2026-08-22/TC2.
+   This rule used to read `opacity: 0.72`, and the browser measured what that
+   costs: `--xp-text-muted` (#9B9082) is 6.35:1 on this world's ground, which
+   clears the 4.5:1 body floor with room, but at 0.72 the composited colour is
+   rgb(114,106,96) and the ratio is 3.75:1 — and inside a `[data-shot='quiet']`
+   card, which carries its own 0.86, it is 3.05:1. Both are below the floor at
+   12px, and neither is visible in the declared token, which is why
+   `scripts/xp-contrast.ts` — which reads the CONFIG — could not see it and only
+   a rendered measurement could.
+
+   The general rule this stands for: the muted token IS the quietest legal body
+   colour by construction, so dimming it with `opacity` is always a failure, and
+   the fix is never a bigger alpha. The step this rule wanted survives on the
+   axes that cost nothing: `.tc-seq` beside it is `font-weight: 600` and this is
+   not, and the eyebrow is `--xp-fs-1` against the heading's display size. */
+body[data-experience='timecode'] .tc-chapter-name {
+  font-weight: 400;
+}
+
+/* 2 + 3. NAME and ROLE, and the 1px rule under them. */
+body[data-experience='timecode'] .tc-heading {
+  margin: 0;
+  display: grid;
+  gap: var(--xp-sp-2);
+  font-family: var(--xp-font-display);
+  font-weight: 400;
+  min-width: 0;
+}
+
+body[data-experience='timecode'] .tc-name {
+  font-size: var(--xp-fs-display-2);
+  line-height: var(--xp-lh-display);
+  letter-spacing: var(--xp-track-large);
+  color: var(--xp-text);
+  text-wrap: balance;
+}
+
+body[data-experience='timecode'] .tc-role {
+  font-size: var(--xp-fs-7);
+  line-height: var(--xp-lh-title);
+  letter-spacing: var(--xp-track-mid);
+  font-style: italic;
+  color: var(--xp-text-muted);
+  text-wrap: balance;
+}
+
+/* 4a. The dates, bottom-right in tabular mono, with THE RULE above them. */
+body[data-experience='timecode'] .tc-dates {
+  margin-top: var(--xp-sp-4);
+  padding-top: var(--xp-sp-3);
+  border-top: var(--xp-hairline) solid var(--xp-border);
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-2);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  text-align: end;
+  color: var(--xp-text-muted);
+}
+
+/* 4b. The one metric, bottom-left, and the place it happened, bottom-right. */
+body[data-experience='timecode'] .tc-meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--xp-sp-3);
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-2);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-metric {
+  display: flex;
+  align-items: baseline;
+  gap: var(--xp-sp-2);
+}
+
+/* The heading is an `<h2>` in the flow and a `<div>` in the frame; the frame's
+   copy must never look like a smaller heading, so the two scales are stated
+   here once each rather than inferred. Compact's card IS the hero — one display
+   size in the whole world, exactly as §4.3 asks — and above compact the flow's
+   card drops to a slug line beneath a frame that is already showing it large. */
+body[data-experience='timecode'] .tc-stage[data-tier='compact'] .tc-card[data-variant='card'] {
+  min-height: 42svh;
+  align-content: end;
+  padding-block: var(--xp-sp-7) var(--xp-sp-5);
+}
+
+body[data-experience='timecode'] .tc-stage[data-tier='medium'] .tc-card[data-variant='card'] .tc-name,
+body[data-experience='timecode'] .tc-stage[data-tier='cinema'] .tc-card[data-variant='card'] .tc-name {
+  font-size: var(--xp-fs-7);
+  line-height: var(--xp-lh-title);
+  letter-spacing: var(--xp-track-mid);
+}
+
+body[data-experience='timecode'] .tc-stage[data-tier='medium'] .tc-card[data-variant='card'] .tc-role,
+body[data-experience='timecode'] .tc-stage[data-tier='cinema'] .tc-card[data-variant='card'] .tc-role {
+  font-size: var(--xp-fs-5);
+}
+
+/* The push-in. 1.055 over 1100ms on `--xp-ease-camera`, and it is spent on
+   exactly two sequences in the whole film (`stageProps.push`) — a move used
+   everywhere is not a move. `transform` only, so it composites; the card
+   remounts on each cut, which is what starts it. */
+@keyframes tc-push-in {
+  from { transform: scale(1); }
+  to { transform: scale(1.055); }
+}
+
+body[data-experience='timecode'] .tc-card[data-variant='frame'][data-push] {
+  transform-origin: 12% 50%;
+  animation: tc-push-in var(--xp-dur-establish) var(--xp-ease-camera) forwards;
+}
+
+/* The cut itself: every new card arrives at 560ms with the house curve. The
+   element's own declared state is the VISIBLE one and the keyframes supply the
+   pre-state through `backwards` fill, so a card is simply *there* if the
+   animation never runs. Nothing in this world can leave content invisible. */
+@keyframes tc-cut-in {
+  from { opacity: 0; transform: translate3d(0, var(--xp-beat-distance), 0); }
+  to { opacity: 1; transform: none; }
+}
+
+body[data-experience='timecode'] .tc-frame-card {
+  animation: tc-cut-in var(--xp-dur-section) var(--xp-ease-cinema) backwards;
+}
+
+/* The quiet sequences — 2 and 7, and they are quiet on purpose. A flat
+   intensity curve across nine chapters yields no peak and therefore no memory;
+   these two are what buy the reused shot its light. `saturate(0.65)` and 0.86
+   alpha, measured rather than asserted: #EDE6DA at 0.86 over #0A0908 composites
+   to #CDC7BD, which is 11.84:1 on the ground and 10.16:1 on the deepest card —
+   both far above floor, because "quiet" may cost attention and may never cost
+   legibility. */
+body[data-experience='timecode'] .tc-sequence[data-shot='quiet'] .tc-card,
+body[data-experience='timecode'] .tc-sequence[data-shot='landing'] .tc-card,
+body[data-experience='timecode'] .tc-card[data-shot='quiet'],
+body[data-experience='timecode'] .tc-card[data-shot='landing'] {
+  filter: saturate(0.65);
+  opacity: 0.86;
+  transition: opacity var(--xp-dur-element) var(--xp-ease-dissolve);
+}
+
+/* ── 4. THE REUSED SHOT — the peak, rendered from one field ────────────────── */
+
+body[data-experience='timecode'] .tc-echo {
+  display: grid;
+  gap: var(--xp-sp-2);
+  margin-top: var(--xp-sp-3);
+}
+
+body[data-experience='timecode'] .tc-echo-caption {
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+/* The pair, stacked in ONE grid cell so the new date lands in the identical
+   position the old one held — which is the whole definition of a match cut. */
+body[data-experience='timecode'] .tc-echo-pair {
+  display: grid;
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-4);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+}
+
+body[data-experience='timecode'] .tc-echo-from,
+body[data-experience='timecode'] .tc-echo-to {
+  grid-area: 1 / 1;
+}
+
+/* The RESTING state is the finished cut: 2025, in the one amber this world
+   spends. If no animation ever runs — no JS, an old browser, a print — the card
+   reads as the sequence it is, and the caption above it still names the shot it
+   re-prints. */
+body[data-experience='timecode'] .tc-echo-from {
+  opacity: 0;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-echo-to {
+  opacity: 1;
+  color: var(--xp-beat-peak);
+}
+
+@keyframes tc-match-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes tc-match-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* In the FRAME the cut is timed off the remount: the card holds on 2017 for
+   `--xp-cut-hold` + a beat, then hands over across 520ms with a 240ms overlap.
+   `backwards` on both halves means the pre-state exists only while the
+   animation does. */
+body[data-experience='timecode'] .tc-card[data-variant='frame'] .tc-echo-from {
+  animation: tc-match-out 520ms var(--xp-ease-camera) var(--xp-dur-scene) backwards;
+}
+
+body[data-experience='timecode'] .tc-card[data-variant='frame'] .tc-echo-to {
+  animation: tc-match-in 520ms var(--xp-ease-camera) calc(var(--xp-dur-scene) + 280ms) backwards;
+}
+
+/* In the FLOW the card mounts long before the reader reaches it, so the cut is
+   scroll-linked instead — one view timeline, no rAF, no observer. `@supports`
+   because the fallback is the resting state, which is already complete.
+
+   THE CUT IS A WIPE HERE, NOT A DISSOLVE — QA-2026-08-22/F-9.
+   A cross-DISSOLVE cannot be driven by scroll position and stay legible. Scroll
+   does not run to completion the way time does: it PARKS. A reader who stops
+   mid-range holds both halves at partial alpha indefinitely, and the measured
+   result was `1.36:1` on `.tc-echo-from` at 390 — text a reader can see and
+   cannot read, held for as long as they care to stand still. Staggering the two
+   ranges does not fix it; it only moves which of the two is illegible.
+
+   A wipe has no such band, because opacity never leaves 1. The two halves share
+   one grid cell and carry complementary insets over the IDENTICAL range, so at
+   every progress value each pixel of that cell shows exactly one half at full
+   strength: `p` from the left is the old number, the rest is the new one. Park
+   anywhere and both fragments are at their full authored contrast.
+
+   Identical `animation-range` on both arms is load-bearing, not tidiness — it
+   is what makes the two insets complementary. Split them and a gap opens where
+   the cell shows neither. A wipe is also the older piece of film grammar of the
+   two, so this world loses nothing by using it. */
+@supports (animation-timeline: view()) {
+  body[data-experience='timecode'] .tc-card[data-variant='card'] .tc-echo-from {
+    animation: tc-wipe-out 1ms var(--xp-ease-camera) both;
+    animation-timeline: view();
+    animation-range: entry 45% cover 40%;
+  }
+
+  body[data-experience='timecode'] .tc-card[data-variant='card'] .tc-echo-to {
+    animation: tc-wipe-in 1ms var(--xp-ease-camera) both;
+    animation-timeline: view();
+    animation-range: entry 45% cover 40%;
+  }
+}
+
+/* The old number is uncovered from the right; the new one is uncovered from the
+   left by exactly the width the old one gave up. Both hold `opacity: 1`
+   throughout — that is the whole point of the pair. */
+@keyframes tc-wipe-out {
+  from { opacity: 1; clip-path: inset(0 0 0 0); }
+  to   { opacity: 1; clip-path: inset(0 100% 0 0); }
+}
+
+@keyframes tc-wipe-in {
+  from { opacity: 1; clip-path: inset(0 0 0 100%); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+/* THE STILL FOR THE SCROLL-LINKED CUT — QA-2026-08-22/TC1.
+   Stated HERE, three lines under the binding it undoes, and NOT with the rest of
+   this world's reduced-motion block at the foot of the file, because the reason
+   it has to exist is a specificity accident that only makes sense beside the
+   rule that caused it.
+
+   §4's shared kill switch is `html[data-reduce-motion] body[data-experience]
+   .xp-scroll-linked { animation-timeline: none }` — (0,3,2). The binding above
+   is `body[data-experience='timecode'] .tc-card[data-variant='card']
+   .tc-echo-from` — (0,4,1), which OUT-SPECIFIES it. So the shared switch was
+   silently losing: `getComputedStyle` still reported `animation-timeline:
+   view()`, `getAnimations()` still returned a live `ViewTimeline`, and
+   `scripts/qa-experiences.sh` correctly failed A8 with "2 animation(s) still
+   running under reduced motion". The world's own reduced-motion rules at the
+   foot of the file lose the same way — they are (0,3,2) and (0,2,1).
+
+   Both arms are needed and neither is redundant: the media query is the OS
+   preference for a reader who never opens the in-page control, and the
+   attribute is that control. The media arm ties the binding at (0,4,1) and wins
+   on source order, which is the whole reason it is placed after it rather than
+   before; the attribute arm is (0,5,2) and wins outright.
+
+   Nothing is HIDDEN by this. With the animation gone the resting cascade takes
+   over, and this world's reduced-motion rules already set both halves to
+   `opacity: 1` beside each other — the match cut PRINTED, which is the telling
+   §10 authored for paper. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-experience='timecode'] .tc-card[data-variant='card'] .tc-echo-from,
+  body[data-experience='timecode'] .tc-card[data-variant='card'] .tc-echo-to {
+    animation: none;
+    animation-timeline: auto;
+  }
+}
+
+html[data-reduce-motion] body[data-experience='timecode'] .tc-card[data-variant='card'] .tc-echo-from,
+html[data-reduce-motion] body[data-experience='timecode'] .tc-card[data-variant='card'] .tc-echo-to {
+  animation: none;
+  animation-timeline: auto;
+}
+
+/* THE DISSOLVE — sequence 03, and the only `from` in the film. The card holds
+   on the old number and the new one replaces it in the identical position over
+   720ms linear with a 240ms overlap: the dissolve IS the measurement, and the
+   reader sees the improvement rather than reading it.
+
+   Gated to the frame, because at compact the card is in the FLOW and a metric
+   that dissolves away there would be a fact leaving the page. In the flow both
+   halves stay, side by side, forever. */
+body[data-experience='timecode'] .tc-card[data-variant='frame'][data-shot='dissolve'] .tc-metric {
+  display: grid;
+  justify-items: start;
+}
+
+body[data-experience='timecode'] .tc-card[data-variant='frame'][data-shot='dissolve'] .tc-metric > * {
+  grid-area: 1 / 1;
+}
+
+body[data-experience='timecode'] .tc-card[data-variant='frame'][data-shot='dissolve'] .tc-metric-from,
+body[data-experience='timecode'] .tc-card[data-variant='frame'][data-shot='dissolve'] .tc-metric-arrow {
+  opacity: 0;
+  animation: tc-match-out var(--xp-dur-scene) var(--xp-ease-dissolve) var(--xp-dur-establish) backwards;
+}
+
+body[data-experience='timecode'] .tc-card[data-variant='frame'][data-shot='dissolve'] .tc-metric-to {
+  animation: tc-match-in var(--xp-dur-scene) var(--xp-ease-dissolve)
+    calc(var(--xp-dur-establish) + 480ms) backwards;
+}
+
+/* The arrow is a glyph between two measurements, so it only exists where both
+   are on screen at once. */
+body[data-experience='timecode'] .tc-metric-arrow {
+  color: var(--xp-text-muted);
+}
+
+/* ── 5. THE TRACK — drawn to real duration, in every telling ───────────────── */
+
+body[data-experience='timecode'] .tc-track {
+  display: grid;
+  gap: var(--xp-sp-2);
+  align-self: end;
+}
+
+body[data-experience='timecode'] .tc-track-lane {
+  position: relative;
+  height: 10px;
+  border-top: var(--xp-hairline) solid var(--xp-border);
+}
+
+body[data-experience='timecode'] .tc-track-lane[data-lane='broll'] {
+  height: 4px;
+  border-top: none;
+}
+
+/* One clip. `left` and `width` are the real fractions `timeline.ts` derived from
+   the parsed periods — a three-month contract is a sliver and a four-year degree
+   is a bar, and neither number was typed by anyone. They are static geometry,
+   not animation, so `left`/`width` cost one layout at mount and nothing after. */
+body[data-experience='timecode'] .tc-clip {
+  position: absolute;
+  top: 3px;
+  bottom: 0;
+  left: calc(var(--tc-from) * 100%);
+  width: max(2px, calc(var(--tc-span) * 100%));
+  background-color: var(--tc-stage-color, var(--xp-text-muted));
+  opacity: 0.34;
+  transition: opacity var(--xp-dur-element) var(--xp-ease-ui);
+}
+
+body[data-experience='timecode'] .tc-clip[data-state='past'] { opacity: 0.62; }
+body[data-experience='timecode'] .tc-clip[data-state='now'] { opacity: 1; }
+
+/* The end card is not a duration and is not drawn as one. It is an out-point
+   mark past the last frame — a fabricated length on the one track whose entire
+   claim is that its lengths are real would undo the world. */
+body[data-experience='timecode'] .tc-clip:not([data-dated]) {
+  width: var(--xp-hairline);
+  background-color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-broll {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--tc-from) * 100%);
+  width: max(2px, calc(var(--tc-span) * 100%));
+  background-color: var(--xp-counter);
+  opacity: 0.55;
+}
+
+/* THE PLAYHEAD. A full-width element translated by `(p − 1) × 100%` so its right
+   edge lands at `p`. That is a pure `transform` — the composited property — where
+   the obvious `left: calc(p * 100%)` would run layout on every sequence change.
+   The mark itself is the 1px border, which a translate does not scale. */
+body[data-experience='timecode'] .tc-playhead {
+  position: absolute;
+  inset-block: -4px;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  border-right: var(--xp-hairline) solid var(--xp-accent);
+  transform: translateX(calc((var(--tc-p, 0) - 1) * 100%));
+  transition: transform var(--xp-dur-scene) var(--xp-ease-camera);
+}
+
+body[data-experience='timecode'] .tc-track-marks {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  /* The two endpoint years of the track. `opacity: 0.7` here measured 3.60:1 —
+     see the note on `.tc-chapter-name`. They are the only dates on the track and
+     a reader who cannot read them cannot date the graph at all. */
+  color: var(--xp-text-muted);
+}
+
+/* The compact strip: the shared chrome's 3px top bar, drawn as the cut in its
+   real proportions rather than as a uniform fill. It fits at 390px because it
+   is one dimension. */
+body[data-experience='timecode'] .tc-strip {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  z-index: 80;
+  background-color: var(--xp-bg-alt);
+}
+
+body[data-experience='timecode'] .tc-strip-clip {
+  position: absolute;
+  inset-block: 0;
+  left: calc(var(--tc-from) * 100%);
+  width: max(2px, calc(var(--tc-span) * 100%));
+  background-color: var(--xp-text-muted);
+  opacity: 0.45;
+}
+
+body[data-experience='timecode'] .tc-strip-clip[data-state='past'] {
+  background-color: var(--xp-accent);
+  opacity: 1;
+}
+
+body[data-experience='timecode'] .tc-strip .tc-playhead {
+  inset-block: 0;
+}
+
+/* ── 6. The rail, the pill and the sheet ──────────────────────────────────── */
+
+body[data-experience='timecode'] .tc-rail {
+  flex: 0 0 auto;
+  width: var(--xp-rail-width);
+  position: sticky;
+  top: calc(var(--xp-sp-9) + var(--xp-sp-4));
+  align-self: flex-start;
+}
+
+body[data-experience='timecode'] .tc-stage[data-tier='medium'] .tc-rail {
+  /* Clear of the sticky band above it, or the first two sequences sit under the
+     frame and are unclickable — the kind of defect that only appears once the
+     reader has scrolled, which is to say after review. */
+  top: calc(40svh + var(--xp-sp-5));
+}
+
+body[data-experience='timecode'] .tc-rail ol,
+body[data-experience='timecode'] .tc-sheet ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+body[data-experience='timecode'] .tc-rail a {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--xp-sp-3);
+  /* 44px minimum target for every row, INCLUDING the three-month contract. The
+     honest proportion is carried by the bar inside the row instead — a rail that
+     scaled its hit area with the duration would make the peak the hardest thing
+     on the page to tap. */
+  min-height: 44px;
+  padding: var(--xp-sp-2) var(--xp-sp-2) calc(var(--xp-sp-2) + 3px);
+  text-decoration: none;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-2);
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-rail a:hover,
+body[data-experience='timecode'] .tc-rail a:focus-visible {
+  color: var(--xp-text);
+}
+
+body[data-experience='timecode'] .tc-rail a[aria-current='step'] {
+  color: var(--xp-text);
+}
+
+body[data-experience='timecode'] .tc-rail-seq {
+  color: var(--tc-stage-color, var(--xp-text-muted));
+  font-weight: 600;
+}
+
+body[data-experience='timecode'] .tc-rail-body {
+  min-width: 0;
+  display: grid;
+}
+
+body[data-experience='timecode'] .tc-rail-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The poetic name: 11px, 0.55 alpha, revealed on hover and focus only, and in
+   the DOM at all times so a screen reader gets it with no hover ever happening.
+   A skimmer scanning for "did he do Kafka at scale" will not click "Montage". */
+body[data-experience='timecode'] .tc-rail-sub {
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity var(--xp-dur-micro) var(--xp-ease-ui);
+}
+
+/* Revealed at FULL opacity, not at 0.55 — QA-2026-08-22/TC3. The reveal is the
+   design; the dimming was not. `aria-current='step'` shows this row's poetic
+   name with no hover at all, so for whichever chapter the reader is standing in
+   it is permanently visible text, and at 0.55 over `--xp-text-muted` it measured
+   2.63:1 against this world's ground. Text a reader is shown has to be text a
+   reader can read; the "quiet" it wanted is already carried by 11px uppercase
+   against the 12px label above it. */
+body[data-experience='timecode'] .tc-rail a:hover .tc-rail-sub,
+body[data-experience='timecode'] .tc-rail a:focus-visible .tc-rail-sub,
+body[data-experience='timecode'] .tc-rail a[aria-current='step'] .tc-rail-sub {
+  opacity: 1;
+}
+
+/* The duration reads at `--xp-text-muted` and nothing dims it further; it was
+   `opacity: 0.72` and measured 3.75:1 against this world's ground at 12px. See
+   the note on `.tc-chapter-name` — the step this wanted is carried by
+   `--xp-fs-1` against the label's `--xp-fs-2` instead. */
+body[data-experience='timecode'] .tc-rail-dur {
+  font-size: var(--xp-fs-1);
+  white-space: nowrap;
+}
+
+/* The duration, on the axis the rail can spare: a bar as long as the engagement
+   was, under a row of uniform height. Both truths are on screen — the track
+   carries the geometry, the rail carries the proportion and stays tappable. */
+body[data-experience='timecode'] .tc-rail-bar {
+  position: absolute;
+  left: var(--xp-sp-2);
+  right: var(--xp-sp-2);
+  bottom: var(--xp-sp-2);
+  height: 2px;
+  background-image: linear-gradient(
+    to right,
+    var(--tc-stage-color, var(--xp-text-muted)) calc(var(--tc-span, 0) * 100% / 0.35),
+    transparent 0
+  );
+  opacity: 0.5;
+}
+
+body[data-experience='timecode'] .tc-rail a[aria-current='step'] .tc-rail-bar {
+  opacity: 1;
+}
+
+/* The compact position readout: `03 / 09 · Oracle`, in the thumb arc, inside the
+   reserved bottom band the chat FAB offsets from. A dot strip alone answers "how
+   many" and never "where am I, in words". */
+body[data-experience='timecode'] .tc-pill {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--xp-sp-4) + env(safe-area-inset-bottom));
+  z-index: 80;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--xp-sp-3);
+  padding-inline: var(--xp-sp-4);
+  border: var(--xp-hairline) solid var(--xp-border);
+  border-radius: 999px;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-2);
+  color: var(--xp-text);
+  /* Blur is not a contrast strategy: the ground behind it is mixed at 88% so the
+     composited result is the measured one, and the border keeps the edge
+     readable where `backdrop-filter` is unsupported. */
+  background-color: color-mix(in oklab, var(--xp-bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+body[data-experience='timecode'] .tc-pill-label {
+  max-width: 42vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-experience='timecode'] .tc-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 85;
+  max-height: 72dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--xp-sp-5) var(--xp-sp-4)
+    calc(var(--xp-nav-h) + env(safe-area-inset-bottom));
+  background-color: var(--xp-surface);
+  border-top: var(--xp-hairline) solid var(--xp-border);
+}
+
+body[data-experience='timecode'] .tc-sheet a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--xp-sp-3);
+  min-height: 44px;
+  padding-block: var(--xp-sp-2);
+  text-decoration: none;
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-3);
+  color: var(--xp-text-muted);
+  border-bottom: var(--xp-hairline) solid var(--xp-border);
+}
+
+body[data-experience='timecode'] .tc-sheet a[aria-current='step'] {
+  color: var(--xp-text);
+}
+
+/* ── 7. The evidence, the slate and the narration ─────────────────────────── */
+
+body[data-experience='timecode'] .tc-slate {
+  max-width: var(--xp-measure);
+  margin-bottom: var(--xp-sp-9);
+}
+
+body[data-experience='timecode'] .tc-slate-name {
+  margin: 0;
+  font-family: var(--xp-font-display);
+  font-size: var(--xp-fs-display-2);
+  line-height: var(--xp-lh-display);
+  letter-spacing: var(--xp-track-large);
+  font-weight: 400;
+  color: var(--xp-text);
+  text-wrap: balance;
+}
+
+body[data-experience='timecode'] .tc-slate-role {
+  margin: var(--xp-sp-3) 0 0;
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-2);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-slate-summary {
+  margin: var(--xp-sp-5) 0 0;
+  font-size: var(--xp-fs-base);
+  line-height: var(--xp-lh-body);
+  text-wrap: pretty;
+}
+
+body[data-experience='timecode'] .tc-sequence {
+  /* Beat rhythm is SPACING, not time: a weight-1.6 sequence arrives after 154px
+     of silence where a weight-0.7 one gets 67px. It is the one pacing device
+     that survives reduced motion and print, where time does not exist. */
+  margin-top: calc(var(--xp-sp-9) * var(--beat-weight));
+  scroll-margin-top: calc(var(--xp-sp-9) + var(--xp-sp-4));
+}
+
+body[data-experience='timecode'] .tc-stage[data-tier='medium'] .tc-sequence {
+  scroll-margin-top: calc(40svh + var(--xp-sp-5));
+}
+
+body[data-experience='timecode'] .tc-narration {
+  margin: var(--xp-sp-5) 0 0;
+  max-width: var(--xp-measure);
+  font-size: var(--xp-fs-4);
+  line-height: var(--xp-lh-caption);
+  color: var(--xp-text-muted);
+  text-wrap: pretty;
+}
+
+body[data-experience='timecode'] .tc-evidence-group {
+  display: grid;
+  gap: var(--xp-sp-7);
+  margin-top: var(--xp-sp-6);
+}
+
+body[data-experience='timecode'] .tc-evidence {
+  max-width: var(--xp-measure);
+  min-width: 0;
+}
+
+body[data-experience='timecode'] .tc-evidence-title {
+  margin: 0;
+  font-family: var(--xp-font-display);
+  font-size: var(--xp-fs-6);
+  line-height: var(--xp-lh-title);
+  letter-spacing: var(--xp-track-mid);
+  font-weight: 400;
+  color: var(--xp-text);
+  text-wrap: balance;
+}
+
+body[data-experience='timecode'] .tc-evidence-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: var(--xp-hairline) solid var(--xp-accent);
+}
+
+body[data-experience='timecode'] .tc-evidence-link:hover {
+  border-bottom-width: 2px;
+}
+
+body[data-experience='timecode'] .tc-evidence-org {
+  margin: var(--xp-sp-1) 0 0;
+  font-size: var(--xp-fs-3);
+  color: var(--xp-text);
+}
+
+body[data-experience='timecode'] .tc-evidence-via {
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-evidence-meta {
+  margin: var(--xp-sp-1) 0 0;
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-2);
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-evidence-summary {
+  margin: var(--xp-sp-3) 0 0;
+  font-size: var(--xp-fs-base);
+  line-height: var(--xp-lh-body);
+  text-wrap: pretty;
+}
+
+body[data-experience='timecode'] .tc-evidence-bullets {
+  margin: var(--xp-sp-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+body[data-experience='timecode'] .tc-evidence-bullets > li {
+  position: relative;
+  padding-left: var(--xp-sp-5);
+  margin-bottom: var(--xp-sp-3);
+  line-height: var(--xp-lh-body);
+  text-wrap: pretty;
+}
+
+/* A drawn marker rather than a list glyph, because the glyph inherits the font
+   and every world would get a different one. */
+body[data-experience='timecode'] .tc-evidence-bullets > li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: var(--xp-sp-3);
+  height: var(--xp-hairline);
+  background-color: var(--xp-accent);
+}
+
+body[data-experience='timecode'] .tc-evidence-tags {
+  margin: var(--xp-sp-4) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--xp-sp-2);
+}
+
+body[data-experience='timecode'] .tc-evidence-tags > li {
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-1);
+  color: var(--xp-text-muted);
+  border: var(--xp-hairline) solid var(--xp-border);
+  border-radius: 8px;
+  padding: var(--xp-sp-1) var(--xp-sp-2);
+  white-space: nowrap;
+}
+
+/* The closing line. One sentence, no credits roll, no recap — self-applause at
+   the exact moment peak-end is recording is the one thing the coda may not do. */
+body[data-experience='timecode'] .tc-closing {
+  margin: var(--xp-sp-8) 0 0;
+  max-width: var(--xp-measure);
+  font-family: var(--xp-font-display);
+  font-size: var(--xp-fs-7);
+  line-height: var(--xp-lh-title);
+  letter-spacing: var(--xp-track-mid);
+  color: var(--xp-text);
+  text-wrap: balance;
+}
+
+/* ── 8. The mix ───────────────────────────────────────────────────────────── */
+
+body[data-experience='timecode'] .tc-mix {
+  display: grid;
+  gap: var(--xp-sp-2);
+}
+
+body[data-experience='timecode'] .tc-mix[data-variant='panel'] {
+  margin-top: var(--xp-sp-8);
+  max-width: var(--xp-measure);
+  padding: var(--xp-sp-5);
+  background-color: var(--xp-surface-alt);
+  border: var(--xp-hairline) solid var(--xp-border);
+  border-radius: 16px;
+}
+
+body[data-experience='timecode'] .tc-mix-title {
+  margin: 0;
+  font-family: var(--xp-font-mono);
+  font-size: var(--xp-fs-1);
+  letter-spacing: var(--xp-track-caps);
+  text-transform: uppercase;
+  color: var(--xp-text-muted);
+}
+
+body[data-experience='timecode'] .tc-mix-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--xp-sp-2);
+}
+
+body[data-experience='timecode'] .tc-mix-stem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: var(--xp-sp-3);
+  font-family: var(--xp-font-label);
+  font-size: var(--xp-fs-2);
+  color: var(--xp-text-muted);
+}
+
+/* A stem is VISIBLE and empty before it enters, so the reader watches the mix
+   filling rather than discovering it at the end. Empty is a 1px trough, not a
+   hidden row — the difference is the whole affordance. */
+body[data-experience='timecode'] .tc-mix-meter {
+  height: 2px;
+  background-color: var(--xp-border);
+  position: relative;
+}
+
+body[data-experience='timecode'] .tc-mix-meter::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--xp-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--xp-dur-section) var(--xp-ease-cinema);
+}
+
+body[data-experience='timecode'] .tc-mix-stem[data-level='full'] {
+  color: var(--xp-text);
+}
+
+body[data-experience='timecode'] .tc-mix-stem[data-level='full'] .tc-mix-meter::after {
+  transform: scaleX(1);
+}
+
+/* ── 9. Reduced motion — a second telling, and the test of this world ─────── */
+
+/* THE PEAK MUST LAND WITH ZERO MOTION. Under stillness the reused shot renders
+   showing BOTH states at once — 2017 and 2025 side by side with the rule between
+   them — rather than depending on a transition to communicate the match. That is
+   also how a film's press kit shows a match cut, so it is not a degraded
+   version of the idea; it is the idea, printed.
+   Both selectors are duplicated rather than merged into one list for the reason
+   `globals.css` gives: folding `html[data-reduce-motion]` into the media query
+   would make the whole block depend on the attribute, and the OS preference
+   would stop working for everyone who never opens the in-page control. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-experience='timecode'] .tc-echo-pair {
+    grid-auto-flow: column;
+    justify-content: start;
+    align-items: baseline;
+    gap: var(--xp-sp-4);
+  }
+
+  body[data-experience='timecode'] .tc-echo-from,
+  body[data-experience='timecode'] .tc-echo-to {
+    grid-area: auto;
+    opacity: 1;
+    animation: none;
+  }
+
+  body[data-experience='timecode'] .tc-echo-from {
+    padding-inline-end: var(--xp-sp-4);
+    border-inline-end: var(--xp-hairline) solid var(--xp-border);
+  }
+
+  body[data-experience='timecode'] .tc-frame-card,
+  body[data-experience='timecode'] .tc-card[data-variant='frame'][data-push],
+  body[data-experience='timecode'] .tc-metric-from,
+  body[data-experience='timecode'] .tc-metric-arrow,
+  body[data-experience='timecode'] .tc-metric-to {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The playhead still moves — it is a position, not a motion — but it arrives
+     instead of travelling. */
+  body[data-experience='timecode'] .tc-playhead,
+  body[data-experience='timecode'] .tc-mix-meter::after,
+  body[data-experience='timecode'] .tc-clip,
+  body[data-experience='timecode'] .tc-ember {
+    transition-duration: 1ms;
+  }
+
+  /* A smooth scroll is motion the reader asked not to have, and it applies to
+     every in-page anchor — including the ones the rail and the sheet are made
+     of, which JS never touches. */
+  body[data-experience='timecode'] .tc-stage {
+    scroll-behavior: auto;
+  }
+}
+
+html[data-reduce-motion] body[data-experience='timecode'] .tc-echo-pair {
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: baseline;
+  gap: var(--xp-sp-4);
+}
+
+html[data-reduce-motion] body[data-experience='timecode'] .tc-echo-from,
+html[data-reduce-motion] body[data-experience='timecode'] .tc-echo-to {
+  grid-area: auto;
+  opacity: 1;
+  animation: none;
+}
+
+html[data-reduce-motion] body[data-experience='timecode'] .tc-echo-from {
+  padding-inline-end: var(--xp-sp-4);
+  border-inline-end: var(--xp-hairline) solid var(--xp-border);
+}
+
+html[data-reduce-motion] body[data-experience='timecode'] .tc-frame-card,
+html[data-reduce-motion] body[data-experience='timecode'] .tc-card[data-variant='frame'][data-push],
+html[data-reduce-motion] body[data-experience='timecode'] .tc-metric-from,
+html[data-reduce-motion] body[data-experience='timecode'] .tc-metric-arrow,
+html[data-reduce-motion] body[data-experience='timecode'] .tc-metric-to {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+html[data-reduce-motion] body[data-experience='timecode'] .tc-playhead,
+html[data-reduce-motion] body[data-experience='timecode'] .tc-mix-meter::after,
+html[data-reduce-motion] body[data-experience='timecode'] .tc-clip,
+html[data-reduce-motion] body[data-experience='timecode'] .tc-ember {
+  transition-duration: 1ms;
+}
+
+html[data-reduce-motion] body[data-experience='timecode'] .tc-stage {
+  scroll-behavior: auto;
+}
+
+/* ── 10. Print — the reading survives to paper ────────────────────────────── */
+
+@media print {
+  /* The frame, the strip, the pill, the sheet and the rail all carry
+     `.no-print`, which `globals.css` already removes. What is left is the flow,
+     and the flow is the whole story — so the only work here is undoing the
+     screen's columns and making sure the reused shot prints as BOTH dates. A
+     printed page has no transition to wait for. */
+  body[data-experience='timecode'] .tc-stage {
+    display: block;
+    padding: 0;
+  }
+
+  body[data-experience='timecode'] .tc-body {
+    display: block;
+  }
+
+  body[data-experience='timecode'] .tc-card {
+    break-inside: avoid;
+  }
+
+  body[data-experience='timecode'] .tc-card[data-variant='card'] {
+    min-height: 0;
+    padding-block: 0;
+  }
+
+  body[data-experience='timecode'] .tc-echo-pair {
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: var(--xp-sp-4);
+  }
+
+  body[data-experience='timecode'] .tc-echo-from,
+  body[data-experience='timecode'] .tc-echo-to {
+    grid-area: auto;
+    opacity: 1;
+    animation: none;
+    color: inherit;
+  }
+
+  /* Quiet sequences are quiet by INTENSITY on screen; on paper a 0.86-alpha
+     block is just a lighter grey a photocopier loses. */
+  body[data-experience='timecode'] .tc-card {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+/* ── 11. Forced colors ────────────────────────────────────────────────────── */
+
+@media (forced-colors: active) {
+  /* The ramp has collapsed to one system colour by the time this runs, which is
+     correct rather than a loss — the OS has taken the palette. What must survive
+     is GEOMETRY, so every boundary this world drew with a background difference
+     is restated as a border. */
+  body[data-experience='timecode'] .tc-clip,
+  body[data-experience='timecode'] .tc-broll,
+  body[data-experience='timecode'] .tc-strip-clip {
+    outline: var(--xp-hairline) solid CanvasText;
+  }
+
+  body[data-experience='timecode'] .tc-ember {
+    box-shadow: none;
+    outline: var(--xp-hairline) solid CanvasText;
+  }
+}
+
+
+/* ── overworld ──────────────────────────────────────────────────────────────
+ * Owner: `src/experiences/overworld/`.
+ *
+ * Holds the five things this world cannot say in `tokens()`: the registered
+ * `@property --ow-p` and the `@supports (animation-timeline: scroll())` block
+ * that drives it, with SIX consumers through `calc()` — route advance, four
+ * parallax planes, the sun's arc, the lantern, the token's `offset-distance`
+ * and the five inventory slots; the plane blur ladder; the token's
+ * `offset-path: path()` advance, behind its own `@supports` because an
+ * unsupported motion path parks the element at the origin; the rail-yard
+ * ambient loop (9s period, 0.12 opacity delta, no text on that surface); and
+ * the compact scroll-snap, which has to reach `html` because `scroll-snap-type`
+ * does not propagate from `body`.
+ *
+ * The FINAL state is the unconditional default in every one of them: `--ow-p`
+ * is declared 1 and the animation is what takes the picture away. A browser
+ * with no scroll timelines, a printer, a crawler and a reader who asked for
+ * stillness all get the complete map.
+ *
+ * The grain is inline in the SVG rather than here — it is a `feTurbulence`
+ * filter, which is markup, not style.
+ *
+ * Every rule below this banner MUST begin `body[data-experience='overworld']`,
+ * with one named exception: `@property` is a document-level registration and
+ * has no scoped form. That is why its name is prefixed `--ow-`.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* The world's one animated value, and the only one it has.
+ *
+ * `@property` is a document-level registration and cannot be scoped to a body
+ * attribute — it is the single exception to the banner rule above, and it is
+ * why the name is `--ow-p` rather than the `--p` the creative spec suggests:
+ * four other worlds are being authored in parallel against the same global
+ * registry, and two registrations of one name with different syntaxes is a
+ * collision that surfaces as one of them silently failing to animate.
+ * Registration is what makes the value interpolable at all — an unregistered
+ * custom property animates as a discrete swap at 50%, which is precisely the
+ * opposite of a route being drawn. */
+@property --ow-p {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+/* THE FINAL STATE IS THE UNCONDITIONAL DEFAULT.
+ *
+ * `--ow-p: 1` means: route fully drawn, every station lit, sun at the end of its
+ * arc, lantern burning, all five inventory slots filled, token parked at the
+ * last station. That is what paints with no scroll-timeline support, with the
+ * animation dropped under reduced motion, in the static export before
+ * hydration, and on paper. The animation is what TAKES the picture away and
+ * hands it back as the reader travels — authored in that direction because the
+ * other direction ships a blank map to everyone the enhancement misses, which
+ * is the review-blocking defect §2.3 names. */
+body[data-experience='overworld'] .ow-timeline {
+  --ow-p: 1;
+}
+
+@supports (animation-timeline: scroll()) {
+  @keyframes ow-advance {
+    from { --ow-p: 0; }
+    to { --ow-p: 1; }
+  }
+
+  /* One timeline, six consumers, zero JS and zero rAF. `scroll(root block)` is
+     the document's own scroller, so the map advances with the reader and stops
+     dead when they stop — the single detail that makes the rails feel
+     intentional rather than automated. It is also the only scroll motion that
+     survives the ONNX runtime owning the main thread while the on-device model
+     warms, which is why it is a compositor timeline and not a listener. */
+  body[data-experience='overworld'] .ow-timeline {
+    animation: ow-advance 1s linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+/* Four parallax planes. Ratios 0.08 / 0.16 / 0.28 / 0.45 against a per-tier
+   travel clamp of 120px, 48px and — at compact, where the map is nine vignettes
+   rather than one moving picture — zero. `0.5 - p` centres the travel, so a
+   plane sits at its authored position in the middle of the story rather than
+   having drifted a full clamp away from it by the end. */
+body[data-experience='overworld'] .ow-plane {
+  transform: translateY(
+    calc((0.5 - var(--ow-p)) * 2 * var(--ow-ratio, 0) * var(--ow-travel, 0px))
+  );
+}
+
+/* Blur carries depth so speed is not doing it alone, and it is applied only to
+   the two planes that want it: a `blur(0px)` still forces a group into its own
+   raster pass, so the other two would pay for an effect they do not use. */
+/* The map's own frame per tier, and the one place a world states a height that
+   is not the shared 100svh: at medium the map is a band above the evidence
+   rather than a column beside it. It is the same picture at the same aspect —
+   letterboxed, never cropped — which is what makes this a trim of one world
+   rather than a second one. */
+body[data-experience='overworld'] [data-tier='medium'] .ow-map {
+  height: 40svh;
+}
+
+body[data-experience='overworld'] .ow-plane--blur {
+  filter: blur(var(--ow-blur, 0px));
+}
+
+/* The route behind the reader, drawn at full strength over the route ahead.
+   `pathLength="1"` in the markup is what turns "how far along" into a pure
+   number, so this is one subtraction rather than a measured length. */
+body[data-experience='overworld'] .ow-route-done {
+  stroke-dashoffset: calc(1 - var(--ow-p));
+}
+
+/* The token advances by native motion path. No library, no per-frame JS.
+   Outside the `@supports` it is not rendered at all: an unsupported
+   `offset-path` parks the element at the SVG's origin, which reads as a bug, and
+   the token carries nothing the station glyphs do not already carry. */
+body[data-experience='overworld'] .ow-token {
+  display: none;
+}
+
+@supports (offset-path: path('M0 0')) {
+  body[data-experience='overworld'] .ow-token {
+    display: block;
+    offset-path: var(--ow-route);
+    offset-distance: calc(var(--ow-p) * 100%);
+    /* A marker, not a vehicle: it must not bank into the corners. A rotating
+       token is the first step toward a character with a walk cycle, and a
+       character is something to watch instead of something to read. */
+    offset-rotate: 0deg;
+  }
+}
+
+/* The sun crosses the sky once, over the whole story. It is the only statement
+   this world makes about elapsed time, and it makes it with no clock, no
+   counter and no date on screen. */
+body[data-experience='overworld'] .ow-sun {
+  transform: translate(calc(var(--ow-p) * -132px), calc(var(--ow-p) * 46px));
+}
+
+/* The lantern and the five inventory slots: one expression, six times over.
+   `--ow-at` is the position of the station that lights each one, derived from
+   the spine's own weights, so a re-balanced chapter moves both the station and
+   the moment its slot fills. Values outside 0–1 are clamped by `opacity` itself,
+   which is why no `clamp()` appears here. */
+body[data-experience='overworld'] .ow-lantern {
+  opacity: calc((var(--ow-p) - var(--ow-at, 1)) * 12);
+}
+
+body[data-experience='overworld'] .ow-slot {
+  /* Unacquired slots are VISIBLE at 0.18 rather than hidden: seeing what is
+     coming is what makes progression feel like progression. The panel is
+     `aria-hidden` chrome and every group in it is rendered in full as real
+     content by the coda, so the dim state previews rather than withholds. */
+  opacity: calc(0.18 + (var(--ow-p) - var(--ow-at, 1)) * 24);
+}
+
+body[data-experience='overworld'] .ow-slot-fill {
+  opacity: calc((var(--ow-p) - var(--ow-at, 1)) * 24);
+}
+
+/* The map's one ambient loop, on the one station whose content is throughput.
+   9s period (>= 4s), a 0.12 opacity delta (<= 0.15), on a surface that carries
+   no text, and gone entirely under the still. */
+@keyframes ow-yard {
+  from { transform: translateX(0); opacity: 0.34; }
+  50%  { opacity: 0.22; }
+  to   { transform: translateX(34px); opacity: 0.34; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body[data-experience='overworld'] .ow-yard {
+    animation: ow-yard 9s linear infinite;
+  }
+}
+
+/* The two deliberately quiet chapters. A flat intensity curve across nine
+   chapters yields no peak and therefore no memory; these two are what buy
+   `return` its brightness. `saturate(0.65)`, a 240ms fade, and nothing else —
+   the 0.86 alpha the spec also asks for is applied to the ordinal and the
+   eyebrow ONLY, because `--xp-text-muted` at 0.86 over this world's deepest card
+   measures 4.59:1 against an internal floor of 5.0. Quiet is a colour decision
+   here; it is never a legibility one. */
+body[data-experience='overworld'] [data-xp-chapter='trials'],
+body[data-experience='overworld'] [data-xp-chapter='mastery'] {
+  filter: saturate(0.65);
+  transition: filter 240ms var(--xp-ease-dissolve);
+}
+
+body[data-experience='overworld'] [data-xp-chapter='trials'] .ow-ordinal,
+body[data-experience='overworld'] [data-xp-chapter='mastery'] .ow-ordinal {
+  opacity: 0.86;
+}
+
+/* Station lockups take the display face's `wdth` axis at 96. One declaration,
+   because `font-optical-sizing: auto` is already the default and the `opsz` axis
+   therefore tracks the size ladder without being told to. */
+body[data-experience='overworld'] [data-xp-stage] h1,
+body[data-experience='overworld'] [data-xp-stage] h2,
+body[data-experience='overworld'] [data-xp-stage] h3 {
+  font-variation-settings: 'wdth' 96;
+}
+
+/* One station per screen at compact. `proximity`, never `mandatory`: a chapter
+   with eight bullets is taller than a phone, and a mandatory snap would fight a
+   reader for control of a section they are still reading. The root is the
+   scroller and `scroll-snap-type` does not propagate from `body`, so the rule
+   has to reach `html` — scoped through `:has()` exactly as the canvas rule
+   further up this file is, and feature-detected for the same reason: the
+   failure without it is a telling that scrolls normally, which is a fine
+   telling. */
+@supports selector(html:has(body)) {
+  html:has(body[data-experience='overworld'] [data-tier='compact']) {
+    scroll-snap-type: y proximity;
+  }
+}
+
+/* ── The still ──────────────────────────────────────────────────────────────
+   Nothing below HIDES anything. The timeline stops, so `--ow-p` falls back to
+   its declared 1 and the map paints complete: the whole route, all nine
+   stations, the sun at the end of its arc, the lantern lit, every inventory slot
+   filled, and the token parked at the last station rather than removed —
+   stilled, not subtracted. Snap goes because snap plus reduced motion is itself
+   a sickness trigger. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-experience='overworld'] .ow-timeline,
+  body[data-experience='overworld'] .ow-yard {
+    animation: none;
+  }
+
+  body[data-experience='overworld'] [data-xp-chapter='trials'],
+  body[data-experience='overworld'] [data-xp-chapter='mastery'] {
+    transition: none;
+  }
+}
+
+html[data-reduce-motion] body[data-experience='overworld'] .ow-timeline,
+html[data-reduce-motion] body[data-experience='overworld'] .ow-yard {
+  animation: none;
+}
+
+html[data-reduce-motion] body[data-experience='overworld'] [data-xp-chapter='trials'],
+html[data-reduce-motion] body[data-experience='overworld'] [data-xp-chapter='mastery'] {
+  transition: none;
+}
+
+@supports selector(html:has(body)) {
+  html[data-reduce-motion]:has(body[data-experience='overworld']) {
+    scroll-snap-type: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @supports selector(html:has(body)) {
+    html:has(body[data-experience='overworld']) {
+      scroll-snap-type: none;
+    }
+  }
+}
+
+/* ── Paper ──────────────────────────────────────────────────────────────────
+   The map, the vignettes, the rail, the bottom band and the inventory all carry
+   `.no-print` and are gone before this runs; what is left is to stop the story
+   inheriting a phone's rhythm on A4. Chapter order, link expansion and the light
+   palette all come from the shared sheet, which this world does not touch. */
+@media print {
+  body[data-experience='overworld'] [data-xp-chapter] {
+    /* A 100svh section is a page of white space on paper. */
+    min-height: 0;
+  }
+
+  body[data-experience='overworld'] [data-xp-chapter='trials'],
+  body[data-experience='overworld'] [data-xp-chapter='mastery'] {
+    /* Quiet is a screen argument. On paper it is just grey ink. */
+    filter: none;
+  }
+
+  body[data-experience='overworld'] .ow-ordinal {
+    opacity: 1;
+  }
+}
+
+
+
+
+/* ── crossing ───────────────────────────────────────────────────────────────
+ * Owner: `src/experiences/crossing/`.
+ *
+ * Holds the four things this world cannot say in `tokens()`: the registered
+ * `@property --crossing-p` and the ONE `@supports (animation-timeline: …)`
+ * binding that drives it (six consumers — the arc's `stroke-dashoffset`, the
+ * horizon's descent, five silhouette planes, the throughput hairlines, the
+ * light in the vault, and the echo's arrival — from that single number, with
+ * zero JS and zero rAF loops); the two-pane / band / vignette geometry, keyed
+ * off the `data-tier` the shared stage already publishes rather than off a media
+ * query; the deliberately quiet treatment of chapters 2 and 7; and the peak's
+ * 120ms dead hold.
+ *
+ * ── The rule that makes the whole world safe ────────────────────────────────
+ * Every scroll-linked value is authored as a `calc()` over `--crossing-p`, whose
+ * REGISTERED INITIAL VALUE IS 1 — the final state, the top of the climb, a
+ * complete dawn. The `@supports` block adds an animation that walks it from 0,
+ * and nothing else. So a browser with no scroll-driven animations, a printer, a
+ * forced-colors user and a reader who asked for stillness all get a finished
+ * picture rather than an empty one, and there is not a single declaration in
+ * this block whose default state withholds anything. That is the pattern proven
+ * at `src/app/skin-sanctum.css:259`, one axis over.
+ *
+ * Every rule below this banner MUST begin `body[data-experience='crossing']`. An
+ * unscoped rule here is the one way this feature could reach `/`.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* The climb, as one number. Registered so it INTERPOLATES — an unregistered
+   custom property is a string to the animation engine and would jump between
+   keyframes instead of ramping. `inherits: true` is what lets one animation on
+   the sky root feed every consumer beneath it. The name is namespaced rather
+   than the `--p` the spec sketches, because `@property` registration is
+   document-global and five worlds sharing one page's stylesheet must not share
+   one registration. */
+@property --crossing-p {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+body[data-experience='crossing'] {
+  /* `opsz` is the reason Fraunces and Source Serif 4 are here at all: the
+     145px title card and the 28px chapter heading are two drawings of the same
+     face rather than one drawing at two sizes. Never `font-variation-settings`
+     for weight — that discards this axis silently. */
+  font-optical-sizing: auto;
+}
+
+/* No `font-variation-settings` anywhere in this world, and the absence is the
+   decision: Fraunces ships `SOFT` and `WONK` axes, both were tried, and both
+   were cut for 52KB of latin woff2 (see `crossing/index.ts`). A declaration that
+   names an axis the loaded file does not carry is inert CSS that reads as
+   intent, which is worse than no declaration. Weight is never set this way in
+   any case — `font-variation-settings: 'wght'` silently discards the `opsz` axis
+   and disables the browser's own weight interpolation. */
+
+/* Oldstyle proportional figures for years that appear INSIDE sentences, which
+   is what a serif text face is bought for. Every stacked date column, metric and
+   counter stays lining and tabular: `.xp-tnum` and `.xp-metric` match those
+   elements DIRECTLY, and a direct match always outranks an inherited value, so
+   the seven-row date column is unaffected by this rule no matter what its
+   specificity is. */
+body[data-experience='crossing'] .xp-beat {
+  font-variant-numeric: oldstyle-nums proportional-nums;
+}
+
+/* ── The sky ────────────────────────────────────────────────────────────────
+   Fixed at `z-index: 0`: above `body`'s opaque ground, below `.xp-plane-flow`'s
+   `z-index: 1`. Two planes, never three. See the header of `crossing/Stage.tsx`
+   for why this is not the frame's `Atmosphere` slot. */
+body[data-experience='crossing'] .xc-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* `clip`, not `hidden`: an overhanging decorative layer still contributes to
+     the document's scroll width under `hidden`, and iOS Safari renders that as
+     real horizontal scroll. */
+  overflow: clip;
+  contain: layout paint;
+
+  /* Per-tier geometry, as data. The three tellings differ in SHAPE — a
+     full-height left pane, a top band, a vignette — and not in how much of the
+     story they contain. */
+  --xc-vault-w: 100vw;
+  --xc-vault-h: 180px;
+  --xc-arc-w: 12px;
+  --xc-arc-stroke: 4px;
+  /* Parallax travel, in the sky's own user units (≈0.4–1.4× a device pixel once
+     the viewBox is scaled), so the ±120px cinema ceiling is respected with room
+     to spare. Compact parallaxes NOTHING, which is why this world's altitude
+     signal is colour rather than motion. */
+  --xc-travel: 0px;
+}
+
+body[data-experience='crossing'] .xc-sky[data-tier='medium'] {
+  --xc-vault-h: 40svh;
+  --xc-arc-w: 56px;
+  --xc-arc-stroke: 3px;
+  --xc-travel: 48px;
+}
+
+body[data-experience='crossing'] .xc-sky[data-tier='cinema'] {
+  --xc-vault-w: 34vw;
+  --xc-vault-h: 100%;
+  --xc-arc-w: 92px;
+  --xc-arc-stroke: 3px;
+  --xc-travel: 120px;
+}
+
+/* The vault — the light itself, and the one element the horizon lives in. It is
+   the SAME DOM node for the whole story, so moving between chapters is a match
+   cut on the horizon rather than a page change: there is no transition here
+   because there is nothing to transition between. */
+body[data-experience='crossing'] .xc-vault {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--xc-vault-w);
+  height: var(--xc-vault-h);
+  overflow: clip;
+  /* Two layers: the sun's radial wash, whose strength IS the climb, over the
+     night it rises out of. Every colour is a token or a mix of two — no world
+     may introduce a colour it did not declare, and `color-mix` degrades to the
+     unmixed ground where unsupported, which is more opaque rather than less. */
+  background-image:
+    radial-gradient(
+      140% 62% at 50% 96%,
+      color-mix(in oklab, var(--xp-accent) calc(var(--crossing-p) * 52%), transparent) 0%,
+      color-mix(in oklab, var(--xp-accent) calc(var(--crossing-p) * 16%), transparent) 34%,
+      transparent 74%
+    ),
+    linear-gradient(
+      to bottom,
+      var(--xp-bg) 0%,
+      var(--xp-bg-alt) 58%,
+      color-mix(in oklab, var(--xp-surface) 72%, var(--xp-bg)) 100%
+    );
+}
+
+/* The seam. The reading never stands ON the sky at any tier — the flow is
+   offset past it below — so this is the softer form of §2.1's scrim: the picture
+   fades into the ground it borders rather than the prose being protected from
+   it. Nothing measurable depends on it, which is the point. */
+body[data-experience='crossing'] .xc-vault::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to bottom, transparent 62%, var(--xp-bg) 100%);
+}
+
+body[data-experience='crossing'] .xc-sky[data-tier='cinema'] .xc-vault::after {
+  background-image: linear-gradient(to right, transparent 68%, var(--xp-bg) 100%);
+}
+
+/* The horizon: one hairline, 1px, always. It DESCENDS as the reader climbs —
+   translate only, never `top`, so the move is composited and costs no layout. */
+body[data-experience='crossing'] .xc-horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 78%;
+  height: 0;
+  border-top: var(--xp-hairline) solid color-mix(in oklab, var(--xp-accent) 72%, transparent);
+  box-shadow: 0 0 calc(var(--xp-glow-strength) * 40px)
+    color-mix(in oklab, var(--xp-accent) 30%, transparent);
+  transform: translate3d(0, calc(var(--crossing-p) * var(--xc-vault-h) * 0.13), 0);
+}
+
+/* Chapter 4's only literal throughput cue: twelve fine parallel hairlines at
+   plane 1. They stream because the plane they sit on parallaxes; they have no
+   animation of their own, and there are twelve of them because that is what
+   twelve reads as — a count, not a texture. */
+body[data-experience='crossing'] .xc-stream {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 44%;
+  height: 144px;
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 11px,
+    color-mix(in oklab, var(--xp-text) 20%, transparent) 11px 12px
+  );
+  transform: translate3d(0, calc(0.08 * var(--xc-travel) * var(--crossing-p)), 0);
+}
+
+body[data-experience='crossing'] .xc-planes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Atmospheric perspective as one formula: the nearer the plane, the closer its
+   fill is to the world's own near-black; the farther, the more of the sky is
+   mixed into it. One expression, five planes, and no per-plane colour anywhere.
+
+   The plane RECEDES as the reader climbs — that is the whole way the figure is
+   depicted, since the figure is never drawn: the land shrinks away while the arc
+   brightens. It bottoms out at 0.12 rather than at 0, because a still that
+   erased the ground would be hiding something rather than stopping it. */
+body[data-experience='crossing'] .xc-plane {
+  fill: color-mix(in oklab, var(--xp-bg) calc(44% + var(--xc-depth) * 130%), var(--xp-surface));
+  opacity: clamp(0.12, calc(1.04 - var(--xc-depth) * var(--crossing-p) * 1.9), 1);
+  transform: translate3d(0, calc(var(--xc-depth) * var(--xc-travel) * var(--crossing-p)), 0);
+}
+
+/* The shared 160×160 turbulence tile, at the shared strength. A world gets one
+   texture and this is it; a full-frame filter over 1440×900 is a real per-paint
+   cost and a tile is visually indistinguishable from one. */
+body[data-experience='crossing'] .xc-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* ── The arc ────────────────────────────────────────────────────────────────
+   One path, `pathLength="1"`, painted with the seven-stop luminance ramp bottom
+   to top. The ramp IS the altitude signal, and it is colour rather than motion
+   precisely so that it survives at 390px, in greyscale, at zero motion and in a
+   browser that has never heard of a scroll timeline. */
+body[data-experience='crossing'] .xc-arc {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--xc-arc-w);
+  height: 100%;
+  overflow: visible;
+}
+
+body[data-experience='crossing'] .xc-sky[data-tier='cinema'] .xc-arc {
+  /* The arc rises along the seam between the picture and the reading, which is
+     also where the reader's eye already is. */
+  left: calc(var(--xc-vault-w) - var(--xc-arc-w));
+}
+
+body[data-experience='crossing'] .xc-arc-track {
+  fill: none;
+  stroke: color-mix(in oklab, var(--xp-text) 12%, transparent);
+  stroke-width: 1px;
+}
+
+body[data-experience='crossing'] .xc-arc-line {
+  fill: none;
+  stroke: url(#xc-ramp);
+  stroke-width: var(--xc-arc-stroke);
+  stroke-linecap: round;
+  /* NO DASH HERE, deliberately. The unconditional default of this line is a
+     SOLID, complete arc: the dash pattern is declared only inside the
+     `@supports` block below, beside the timeline that animates it. Dashing plus
+     `vector-effect: non-scaling-stroke` is the one corner of SVG this world
+     leans on that browsers have historically disagreed about, and the honest way
+     to lean on it is to hand it only to the engines that also implement the
+     scroll timeline it exists to serve. Everyone else gets the finished line,
+     which is the state the whole world is authored toward anyway.
+  /* The one lit element in the world, at the world's own declared glow budget,
+     which print, forced-colors and every still collapse to 0 without this file
+     being consulted. Well inside the 48px / 0.35-alpha ceiling. */
+  filter: drop-shadow(0 0 calc(var(--xp-glow-strength) * 12px)
+    color-mix(in oklab, var(--xp-accent) 34%, transparent));
+}
+
+body[data-experience='crossing'] .xc-tick {
+  stroke-width: 1px;
+  opacity: 0.8;
+}
+
+body[data-experience='crossing'] .xc-tick[data-peak] {
+  stroke-width: 2px;
+  opacity: 1;
+}
+
+/* ── The echo ───────────────────────────────────────────────────────────────
+   Chapter 1's coastline, returning at a ninth of its size with the arc touching
+   it. The path data is the plane's own string, not a redrawing; the position
+   comes from the spine's weights; and the whole thing exists because ONE field
+   on the shared spine says `echoes: 'crossing'`. There is no peak code here. */
+body[data-experience='crossing'] .xc-echo {
+  position: absolute;
+  width: calc(var(--xc-vault-w) / 9);
+  aspect-ratio: 1000 / 620;
+  /* Arrives with the altitude it belongs to rather than being present from the
+     first frame — but its default, the state a browser without scroll timelines
+     paints, is fully present. It quietly spoils the peak in the best way. */
+  opacity: clamp(0.35, calc(var(--crossing-p) * 1.15), 1);
+  /* Compact and medium: the vignette IS the picture, so the echo sits on its
+     floor beside the arc rather than at an altitude a 180px band cannot
+     express. Cinema puts it back on the curve, below. */
+  left: calc(var(--xc-arc-w) + var(--xp-sp-4));
+  top: calc(var(--xc-vault-h) - (var(--xc-vault-w) / 9 * 0.62) - var(--xp-sp-5));
+}
+
+body[data-experience='crossing'] .xc-echo path {
+  fill: color-mix(in oklab, var(--xp-accent) 52%, var(--xp-bg));
+}
+
+body[data-experience='crossing'] .xc-sky[data-tier='cinema'] .xc-echo {
+  /* On the arc, at the echoing chapter's own altitude. `--xc-arc-x` is where the
+     curve actually is at that height, sampled from the same path the line is
+     drawn from — so "the arc touches it" is true at every width. */
+  left: calc(var(--xc-vault-w) - var(--xc-arc-w) + var(--xc-arc-x) * var(--xc-arc-w));
+  top: calc((1 - var(--xc-alt)) * 100%);
+}
+
+/* ── The reading, offset past the picture ───────────────────────────────────
+   Keyed off the `data-tier` the shared stage publishes on its own element — DATA,
+   not a media query nobody can find later. The flow never stands on the sky at
+   any tier, which is the strongest form of §2.1's scrim rule: the measured
+   contrast is the true contrast because there is nothing moving behind the
+   words at all. */
+body[data-experience='crossing'] [data-xp-stage][data-tier='compact'] {
+  padding-block-start: calc(180px + var(--xp-sp-6));
+  padding-inline-start: calc(var(--xp-gutter) + 12px);
+}
+
+body[data-experience='crossing'] [data-xp-stage][data-tier='medium'] {
+  padding-block-start: calc(40svh + var(--xp-sp-7));
+  padding-inline-start: calc(var(--xp-gutter) + 56px);
+}
+
+body[data-experience='crossing'] [data-xp-stage][data-tier='cinema'] {
+  padding-inline-start: calc(34vw + var(--xp-sp-6));
+}
+
+/* ── The two deliberately quiet chapters ────────────────────────────────────
+   Flat intensity across nine chapters yields no peak and therefore no memory.
+   Chapter 2 is quiet before the climb and chapter 7 is quiet AFTER it, so the
+   shape of the career says "the interesting thing was the return" rather than
+   "behold how high I got".
+
+   MEASURED, and one number differs from the spec because of it: `saturate(0.65)`
+   alone leaves every slot legal (text 16.07:1 on the ground, muted 6.35:1 /
+   5.20:1), but the additional 0.86 alpha the spec asks for drops MUTED to 4.94:1
+   on the ground and 4.22:1 on the deepest card — under both the 4.5 body floor
+   and the 5.0 internal floor. So the alpha is applied to `--xp-text` only, where
+   it measures 11.90:1, and the muted channel is left at full strength. A quiet
+   chapter is quieter; it is never less legible. */
+body[data-experience='crossing'] [data-xp-chapter='trials'],
+body[data-experience='crossing'] [data-xp-chapter='mastery'] {
+  filter: saturate(0.65);
+  --xp-text: color-mix(in oklab, var(--xp-text) 86%, var(--xp-bg));
+  transition: filter var(--xp-dur-element) var(--xp-ease-dissolve);
+}
+
+/* ── The peak ───────────────────────────────────────────────────────────────
+   120ms of dead hold — a beat that deliberately does nothing is a first-class
+   camera move and the one most often forgotten — and then a 900ms arrival on the
+   house curve. It is expressed as an override of the shared beat entrance rather
+   than as an animation of its own, so it inherits every safety property that
+   entrance has: authored resting-frame-first, `backwards` fill, and removed
+   outright rather than shortened under any still. */
+body[data-experience='crossing'] [data-xp-chapter='return'] .xp-beat {
+  animation-duration: 900ms;
+  animation-delay: calc(120ms + var(--xp-beat-index, 0) * var(--xp-beat-stagger));
+}
+
+/* ── The one scroll binding ─────────────────────────────────────────────────
+   Six consumers, one number, zero JS, zero rAF loops. Everything above already
+   paints its FINAL state without this block; all this adds is the walk up to it.
+   `scroll(root block)` rather than `view()` because in this world the scroll
+   position IS the altitude — the reader's progress through the document is the
+   climb, and no single element's visibility is a better statement of that. */
+@supports (animation-timeline: scroll(root block)) {
+  body[data-experience='crossing'] .xc-sky {
+    animation: xc-climb linear both;
+    animation-timeline: scroll(root block);
+  }
+
+  /* `pathLength="1"` makes one unit the whole path, so this dash maths is the
+     same expression at every viewport and at every tier. It lives in here rather
+     than beside the rest of the arc for the reason stated up there: the line is
+     solid and complete for anything that cannot animate it. */
+  body[data-experience='crossing'] .xc-arc-line {
+    stroke-dasharray: 1px;
+    stroke-dashoffset: calc((1 - var(--crossing-p)) * 1px);
+  }
+}
+
+@keyframes xc-climb {
+  from {
+    --crossing-p: 0;
+  }
+  to {
+    --crossing-p: 1;
+  }
+}
+
+/* ── Stillness ──────────────────────────────────────────────────────────────
+   The climb stops at its END, not at its beginning: the arc is drawn complete,
+   the ramp is complete, the echo is present, the land has receded to its floor
+   of 0.12 and nothing is missing. A still of this world is a finished dawn with
+   a gold line down the left margin and nine lit stops on it, which is exactly
+   the second telling §4.5 asks for — never the first one with its motor off.
+
+   Both selectors are duplicated rather than merged, for the reason
+   `globals.css` gives: folding `html[data-reduce-motion]` into the media query's
+   rule would make the whole block depend on the attribute, and the OS preference
+   would stop working for everyone who never opens the in-page control. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-experience='crossing'] .xc-sky {
+    animation: none;
+  }
+
+  body[data-experience='crossing'] [data-xp-chapter='trials'],
+  body[data-experience='crossing'] [data-xp-chapter='mastery'] {
+    transition: none;
+  }
+}
+
+html[data-reduce-motion] body[data-experience='crossing'] .xc-sky {
+  animation: none;
+}
+
+html[data-reduce-motion] body[data-experience='crossing'] [data-xp-chapter='trials'],
+html[data-reduce-motion] body[data-experience='crossing'] [data-xp-chapter='mastery'] {
+  transition: none;
+}
+
+/* ── Forced colors ──────────────────────────────────────────────────────────
+   The OS has taken the palette, so a sky drawn entirely out of gradients can no
+   longer carry meaning and must not pretend to. It goes, and the reading takes
+   back the width the picture was holding — the story is unchanged, because the
+   story was never in the picture. */
+@media (forced-colors: active) {
+  body[data-experience='crossing'] .xc-sky {
+    display: none;
+  }
+
+  body[data-experience='crossing'] [data-xp-stage][data-tier='compact'],
+  body[data-experience='crossing'] [data-xp-stage][data-tier='medium'],
+  body[data-experience='crossing'] [data-xp-stage][data-tier='cinema'] {
+    padding-inline-start: var(--xp-gutter);
+    padding-block-start: calc(var(--xp-sp-9) + var(--xp-sp-4));
+  }
+
+  body[data-experience='crossing'] [data-xp-chapter='trials'],
+  body[data-experience='crossing'] [data-xp-chapter='mastery'] {
+    filter: none;
+  }
+}
+
+/* ── Print ──────────────────────────────────────────────────────────────────
+   The sky carries `.no-print`, which `globals.css` already removes; it is
+   restated here because a printed page that lost a chapter to a leftover
+   `saturate()` or kept a 34vw margin for a picture that is not there is a
+   printed page the reader silently blames the résumé for. The chapters
+   themselves are untouched: on paper this world is the shared telling, reverse-
+   chronological, and every fact survives. */
+@media print {
+  body[data-experience='crossing'] .xc-sky {
+    display: none !important;
+  }
+
+  body[data-experience='crossing'] [data-xp-stage][data-tier='compact'],
+  body[data-experience='crossing'] [data-xp-stage][data-tier='medium'],
+  body[data-experience='crossing'] [data-xp-stage][data-tier='cinema'] {
+    padding-inline-start: 0;
+    padding-block-start: 0;
+  }
+
+  body[data-experience='crossing'] [data-xp-chapter='trials'],
+  body[data-experience='crossing'] [data-xp-chapter='mastery'] {
+    filter: none;
+    --xp-text: #14181F;
+  }
+
+  body[data-experience='crossing'] .xp-beat {
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+}
+
+
+/* ── plain ──────────────────────────────────────────────────────────────────
+ * NO BLOCK, on purpose, permanently. `plain` is the entry that proves the token
+ * defaults in §1 are a complete telling on their own, and a rule here would end
+ * that proof. Do not add one.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. THE DASHBOARD — `/experience/`, the call sheet
+   ═══════════════════════════════════════════════════════════════════════════
+
+   ── Why this block is scoped by CLASS and not by `body[data-experience]` ────
+   Every other rule in this file requires that attribute, and §7 calls an
+   unscoped rule a review-blocking defect. This block is the one place the
+   attribute is the wrong hook, and the reason is the dashboard's whole thesis:
+   **the dashboard is deliberately not a sixth world** (CREATIVE-SPEC §3). If it
+   set `data-experience` it would inherit §1's token defaults, §2's ground paint
+   and §3's `min-height: 100svh` on a page that is wearing the ordinary
+   `<Layout>` — the picker would start competing with the five things it is
+   selling, which is precisely the failure §3 is written to prevent.
+
+   The property §7 actually cares about is preserved and is stronger here, not
+   weaker: every selector below begins `.xp-dashboard`, a class that exists in
+   exactly one component (`src/app/experience/page.tsx`) and on exactly one
+   route. It cannot reach `/` for the same structural reason `body[data-experience]`
+   cannot — there is no element on `/` it can match — and unlike an attribute
+   that JavaScript writes and deletes, this one cannot survive a client-side
+   crossing because it is part of the markup of a page you have left.
+
+   ── Why the palette is restated here instead of read from §1 ───────────────
+   §1's `--xp-*` defaults are declared on `body[data-experience]`, so they do not
+   resolve on this route at all — not as a stylistic choice but as a fact of the
+   selector. The neutral chrome below is CREATIVE-SPEC §3.1's own palette, typed
+   once, here, and nowhere else in the codebase. Measured, all six against both
+   grounds: text `#E8EAED` 16.24:1 on `#0B0C0E` / 15.04:1 on `#141619`; muted
+   `#9AA0A6` 7.41:1 / 6.86:1; focus `#7CC5FF` 10.52:1 / 9.74:1. The hairline is
+   1.29:1 / 1.19:1 and is not gated — it is a non-text separator, and the thing
+   that actually makes a card visible is its poster, not its border.
+
+   ── Why a dark panel inside a page that may be light ───────────────────────
+   `<Layout>` paints the visitor's own appearance and this block does not touch
+   it. The shelf is an inset gallery wall: a cinema is dark whatever the weather
+   outside it, the five posters are lit objects on it, and every world's ground
+   is dark, so previewing them on paper-white would misrepresent all five. It
+   pins `color-scheme: dark` on its own subtree so form controls, scrollbars and
+   any `system` colour inside it agree with the paint. */
+
+.xp-dashboard {
+  /* CREATIVE-SPEC §3.1, verbatim. Not tokens on `:root` — see the banner. */
+  --dash-bg: #0B0C0E;
+  --dash-card: #141619;
+  --dash-hair: #23262B;
+  --dash-text: #E8EAED;
+  --dash-muted: #9AA0A6;
+  --dash-focus: #7CC5FF;
+
+  /* Byte-identical to `--xp-ease-cinema` and `--xp-dur-element` in §1b, which
+     are unavailable on this route because they are declared on
+     `body[data-experience]`. Restated, not re-invented: if §1b's numbers ever
+     change, these change with them. */
+  --dash-ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
+  --dash-dur-element: 320ms;
+  /* The card's own curve (§3.3) — a slightly softer overshoot than the house
+     arrival, because a card lifting 4px under a cursor is a response, not an
+     entrance. */
+  --dash-ease-card: cubic-bezier(0.22, 1, 0.36, 1);
+  --dash-dur-card: 260ms;
+
+  /* §3.2. Deliberately wider than the résumé's 1000px: the résumé is a
+     document, this is a gallery of five posters, and 1000px turns them into
+     cramped thumbnails. */
+  --dash-gutter: clamp(16px, 4vw, 48px);
+
+  /* ── The shelf tiers on the CONTAINER, not the viewport ─────────────────
+     CREATIVE-SPEC §3.2 names 360 / 768 / 1280, and those are viewport numbers
+     that assume the shelf owns the window. It does not: `<Layout>` puts a 260px
+     permanent drawer beside it above `md` and 32px of its own padding around
+     it, so a 1440px window hands this element 1020px. Tiering on `min-width:
+     1280px` therefore laid a 1020px shelf out as if it were 1440 — measured, the
+     four remainder cards came out 194px wide, which is a thumbnail with a
+     headline in it.
+
+     `container-type: inline-size` moves the question from "how wide is the
+     window" to "how wide am I", which is the question the layout was always
+     asking. The thresholds below are the spec's viewports minus the chrome that
+     is actually there. A browser without container query support gets the
+     single-column compact shelf at every width: narrow, never broken. */
+  container-type: inline-size;
+
+  color-scheme: dark;
+  background-color: var(--dash-bg);
+  color: var(--dash-text);
+  /* Geometry comes from the shipped `RADIUS` const, handed down as a custom
+     property by the page (SKIN-CONTRACT: radii are imported, never re-typed).
+     The literal is the fallback for the one frame before that inline style
+     exists — a stylesheet cannot `import`. */
+  border-radius: var(--dash-radius-card, 16px);
+  /* `padding-block-end` clears the chat FAB so it can never land on the last
+     card (§3.2). `env()` is inside `max()` so a browser without safe-area
+     insets still gets the 96px. */
+  padding-block: clamp(48px, 8vh, 96px) max(96px, calc(env(safe-area-inset-bottom) + 96px));
+  padding-inline: var(--dash-gutter);
+  /* The shelf can be wider than the résumé column but never wider than 1440. */
+  width: 100%;
+  max-width: calc(1440px + 2 * var(--dash-gutter));
+  margin-inline: auto;
+}
+
+/* The header block. `52ch` and not the shelf width: a one-line dek that runs
+   the full 1440px is a banner, not a sentence (§3.2). */
+.xp-dashboard__intro {
+  max-width: 52ch;
+  margin-block-end: clamp(32px, 5vh, 64px);
+}
+
+.xp-dashboard__title {
+  /* Inter 600, the neutral voice. The dashboard previews five display faces and
+     wears none of them — one loud glyph run per card against calm chrome is
+     what makes the shelf read as curated rather than as a font sampler. */
+  margin: 0;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: clamp(2rem, 1.2rem + 3vw, 3.5rem);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--dash-text);
+  text-wrap: balance;
+}
+
+.xp-dashboard__dek {
+  margin: 12px 0 0;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--dash-muted);
+  text-wrap: pretty;
+}
+
+/* ── The shelf ──────────────────────────────────────────────────────────────
+   Five is prime and every symmetric grid orphans it, so: one featured card and
+   an auto-fill remainder shelf. Never five-across, never 3+2, never a carousel.
+
+   Compact (the default, because this file is written mobile-first and a phone
+   must not parse two overrides to reach its own layout): a single column, all
+   five identical at 4/3. 4/3 and not 3/4 — a portrait card fits ~1.5 per screen
+   and hides the shelf, where 4/3 shows one card plus the top edge of the next,
+   which is the thing that makes people scroll. */
+.xp-dashboard__shelf {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.xp-dashboard__slot {
+  /* `min-width: 0` on every grid child, unconditionally. A grid item's default
+     `min-width: auto` is the single most common cause of horizontal overflow at
+     360px — one unbreakable word in a caption widens the column and the whole
+     page scrolls sideways. */
+  min-width: 0;
+  display: flex;
+}
+
+/* Medium — 620px of shelf, which is a 768px viewport once the gutters are
+   taken out. The featured card takes the full width at 21/9 and the remaining
+   four pair up beneath it at 16/10. The featured card has stopped being a
+   different SHAPE and is still the first thing read. */
+@container (min-width: 620px) {
+  .xp-dashboard__shelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+    row-gap: 20px;
+  }
+
+  .xp-dashboard__slot--featured {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Cinema — 1180px of shelf. Below that the two remainder columns are narrower
+   than their own captions and the medium tier is the better telling, which is
+   why this threshold is not simply the spec's 1280 minus chrome: it is the
+   width at which the three-across composition starts being worth having.
+
+   A 24-column grid, which is §3.2's 12-column grid at double resolution. That
+   doubling is not decoration — the remainder region is five twelfths wide and
+   has to split in two, and 2.5 columns is not a thing a grid can express. At 24
+   the featured card is `1 / 15` and each remainder card spans 5, which lands
+   them on exactly the boundaries §3.2 names; the gaps interior to a span are
+   absorbed by the card that spans them, so the visible gutters are still the
+   24px the spec asks for.
+
+   Placement is left to auto-flow rather than written out per card: the featured
+   card occupies rows 1–2 of columns 1–14, so the next four items fall into the
+   2×2 remainder block on their own. Nothing here counts to five, so a sixth
+   world joins the shelf with no edit. */
+@container (min-width: 1180px) {
+  .xp-dashboard__shelf {
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    column-gap: 24px;
+    row-gap: 32px;
+  }
+
+  .xp-dashboard__slot {
+    grid-column: span 5;
+  }
+
+  .xp-dashboard__slot--featured {
+    grid-column: 1 / 15;
+    grid-row: 1 / 3;
+  }
+}
+
+/* ── The card ───────────────────────────────────────────────────────────────
+   One `<a>` wrapping the whole card. The card is the target, not the title —
+   a 20px headline is a 20px hit target, and the poster is the thing the visitor
+   is actually aiming at. */
+.xp-dashboard__card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--dash-hair);
+  border-radius: var(--dash-radius-card, 16px);
+  background-color: var(--dash-card);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  /* Named properties only, never `all` — the house rule, and here it also keeps
+     the compositor out of the caption's text rendering. */
+  transition:
+    transform var(--dash-dur-card) var(--dash-ease-card),
+    border-color var(--dash-dur-card) linear;
+}
+
+/* Entry: 40ms stagger, 8px of travel, 320ms on the house arrival curve.
+
+   The RESTING frame is the authored default and the animation travels TO it, so
+   deleting this file — the invariant at the top — leaves five cards where they
+   already were rather than five invisible ones.
+
+   `backwards` and NOT `both`, and the difference is a real bug rather than a
+   nicety. Fill mode `backwards` holds the from-state through the stagger delay,
+   which is what stops the fifth card painting, vanishing and re-arriving. Fill
+   mode `both` would ALSO hold the to-state forever afterwards — and an
+   animation's filled value outranks an ordinary declaration in the cascade, so
+   `transform: none` would permanently beat the `translateY(-4px)` hover lift
+   below and the cards would never move under a cursor again.
+
+   `--dash-i` needs no clamp: there are five cards, so the longest delay is
+   160ms and no cascade approaches §2.3's 420ms ceiling. */
+@keyframes xp-dashboard-card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.xp-dashboard__card {
+  animation: xp-dashboard-card-in var(--dash-dur-element) var(--dash-ease-cinema) backwards;
+  animation-delay: calc(var(--dash-i, 0) * 40ms);
+}
+
+/* Hover AND focus-within, always as a pair. The whole card is one link, so
+   `:focus-within` is what gives a keyboard visitor the same read of "this one"
+   that a cursor gets — and the preview scale is never the sole carrier of that
+   state, because the border also goes to the world's own accent. */
+.xp-dashboard__card:hover,
+.xp-dashboard__card:focus-within {
+  transform: translateY(-4px);
+  border-color: var(--dash-accent, var(--dash-focus));
+}
+
+/* `will-change` only while hovered. A standing `will-change: transform` on five
+   cards is five permanently promoted layers on a page that also warms an ONNX
+   runtime; §2.3 caps promoted layers at 12 per viewport and this is the easiest
+   place to spend them for nothing. */
+.xp-dashboard__card:hover {
+  will-change: transform;
+}
+
+.xp-dashboard__card:focus-visible,
+.xp-dashboard__card:has(:focus-visible) {
+  /* §3.1's ring: 2px at 3px offset. It lands on `--dash-bg` (10.52:1) or on the
+     card (9.74:1); both clear the 3:1 non-text floor with room, which is the
+     reason the dashboard does not need the worlds' double ring. */
+  outline: 2px solid var(--dash-focus);
+  outline-offset: 3px;
+}
+
+/* ── The preview ────────────────────────────────────────────────────────────
+   Aspect-locked per breakpoint, `overflow: hidden`, inline SVG only. Hard
+   budget 24KB gz per poster and zero raster: five cards × a 400KB screenshot is
+   a 2MB landing surface that also goes stale the moment a world is edited. */
+.xp-dashboard__preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background-color: var(--dash-ground, var(--dash-card));
+  /* The poster is drawn to fill; `slice` rather than `meet` so the card is never
+     letterboxed by its own art when the featured slot stretches. */
+  display: block;
+}
+
+/* The art is its own box inside the preview so the swatch can be a sibling: the
+   poster arrives as a markup string and a node with injected HTML cannot also
+   have children. */
+.xp-dashboard__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.xp-dashboard__preview svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform var(--dash-dur-card) var(--dash-ease-card);
+}
+
+.xp-dashboard__card:hover .xp-dashboard__preview svg,
+.xp-dashboard__card:focus-within .xp-dashboard__preview svg {
+  transform: scale(1.03);
+}
+
+@container (min-width: 620px) {
+  .xp-dashboard__preview { aspect-ratio: 16 / 10; }
+  .xp-dashboard__slot--featured .xp-dashboard__preview { aspect-ratio: 21 / 9; }
+}
+
+@container (min-width: 1180px) {
+  .xp-dashboard__preview { aspect-ratio: 3 / 2; }
+
+  /* The featured card spans two rows whose heights the remainder cards set, so
+     its preview takes whatever is left after its caption rather than declaring
+     an aspect of its own. 16/10 and "match the column beside you" are two
+     constraints on one box and they do not both hold; the one that shows is the
+     ragged bottom edge, so that is the one this honours. */
+  .xp-dashboard__slot--featured .xp-dashboard__preview {
+    aspect-ratio: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+/* ── The caption ────────────────────────────────────────────────────────────
+   Fixed minimum height is what keeps the shelf optically even when one title
+   wraps. Variable card heights are the loudest tell of an unconsidered grid,
+   and this is a five-card grid where one card is already a different shape. */
+.xp-dashboard__caption {
+  min-height: 84px;
+  padding: 16px;
+  border-top: 1px solid var(--dash-hair);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+@container (min-width: 620px) {
+  .xp-dashboard__caption {
+    min-height: 92px;
+    padding: 20px;
+  }
+}
+
+/* "Editor's pick" — how the featured card keeps its hierarchy at 360px, where
+   it has lost its span and is the same 4/3 rectangle as the other four.
+   Hierarchy survives without geometry, which is the only way it can survive a
+   single-column layout at all. */
+.xp-dashboard__eyebrow {
+  margin: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--dash-accent, var(--dash-focus));
+}
+
+.xp-dashboard__name {
+  margin: 0;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  color: var(--dash-text);
+  /* One line. A title that wraps is a title that was too long, and the meta row
+     below it is what the reader is scanning for anyway. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xp-dashboard__hint {
+  margin: 0;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--dash-muted);
+  max-width: 44ch;
+  /* Two lines, clamped. `-webkit-line-clamp` is the only cross-browser clamp
+     that exists and it is unprefixed nowhere; the fallback when it is absent is
+     a taller caption, not lost text. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-wrap: pretty;
+}
+
+/* The honest meta row. Telling a visitor what a thing will cost them before
+   they click it is itself a craft signal, and every figure in it is derived
+   from the story and the world's own config — none of it is typed. */
+.xp-dashboard__meta {
+  margin: auto 0 0;
+  padding-block-start: 4px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--dash-muted);
+  /* The row is four short facts; at 360px it wraps rather than overflowing, and
+     the separator is a character rather than a border so a wrapped row does not
+     grow a stray rule. */
+  overflow-wrap: anywhere;
+}
+
+/* The swatch — the world's own `[accent, ground]` pair, the `SkinMenu` idiom
+   verbatim. It is decorative and `aria-hidden`: the meta row already says
+   everything it says, in words. The hairline ring is what keeps a near-black
+   ground visible against a near-black card. */
+.xp-dashboard__swatch {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-start: 12px;
+  width: 44px;
+  height: 6px;
+  border-radius: var(--dash-radius-pill, 999px);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45);
+  background-image: linear-gradient(90deg, var(--dash-accent) 0 50%, var(--dash-ground) 50% 100%);
+}
+
+/* ── The match cut, half of it ──────────────────────────────────────────────
+   §3.4 wants the selected card to physically become the world. The card's half
+   is this name; the destination's half is a matching name on the world's
+   opening frame, and the `@view-transition { navigation: auto }` opt-in that
+   arms cross-document transitions is deliberately NOT here — it is a
+   document-wide at-rule with no route scope, so shipping it from this file
+   would arm it on `/` as well, and `/` is under a zero-regression rule.
+
+   The name is stable and unique per card, so it costs nothing while the other
+   half is missing and needs no edit when it lands. */
+@supports (view-transition-name: none) {
+  .xp-dashboard__preview {
+    view-transition-name: var(--dash-vt);
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────────
+   Stilled, never hidden. Every card renders at its final state; the entrance,
+   the lift and the preview scale stop existing. Durations collapse to 1ms
+   rather than 0s so any `transitionend` listener still fires — there is none on
+   this surface today, and the rule is here so that adding one later cannot hang
+   a state machine. The border still changes on hover and focus, because that is
+   the state readout and stilling motion must never cost information. */
+@media (prefers-reduced-motion: reduce) {
+  .xp-dashboard__card,
+  .xp-dashboard__preview svg {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+
+  .xp-dashboard__card:hover,
+  .xp-dashboard__card:focus-within {
+    transform: none;
+  }
+
+  .xp-dashboard__card:hover .xp-dashboard__preview svg,
+  .xp-dashboard__card:focus-within .xp-dashboard__preview svg {
+    transform: none;
+  }
+}
+
+/* The site's own opt-in still, which `globals.css` writes on `<html>` from the
+   appearance menu. It must say exactly what the media query says — a visitor
+   who chose stillness in the UI and a visitor whose OS chose it for them are
+   the same visitor. */
+html[data-reduce-motion] .xp-dashboard__card,
+html[data-reduce-motion] .xp-dashboard__preview svg {
+  animation: none !important;
+  transition-duration: 1ms !important;
+}
+
+html[data-reduce-motion] .xp-dashboard__card:hover,
+html[data-reduce-motion] .xp-dashboard__card:focus-within,
+html[data-reduce-motion] .xp-dashboard__card:hover .xp-dashboard__preview svg,
+html[data-reduce-motion] .xp-dashboard__card:focus-within .xp-dashboard__preview svg {
+  transform: none;
+}
+
+/* ── Forced colours ─────────────────────────────────────────────────────────
+   The neutral chrome is six hard-coded hexes and forced-colors mode exists
+   precisely to overrule those. Every one resolves to a system keyword; the
+   posters are decorative `background-image`-equivalents in spirit but they are
+   the CONTENT of the card, so they are kept and merely un-lit. */
+@media (forced-colors: active) {
+  .xp-dashboard {
+    background-color: Canvas;
+    color: CanvasText;
+    forced-color-adjust: none;
+    --dash-bg: Canvas;
+    --dash-card: Canvas;
+    --dash-hair: CanvasText;
+    --dash-text: CanvasText;
+    --dash-muted: CanvasText;
+    --dash-focus: Highlight;
+  }
+
+  .xp-dashboard__card:hover,
+  .xp-dashboard__card:focus-within {
+    border-color: Highlight;
+  }
+}
+
+/* ── Print ──────────────────────────────────────────────────────────────────
+   A printed picker is a list of five URLs. The posters go, the dark ground goes
+   (nobody prints a black page), and `a[href]::after` in §6 does not reach here
+   because that rule is experience-scoped — so the hrefs are printed by this
+   block's own rule. */
+@media print {
+  .xp-dashboard {
+    background: none;
+    color: #14181F;
+    padding: 0;
+    --dash-text: #14181F;
+    --dash-muted: #5A6472;
+    --dash-hair: #CCCCCC;
+  }
+
+  .xp-dashboard__preview,
+  .xp-dashboard__swatch {
+    display: none;
+  }
+
+  .xp-dashboard__card {
+    animation: none;
+    border-color: #CCCCCC;
+    break-inside: avoid;
+  }
+
+  .xp-dashboard__card::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    color: #5A6472;
+    padding: 0 16px 16px;
+    word-break: break-all;
+  }
+}

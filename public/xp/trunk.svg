@@ -1,0 +1,62 @@
+<svg viewBox="0 0 320 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" focusable="false">
+  <defs>
+    <linearGradient id="trunk-poster-ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#101513"/>
+      <stop offset="1" stop-color="#0A0D0C"/>
+    </linearGradient>
+    <linearGradient id="trunk-poster-ramp" gradientUnits="userSpaceOnUse" x1="26" y1="0" x2="288" y2="0">
+      <stop offset="0" stop-color="#7C9A88"/>
+      <stop offset="0.34" stop-color="#7AB692"/>
+      <stop offset="0.68" stop-color="#79CD99"/>
+      <stop offset="1" stop-color="#7DE0A1"/>
+    </linearGradient>
+    <radialGradient id="trunk-poster-bloom" gradientUnits="userSpaceOnUse" cx="288" cy="140" r="44">
+      <stop offset="0" stop-color="#7CE0A0" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#7CE0A0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="320" height="240" fill="url(#trunk-poster-ground)"/>
+  <circle cx="288" cy="140" r="44" fill="url(#trunk-poster-bloom)"/>
+
+  <g fill="none" stroke-linecap="round">
+    <!-- the fan: partitioned throughput, and the only ornament in the drawing -->
+    <g stroke="#7CE0A0" stroke-opacity="0.2" stroke-width="1">
+      <path d="M174 140C182 140 182 116 190 116L214 116C222 116 222 140 230 140"/>
+      <path d="M174 140C184 140 184 96 194 96L210 96C220 96 220 140 230 140"/>
+    </g>
+
+    <!-- the quiet branch, the one that runs below the trunk -->
+    <path d="M118 140C126 140 126 166 134 166L160 166C168 166 168 140 176 140" stroke="#7CE0A0" stroke-opacity="0.3" stroke-width="1"/>
+
+    <!-- 2016-2018: two lines in parallel, merged back onto the trunk -->
+    <path d="M46 140C54 140 54 114 62 114L104 114C112 114 112 140 120 140" stroke="#7CE0A0" stroke-opacity="0.52" stroke-width="1"/>
+
+    <!-- the branch this career turns on: two pixels, not a hairline -->
+    <path d="M230 140C238 140 238 116 246 116L272 116C280 116 280 140 288 140" stroke="#7DE0A1" stroke-opacity="0.92" stroke-width="2"/>
+
+    <!-- the trunk, drawn twice: dim beneath, lit over -->
+    <path d="M26 140H288" stroke="#7CE0A0" stroke-opacity="0.14" stroke-width="5"/>
+    <path d="M26 140H288" stroke="url(#trunk-poster-ramp)" stroke-width="2"/>
+
+    <!-- the cherry-pick: eight years, one arc, and nothing else here is amber -->
+    <path d="M70 114C110 52 240 46 288 140" stroke="#E8B44A" stroke-opacity="0.78" stroke-width="1.6" stroke-dasharray="7 5"/>
+  </g>
+
+  <g fill="url(#trunk-poster-ramp)">
+    <circle cx="26" cy="140" r="4"/>
+    <circle cx="46" cy="140" r="4.5"/>
+    <circle cx="118" cy="140" r="4.5"/>
+    <circle cx="174" cy="140" r="6.5"/>
+    <circle cx="230" cy="140" r="4.5"/>
+    <circle cx="70" cy="114" r="4"/>
+    <circle cx="94" cy="114" r="3"/>
+    <circle cx="146" cy="166" r="3" fill-opacity="0.55"/>
+    <circle cx="252" cy="116" r="3.5"/>
+    <circle cx="266" cy="116" r="3.5"/>
+  </g>
+
+  <!-- the tag on the 2017 commit, and HEAD as a ring rather than a fill -->
+  <circle cx="70" cy="114" r="8" fill="none" stroke="#E8B44A" stroke-opacity="0.55" stroke-width="1"/>
+  <circle cx="288" cy="140" r="6.5" fill="#0A0D0C" stroke="#7DE0A1" stroke-width="2.5"/>
+</svg>

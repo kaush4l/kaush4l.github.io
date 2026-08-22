@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { ThemeVariantSwitcher, RADIUS } from '@/theme/ThemeProvider';
 import AppearanceMenu from './AppearanceMenu';
 import SkinMenu from './SkinMenu';
+import ExperienceButton from './ExperienceButton';
 
 /**
  * The résumé PDF lives in `public/`. Exported so the Footer links to the same
@@ -117,6 +118,8 @@ export default function Header({ onMenuToggle, menuButtonRef }: HeaderProps) {
                         immediately overridden. Coarse to fine, left to right. */}
                     <SkinMenu />
                     <AppearanceMenu />
+                    {/* Settings, then navigation, then the primary action: the skin/appearance pair is a matched set and is not split. */}
+                    <ExperienceButton />
 
                     {/* The highest-value header slot: the recruiter's most common action. */}
                     <Button
