@@ -1,10 +1,9 @@
-import { Box } from '@mui/material';
-import { Layout } from '@/components/Layout';
-import { SectionRenderer } from '@/components/Resume';
-import { HeroSwitcher } from '@/components/Hero';
-import Reveal from '@/components/Motion/Reveal';
-import PointerGlow from '@/components/Motion/PointerGlow';
 import { getSiteSections } from '@/lib/content';
+import { buildResumeCorpus } from '@/lib/resumeContext';
+import { scopeCss } from '@/xp/load';
+import { getHome } from '@/home/load';
+import HomeShell from '@/home/HomeShell';
+import HomePage from '@/home/sections/HomePage';
 import type { SiteSection } from '@/lib/contentTypes';
 
 /**
@@ -52,42 +51,20 @@ function buildPersonJsonLd(sections: SiteSection[]) {
 }
 
 export default async function Home() {
-  // Every section — its title, layout, icon, order and entries — comes from the
-  // content/ folder structure. Nothing about the resume is hardcoded here.
-  const sections = await getSiteSections();
-
-  // The hero's headline, proof line and highlight tags live in the about entry's
-  // frontmatter, not in the component. Located by layout so renaming or
-  // reordering the content folders cannot break it.
-  const about = sections.find((s) => s.layout === 'about')?.items[0];
-
+  // Résumé content comes from content/0*-*; every word, colour and camera angle
+  // of the page itself comes from content/home/home.md.
+  const [sections, data] = await Promise.all([getSiteSections(), getHome()]);
+  const prompts = sections.find((s) => s.layout === 'about')?.prompts;
   return (
-    <Layout>
-      {/* Structured data, derived from the same content the page renders. */}
+    <HomeShell resumeCorpus={buildResumeCorpus(sections)} suggestedPrompts={prompts}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildPersonJsonLd(sections)),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildPersonJsonLd(sections)) }}
       />
-      {/* One delegated pointer listener for every `data-glow` surface on the
-          page. Renders nothing; see PointerGlow for why it is not per-card. */}
-      <PointerGlow />
-
-      {/* Hero — full-width visual lead-in, outside the constrained content box */}
-      <HeroSwitcher about={about} />
-
-      {/* Each section arrives on its own as it enters the frame. `Reveal` is a
-          no-op under reduced motion and for anything already on screen at mount,
-          and the hidden state is applied post-mount — so this HTML is complete
-          and opaque for crawlers and for a visitor whose JS never runs. */}
-      <Box sx={{ maxWidth: 1000, mx: 'auto', px: { xs: 2, md: 3 } }}>
-        {sections.map((section) => (
-          <Reveal key={section.id}>
-            <SectionRenderer section={section} />
-          </Reveal>
-        ))}
-      </Box>
-    </Layout>
+      <div className="xp hm">
+        <style dangerouslySetInnerHTML={{ __html: scopeCss('.hm', data.config.palette, data.config.tokens) }} />
+        <HomePage data={data} />
+      </div>
+    </HomeShell>
   );
 }

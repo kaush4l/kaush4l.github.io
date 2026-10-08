@@ -1,0 +1,123 @@
+/* Desk scene shell. Colours come from home.md via --dsl-* / --dsd-* set inline. */
+.ds {
+  --ds-bg: var(--dsl-background);
+  --ds-desk: var(--dsl-desk);
+  --ds-alu: var(--dsl-aluminum);
+  --ds-screen: var(--dsl-screen);
+  --ds-text: var(--dsl-screenText);
+  --ds-accent: var(--dsl-screenAccent);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ds-bg);
+  transition: background-color 0.6s ease;
+}
+[data-theme='dark'] .ds {
+  --ds-bg: var(--dsd-background);
+  --ds-desk: var(--dsd-desk);
+  --ds-alu: var(--dsd-aluminum);
+  --ds-screen: var(--dsd-screen);
+  --ds-text: var(--dsd-screenText);
+  --ds-accent: var(--dsd-screenAccent);
+}
+.ds-stage { position: absolute; inset: 0; }
+.ds-canvas {
+  display: block; width: 100% !important; height: 100% !important;
+  touch-action: pan-y; cursor: grab;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+.ds[data-status='ready'] .ds-canvas { opacity: 1; }
+
+/* loading shimmer */
+.ds-loading { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.ds-loading span {
+  font: 500 15px/1.2 var(--font-sans, system-ui, sans-serif);
+  color: transparent;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ds-text) 0%, var(--ds-desk)) 0%, var(--ds-accent) 50%, var(--ds-desk) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  animation: ds-shimmer 1.6s linear infinite;
+}
+@keyframes ds-shimmer { to { background-position: -200% 0; } }
+
+/* speech bubble (positioned in JS by projecting a 3D anchor) */
+.ds-bubble {
+  position: absolute; left: 0; top: 0; z-index: 2;
+  padding: 10px 16px; border-radius: 18px;
+  font: 600 15px/1.2 var(--font-sans, system-ui, sans-serif);
+  color: var(--xp-text, currentColor);
+  white-space: nowrap; pointer-events: none;
+  opacity: 0; scale: 0.6; transform-origin: 50% 100%;
+  transition: opacity 0.25s ease, scale 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-top: -12px;
+}
+.ds-bubble[data-show='true'] { opacity: 1; scale: 1; }
+
+/* controls capsule: one compact row — scrolling view chips + icon buttons */
+.ds-ui {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 3;
+  display: flex; align-items: center; gap: 6px; padding: 4px; border-radius: 999px;
+}
+.ds-views {
+  flex: 1; min-width: 0;
+  display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+  border-radius: 999px;
+}
+.ds-views::-webkit-scrollbar { display: none; }
+.ds-chip {
+  flex: none; scroll-snap-align: center;
+  min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px;
+  font: 500 13px/1 var(--font-sans, system-ui, sans-serif);
+  color: var(--xp-text, inherit); background: transparent; cursor: pointer;
+  transition: background-color 0.25s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ds-chip:active { transform: scale(0.94); }
+.ds-chip[aria-pressed='true'] {
+  background: var(--xp-surface, #fff);
+  box-shadow: 0 1px 4px color-mix(in srgb, #000 18%, transparent);
+}
+.ds-icons { display: flex; gap: 4px; flex: none; }
+.ds-icon { width: 44px; min-width: 44px !important; height: 44px; padding: 0 !important; }
+.ds-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ds-icon[aria-pressed='true'] { color: var(--xp-accent, var(--ds-accent)); }
+.ds-angle {
+  position: absolute; z-index: 3; left: 50%; bottom: 68px; translate: -50% 0;
+  padding: 6px 12px; border-radius: 999px; pointer-events: none;
+  font: 500 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  color: var(--xp-muted, inherit);
+  opacity: 0; transition: opacity 0.4s ease;
+}
+.ds-angle[data-show='true'] { opacity: 1; }
+@media (min-width: 1000px) {
+  .ds-ui { left: auto; right: 24px; bottom: 20px; width: min(520px, 50vw); }
+  .ds-angle { left: auto; right: 24px; translate: none; bottom: 76px; opacity: 1; }
+}
+.ds :focus-visible { outline: 2px solid var(--xp-focus, var(--ds-accent)); outline-offset: 2px; }
+
+/* no-WebGL fallback: CSS desk */
+.ds-fallback { position: absolute; inset: 0; display: grid; place-items: end center; padding-bottom: 18%; }
+.ds-fb-desk {
+  position: absolute; left: 12%; right: 12%; bottom: 14%; height: 18px; border-radius: 9px;
+  background: var(--ds-desk); box-shadow: 0 30px 40px -20px color-mix(in srgb, #000 40%, transparent);
+}
+.ds-fb-mac {
+  position: absolute; bottom: calc(14% + 18px); left: 26%; width: 30%; aspect-ratio: 16 / 10;
+  display: grid; place-items: center; border-radius: 10px 10px 2px 2px;
+  border: 6px solid #111; background: var(--ds-screen); color: var(--ds-text);
+  font: 400 clamp(12px, 2vw, 22px)/1 var(--font-display, serif);
+}
+.ds-fb-mac::after {
+  content: ''; position: absolute; bottom: -12px; left: -12%; right: -12%; height: 8px;
+  border-radius: 0 0 8px 8px; background: var(--ds-alu);
+}
+.ds-fb-figure { position: absolute; bottom: calc(14% + 18px); right: 22%; height: 62%; width: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-loading span { animation: none; color: var(--ds-text); }
+  .ds-bubble, .ds-canvas, .ds-chip, .ds-angle { transition: none; }
+}
+html[data-reduce-motion] .ds-loading span { animation: none; color: var(--ds-text); }
+html[data-reduce-motion] .ds-bubble, html[data-reduce-motion] .ds-canvas { transition: none; }

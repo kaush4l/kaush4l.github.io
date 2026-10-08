@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useThemeContext } from '@/theme/ThemeProvider';
+import { useDefaultSkin } from './useDefaultSkin';
 
 /**
  * The two controls every experience carries, whatever it imitates: a way back
@@ -22,6 +23,7 @@ export default function XpControls({
     lightLabel: string;
     darkLabel: string;
 }) {
+    useDefaultSkin();
     const { isDark, setAppearance } = useThemeContext();
     const next = isDark ? 'light' : 'dark';
     return (
