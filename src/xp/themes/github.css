@@ -1,0 +1,202 @@
+/* GitHub-style profile. Colours only via var(--xp-*) from content/experiences/github.md. */
+.xp--github { background: var(--xp-bg); color: var(--xp-text); min-height: 100vh; overflow-x: clip; font-size: 0.875rem; line-height: 1.5; }
+.xp--github a { color: var(--xp-link); text-decoration: none; }
+.xp--github a:hover { text-decoration: underline; }
+.xp--github :focus-visible { outline: 2px solid var(--xp-focus); outline-offset: 2px; }
+.xp--github .gh-muted { color: var(--xp-muted); }
+
+/* Header */
+.xp--github .gh-top { position: sticky; top: 0; z-index: 20; border-width: 0 0 0.5px; border-radius: 0; }
+.xp--github .gh-top-in { max-width: var(--xp-max); margin: 0 auto; min-height: var(--xp-header-height); padding: 0.625rem max(1rem, env(safe-area-inset-right)) 0.625rem max(1rem, env(safe-area-inset-left)); display: flex; align-items: center; gap: 12px; }
+.xp--github .gh-wordmark { font-size: 1.375rem; white-space: nowrap; }
+.xp--github .gh-search { flex: 1; min-width: 0; max-width: 360px; margin-left: auto; position: relative; display: flex; align-items: center; }
+.xp--github .gh-search input {
+  width: 100%; min-height: var(--xp-target); padding: 0 36px 0 12px;
+  border-radius: var(--xp-radius-sm); border: 1px solid var(--xp-field-border);
+  background: var(--xp-surface-2); color: var(--xp-text); font: inherit; font-size: max(1rem, 16px);
+}
+.xp--github .gh-search input::-webkit-search-cancel-button { cursor: pointer; }
+.xp--github .gh-search input::placeholder { color: var(--xp-muted); }
+.xp--github .gh-search kbd {
+  position: absolute; right: 0.625rem; font: 0.75rem/1 var(--xp-mono-font); pointer-events: none; color: var(--xp-muted);
+  border: 1px solid var(--xp-field-border); border-radius: 4px; padding: 2px 5px;
+}
+.xp--github .gh-search:focus-within kbd { display: none; }
+
+/* Tabs */
+.xp--github .gh-tabs { border-bottom: 1px solid var(--xp-hairline); background: var(--xp-bg); }
+.xp--github .gh-tabs-in {
+  max-width: var(--xp-max); margin: 0 auto; padding: 0 16px 0 calc(16px + var(--xp-sidebar) + 24px);
+  display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+}
+.xp--github .gh-tabs-in::-webkit-scrollbar { display: none; }
+.xp--github .gh-tab {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
+  min-height: 48px; padding: 0 12px; border: 0; background: none; color: var(--xp-text);
+  font: inherit; cursor: pointer; border-radius: var(--xp-radius-sm);
+  transition: background-color 0.2s var(--xp-ease);
+}
+.xp--github .gh-tab:hover { background: var(--xp-surface-2); }
+.xp--github .gh-tab::after {
+  content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px;
+  background: var(--xp-tab-active); transform: scaleX(0); transition: transform 0.45s var(--xp-ease-spring);
+}
+.xp--github .gh-tab.is-active { font-weight: 600; }
+.xp--github .gh-tab.is-active::after { transform: scaleX(1); }
+.xp--github .gh-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--xp-surface-2); border: 1px solid var(--xp-hairline); font-size: 0.75rem; line-height: 1.5; text-align: center; }
+
+/* Layout */
+.xp--github .gh-page { max-width: var(--xp-max); margin: 0 auto; padding: 1.5rem max(1rem, env(safe-area-inset-right)) calc(4rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); display: grid; grid-template-columns: var(--xp-sidebar) minmax(0, 1fr); gap: 24px; }
+.xp--github .gh-main { min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+.xp--github .gh-main > section { min-width: 0; }
+.xp--github .gh-card { background: var(--xp-surface); border: 1px solid var(--xp-hairline); border-radius: var(--xp-radius); }
+.xp--github .gh-h2 { font-size: 1rem; font-weight: 400; margin: 0 0 8px; }
+.xp--github .gh-h3 { font-size: 1rem; font-weight: 600; margin: 0 0 8px; }
+
+/* Identity: one copy in the sidebar (desktop), one above the tabs (mobile); only one is ever displayed. */
+.xp--github .gh-id--top { display: none; }
+
+/* Sidebar */
+.xp--github .gh-side { min-width: 0; margin-top: -72px; position: relative; z-index: 1; }
+.xp--github .gh-avatar {
+  width: 100%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--xp-brand-1), var(--xp-brand-3)); color: var(--xp-on-primary);
+  border: 1px solid var(--xp-hairline); box-shadow: 0 0 0 4px var(--xp-bg); font-size: clamp(1.75rem, 6vw, 5.5rem);
+}
+.xp--github .gh-name { font-size: 1.625rem; line-height: 1.2; margin: 16px 0 0; }
+.xp--github .gh-handle { font-size: 1.25rem; font-weight: 300; color: var(--xp-muted); margin: 0; }
+.xp--github .gh-bio { margin: 12px 0 16px; }
+.xp--github .gh-btn {
+  min-height: var(--xp-target); padding: 0 16px; border-radius: var(--xp-radius-sm); cursor: pointer;
+  border: 1px solid var(--xp-hairline); background: var(--xp-btn); color: var(--xp-text); font: 500 0.875rem/1 var(--xp-body-font);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: transform 0.3s var(--xp-ease-spring), background-color 0.2s var(--xp-ease);
+}
+.xp--github .gh-btn:hover { background: var(--xp-surface-2); }
+.xp--github .gh-btn:active { transform: scale(0.97); }
+.xp--github .gh-btn--block { width: 100%; }
+.xp--github .gh-btn[aria-pressed='true'] { background: var(--xp-btn-primary); border-color: var(--xp-btn-primary); color: var(--xp-on-primary); }
+.xp--github .gh-btn--ghost { background: none; border-color: transparent; color: var(--xp-link); padding: 0 8px; margin-left: -8px; }
+.xp--github .gh-followers { margin: 8px 0 12px; }
+.xp--github .gh-facts { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 4px; overflow-wrap: anywhere; }
+.xp--github .gh-side-sec { border-top: 1px solid var(--xp-hairline); padding-top: 16px; margin-top: 16px; }
+.xp--github .gh-achievements { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.xp--github .gh-achievements li {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px;
+  font-size: 0.8125rem; font-weight: 500; background: var(--xp-badge); color: var(--xp-on-badge);
+}
+.xp--github .gh-ach-glyph {
+  width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0;
+  background: var(--xp-surface); color: var(--xp-on-badge);
+}
+.xp--github .gh-orgs { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.xp--github .gh-orgs li { display: flex; gap: 10px; align-items: flex-start; }
+.xp--github .gh-org-avatar { flex: 0 0 32px; height: 32px; border-radius: var(--xp-radius-sm); display: grid; place-items: center; background: var(--xp-surface-2); border: 1px solid var(--xp-hairline); font-size: 0.6875rem; font-weight: 700; }
+.xp--github .gh-org-text { display: flex; flex-direction: column; min-width: 0; }
+
+/* README */
+.xp--github .gh-readme { padding: 1.5rem; overflow-wrap: anywhere; }
+.xp--github .gh-readme-path { font-size: 0.75rem; color: var(--xp-muted); margin: 0 0 12px; }
+.xp--github .gh-readme-h { font-size: clamp(1.5rem, 4vw, 1.875rem); margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--xp-hairline); }
+.xp--github .gh-readme-h3 { font-size: 1.125rem; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--xp-hairline); }
+.xp--github .gh-readme-lead { font-weight: 600; }
+.xp--github .gh-readme-intro { color: var(--xp-muted); }
+.xp--github .gh-readme p { margin: 0 0 12px; line-height: 1.6; }
+.xp--github .gh-badges, .xp--github .gh-topics { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.xp--github .gh-badges li, .xp--github .gh-topics li {
+  padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 500;
+  background: var(--xp-badge); color: var(--xp-on-badge);
+}
+
+/* Repos */
+.xp--github .gh-pinned { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.xp--github .gh-repo { background: var(--xp-surface); border: 1px solid var(--xp-hairline); border-radius: var(--xp-radius-sm); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.xp--github .gh-repo--row { border-radius: 0; border-width: 0 0 1px; padding: 20px 0; }
+.xp--github .gh-repo-head { display: flex; align-items: center; gap: 8px; color: var(--xp-muted); min-width: 0; }
+.xp--github .gh-repo-name { font-weight: 600; color: var(--xp-link); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 24px; display: inline-flex; align-items: center; }
+.xp--github .gh-pill { margin-left: auto; font-size: 0.75rem; padding: 0 7px; border: 1px solid var(--xp-hairline); border-radius: 999px; color: var(--xp-muted); }
+.xp--github .gh-repo-desc { margin: 0; color: var(--xp-muted); font-size: 0.8125rem; flex: 1; }
+.xp--github .gh-repo-meta { display: flex; flex-wrap: wrap; gap: 16px; color: var(--xp-muted); font-size: 0.75rem; }
+.xp--github .gh-repo-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.xp--github .gh-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid var(--xp-hairline); }
+.xp--github .gh-repo-tools { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--xp-hairline); margin-bottom: 8px; }
+.xp--github .gh-select { display: inline-flex; align-items: center; gap: 8px; }
+.xp--github .gh-select select { min-height: var(--xp-target); padding: 0 10px; border-radius: var(--xp-radius-sm); border: 1px solid var(--xp-field-border); background: var(--xp-btn); color: var(--xp-text); font: inherit; max-width: 100%; }
+.xp--github .gh-result { margin: 0; }
+.xp--github .gh-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 2.5rem 1rem; color: var(--xp-muted); text-align: center; }
+.xp--github .gh-empty svg { width: 2rem; height: 2rem; }
+
+/* Contribution graph */
+.xp--github .gh-graph-wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; }
+.xp--github .gh-graph-main { min-width: 0; }
+.xp--github .gh-graph-card { padding: 16px; }
+.xp--github .gh-graph-scroll { overflow-x: auto; padding: 2rem 4px 4px; margin-top: -1rem; }
+.xp--github .gh-graph { position: relative; display: flex; gap: 6px; width: max-content; font-size: 0.6875rem; color: var(--xp-muted); }
+.xp--github .gh-graph-days { display: grid; grid-template-rows: 16px repeat(7, var(--xp-cell)); row-gap: var(--xp-cell-gap); }
+.xp--github .gh-graph-days span:first-child { grid-row: 2; }
+.xp--github .gh-graph-days span { line-height: var(--xp-cell); }
+.xp--github .gh-graph-months { display: grid; grid-template-columns: repeat(53, var(--xp-cell)); column-gap: var(--xp-cell-gap); height: 16px; white-space: nowrap; }
+.xp--github .gh-graph-grid { display: grid; grid-template-columns: repeat(53, var(--xp-cell)); column-gap: var(--xp-cell-gap); }
+.xp--github .gh-week { display: grid; grid-template-rows: repeat(7, var(--xp-cell)); row-gap: var(--xp-cell-gap); }
+.xp--github .gh-cell { width: var(--xp-cell); height: var(--xp-cell); border-radius: 2px; padding: 0; border: 1px solid color-mix(in srgb, var(--xp-text) 6%, transparent); display: inline-block; }
+.xp--github button.gh-cell { cursor: pointer; }
+.xp--github button.gh-cell:focus-visible { outline-offset: 1px; }
+.xp--github .gh-cell--empty { border: 0; background: none; }
+.xp--github .gh-l0 { background: var(--xp-lvl-0); }
+.xp--github .gh-l1 { background: var(--xp-lvl-1); }
+.xp--github .gh-l2 { background: var(--xp-lvl-2); }
+.xp--github .gh-l3 { background: var(--xp-lvl-3); }
+.xp--github .gh-l4 { background: var(--xp-lvl-4); }
+.xp--github .gh-graph-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 0.75rem; color: var(--xp-muted); }
+.xp--github .gh-tip {
+  position: absolute; z-index: 2; transform: translate(-50%, calc(-100% - 6px)); pointer-events: none; white-space: nowrap;
+  padding: 4px 8px; border-radius: var(--xp-radius-sm); font-size: 0.75rem; background: var(--xp-tip-bg); color: var(--xp-tip-text);
+  box-shadow: 0 4px 12px var(--xp-shadow);
+}
+.xp--github .gh-legend { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; }
+.xp--github .gh-years { display: flex; flex-direction: column; gap: 4px; padding-top: 28px; }
+.xp--github .gh-year {
+  min-height: var(--xp-target); min-width: 88px; padding: 0 16px; text-align: left; border: 0; cursor: pointer;
+  border-radius: var(--xp-radius-sm); background: none; color: var(--xp-muted); font: inherit;
+  transition: background-color 0.2s var(--xp-ease);
+}
+.xp--github .gh-year:hover { background: var(--xp-surface-2); }
+.xp--github .gh-year.is-active { background: var(--xp-accent); color: var(--xp-on-accent); font-weight: 600; }
+
+/* Activity */
+.xp--github .gh-timeline { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--xp-hairline); }
+.xp--github .gh-event { position: relative; padding: 0 0 20px 20px; }
+.xp--github .gh-event-dot { position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--xp-bg); border: 2px solid var(--xp-muted); }
+.xp--github .gh-event-period { margin: 0; font-size: 0.75rem; color: var(--xp-muted); }
+.xp--github .gh-event-title { margin: 2px 0 0; }
+.xp--github .gh-commits { list-style: none; margin: 4px 0 0; padding: 0; border: 1px solid var(--xp-hairline); border-radius: var(--xp-radius-sm); }
+.xp--github .gh-commits li { display: flex; gap: 12px; padding: 10px 12px; border-top: 1px solid var(--xp-hairline); font-size: 0.8125rem; }
+.xp--github .gh-commits li:first-child { border-top: 0; }
+.xp--github .gh-hash { flex-shrink: 0; color: var(--xp-link); font-size: 0.75rem; }
+
+/* Mobile: identity sits above the tab bar; the sidebar keeps bio, facts, achievements, orgs below. */
+@media (max-width: 768px) {
+  .xp--github .gh-wordmark { display: none; }
+  .xp--github .gh-search { max-width: none; }
+  .xp--github .gh-id--side { display: none; }
+  .xp--github .gh-id--top {
+    display: flex; align-items: center; gap: 12px; max-width: var(--xp-max); margin: 0 auto;
+    padding: 1rem max(1rem, env(safe-area-inset-right)) 0.5rem max(1rem, env(safe-area-inset-left));
+  }
+  .xp--github .gh-id--top .gh-avatar { width: 3.5rem; flex: 0 0 3.5rem; font-size: 1.375rem; box-shadow: none; }
+  .xp--github .gh-id-text { min-width: 0; }
+  .xp--github .gh-id--top .gh-name { margin: 0; font-size: 1.375rem; }
+  .xp--github .gh-id--top .gh-handle { font-size: 1rem; }
+  .xp--github .gh-tabs-in { padding-left: max(1rem, env(safe-area-inset-left)); }
+  .xp--github .gh-page { grid-template-columns: minmax(0, 1fr); padding-top: 1rem; }
+  .xp--github .gh-side { margin-top: 0; order: -1; }
+  .xp--github .gh-bio { margin-top: 0; }
+  .xp--github .gh-pinned { grid-template-columns: minmax(0, 1fr); }
+  .xp--github .gh-graph-wrap { grid-template-columns: minmax(0, 1fr); }
+  .xp--github .gh-years { flex-direction: row; overflow-x: auto; padding-top: 0; order: -1; }
+  .xp--github .gh-readme { padding: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xp--github .gh-tab, .xp--github .gh-tab::after, .xp--github .gh-btn, .xp--github .gh-year { transition: none; }
+  .xp--github .gh-btn:active { transform: none; }
+}

@@ -1,6 +1,6 @@
 'use client';
 
-// ExperienceButton — the visitor's door into Experience 2.0.
+// ExperienceButton — the visitor's door into the Experience Center.
 //
 // It is deliberately a LINK, not a menu, and that is the one design decision
 // worth defending here. `SkinMenu` and `AppearanceMenu` are menus because they
@@ -21,19 +21,18 @@
 import { IconButton, Tooltip } from '@mui/material';
 import Link from 'next/link';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
-import { EXPERIENCE_NAV } from '@/experiences/registry';
 import { RADIUS } from '@/theme/ThemeProvider';
 
-export default function ExperienceButton() {
+export default function ExperienceButton({ href = '/experience/', label = 'Experience Center', hint = 'Read this résumé as Google, LinkedIn, GitHub or YouTube' }: { href?: string; label?: string; hint?: string }) {
     return (
         // E13 permits a Tooltip here because the control has no visible text
         // sibling naming it — and `hint` is deliberately NOT `label`, so the
         // tooltip adds information instead of re-announcing the aria-label MUI
-        // wires as `aria-describedby`. Both strings come from `EXPERIENCE_NAV`
+        // wires as `aria-describedby`. Both strings arrive as props
         // (M3): the header, the dashboard heading and the route metadata read
         // the same table, so the word for this feature is changed in one place
         // or not at all.
-        <Tooltip title={EXPERIENCE_NAV.hint}>
+        <Tooltip title={hint}>
             <IconButton
                 // Header chrome never prints. `globals.css` forces a light
                 // print surface and drops `.no-print`; a door into a second
@@ -46,8 +45,8 @@ export default function ExperienceButton() {
                 // `/experience/` would 404 there and nowhere else, which is the
                 // worst shape a bug can have.
                 component={Link}
-                href={EXPERIENCE_NAV.href}
-                aria-label={EXPERIENCE_NAV.label}
+                href={href}
+                aria-label={label}
                 sx={{
                     // 44px minimum target, matched to every other header icon
                     // button so the toolbar's 56px height is unaffected.

@@ -55,10 +55,8 @@ import "./skin-ronin.css";
 import "./skin-sanctum.css";
 import "./skin-terminal.css";
 import "./skin-accession.css";
-// The experience layer — every rule requires `body[data-experience]`, absent on `/`.
-import "./experiences.css";
-// Derived from EXPERIENCE_LIST, never hand-joined; `''` today, hence `.trim()` below.
-import { EXPERIENCE_FONT_VARIABLES } from "@/experiences/registry";
+// The experience center — every rule is scoped under `.xp`, absent on `/`.
+import "./xp.css";
 
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 
@@ -256,7 +254,7 @@ const skinFontVariables = [
   archivo.variable,
 ].join(" ");
 
-const fontVariables = `${inter.variable} ${amarante.variable} ${jetbrainsMono.variable} ${skinFontVariables} ${EXPERIENCE_FONT_VARIABLES}`.trim();
+const fontVariables = `${inter.variable} ${amarante.variable} ${jetbrainsMono.variable} ${skinFontVariables}`;
 
 // Blocking, pre-paint appearance stamp. This is a static export — there is no
 // server to resolve the appearance, so the very first frame would otherwise be
