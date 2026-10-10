@@ -107,8 +107,10 @@ export default function DeskScene({ scene }: { scene: SceneConfig }) {
             {status === 'fallback' && (
                 <div className="ds-fallback" aria-label={label(L, 'fallback')}>
                     <div className="ds-fb-mac" aria-hidden="true"><span>{scene.screenLines[0] ?? ''}</span></div>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className="ds-fb-figure" src={scene.figure.src} alt={scene.figure.alt} />
+                    {scene.figure.src && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className="ds-fb-figure" src={scene.figure.src} alt={scene.figure.alt} />
+                    )}
                     <div className="ds-fb-desk" aria-hidden="true" />
                 </div>
             )}

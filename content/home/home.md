@@ -7,8 +7,8 @@ eyebrow: "Senior Software Engineer · Applied AI"
 
 # ── Figure ───────────────────────────────────────────────────────────────────
 figure:
-  src: "/home/figure.png"       # transparent cut-out, standing on the desk
-  alt: "Kaushal, smiling, in a black t-shirt and cap"
+  src: ""                       # optional transparent cut-out standing on the desk; empty = none
+  alt: ""
   height: 1.05                  # scene units (desk top is ~1.6 x 0.8)
 
 # ── 3D scene ─────────────────────────────────────────────────────────────────
@@ -84,9 +84,9 @@ sceneLabels:
   angle: "Angle {az}° · Tilt {el}°"
   copy: "Copy angle"
   copied: "Copied"
-  hint: "Drag to look around · Tap the figure"
+  hint: "Drag to look around · Tap the Mac"
   loading: "Setting up the desk…"
-  fallback: "Kaushal at the desk"
+  fallback: "A desk with a MacBook, lamp and plant"
   reactions: ["Hi there!", "Thanks for stopping by.", "Ask the chat anything.", "Scroll for the work."]
 
 # ── Navigation (glass bar) ──────────────────────────────────────────────────
@@ -121,7 +121,7 @@ sections:
   projects:    { eyebrow: "Projects",    title: "Things built on purpose.", open: "View project" }
   skills:      { eyebrow: "Skills",      title: "The toolbox." }
   education:   { eyebrow: "Education",   title: "Where it started." }
-  experiences: { eyebrow: "Experience Center", title: "Read it another way.", open: "Open" }
+  experiences: { eyebrow: "Experience Center", title: "Read it another way.", open: "Open", carousel: "Experience Center — choose a reading", prev: "Previous experience", next: "Next experience", goTo: "Show experience {n}" }
   contact:     { eyebrow: "Contact",     title: "Let’s build something.", lead: "Open to senior engineering and applied-AI roles. The fastest way in is a short note." }
 footer:
   note: "Built with Next.js · the assistant runs on your own device."

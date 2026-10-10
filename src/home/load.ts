@@ -55,7 +55,7 @@ export async function getHome(): Promise<HomeData> {
                 views,
                 screenLines: (Array.isArray(obj(s.screen).lines) ? (obj(s.screen).lines as unknown[]) : []).map((x) => str(x)),
                 colors: { light, dark: { ...light, ...strMap(colors.dark) } },
-                figure: { src: str(fig.src, '/home/figure.png'), alt: str(fig.alt), height: num(fig.height, 1) },
+                figure: { src: str(fig.src), alt: str(fig.alt), height: num(fig.height, 1) },
                 framing: { offsetX: num(obj(s.framing).offsetX, 0.18), minAspect: num(obj(s.framing).minAspect, 1.2) },
                 macScale: num(s.macScale, 1.3),
                 labels: obj(d.sceneLabels),

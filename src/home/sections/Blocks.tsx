@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { XpContact, XpEntry, XpLabels, XpSkillGroup } from '@/xp/types';
 import type { HomeData } from '../types';
 import { label } from '@/xp/label';
+import Carousel from './Carousel';
 import SectionHead from './SectionHead';
 
 const Arrow = () => (
@@ -92,10 +93,15 @@ export function Center({ L, experiences }: { L: XpLabels; experiences: HomeData[
         <section id="experiences" className="hm-section" aria-labelledby="experiences-h">
             <div className="hm-wrap">
                 <SectionHead id="experiences-h" eyebrow={label(L, 'sections.experiences.eyebrow')} title={label(L, 'sections.experiences.title')} />
-                <ul className="hm-xgrid" data-reveal="stagger">
+                <div data-reveal>
+                <Carousel
+                    label={label(L, 'sections.experiences.carousel')}
+                    prev={label(L, 'sections.experiences.prev')}
+                    next={label(L, 'sections.experiences.next')}
+                    goTo={label(L, 'sections.experiences.goTo')}
+                >
                     {experiences.map((x) => (
-                        <li key={x.id}>
-                            <Link href={`/experience/${x.id}/`} className="hm-xcard hm-press" data-xp={x.id} data-tilt>
+                            <Link key={x.id} href={`/experience/${x.id}/`} className="hm-xcard hm-press" data-xp={x.id} draggable={false}>
                                 <span className="hm-xswatch" aria-hidden="true">
                                     <span className="xp-display">{x.title}</span>
                                     <span className="hm-xdots">
@@ -111,9 +117,9 @@ export function Center({ L, experiences }: { L: XpLabels; experiences: HomeData[
                                     <span className="hm-more">{open} <Arrow /></span>
                                 </span>
                             </Link>
-                        </li>
                     ))}
-                </ul>
+                </Carousel>
+                </div>
             </div>
         </section>
     );

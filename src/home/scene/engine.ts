@@ -311,7 +311,8 @@ export async function createEngine(o: EngineOptions): Promise<Engine> {
 
     // ── figure standee ──────────────────────────────────────────────────────
     const FH = cfg.figure.height, FW = FH * (737 / 1290);
-    const figTex = await new THREE.TextureLoader().loadAsync(cfg.figure.src).catch(() => null);
+    // Optional: only drawn when content/home/home.md sets figure.src.
+    const figTex = cfg.figure.src ? await new THREE.TextureLoader().loadAsync(cfg.figure.src).catch(() => null) : null;
     const figure = new THREE.Group();          // placement + yaw
     figure.position.set(0.42, TOP, 0.08);
     const body = new THREE.Group();            // hop / squash / spin
@@ -339,7 +340,7 @@ export async function createEngine(o: EngineOptions): Promise<Engine> {
     }
     // small stand foot
     const foot = mesh(new RoundedBoxGeometry(0.16, 0.008, 0.08, 2, 0.003), std('deskLeg', { roughness: 0.4, metalness: 0.5 }));
-    foot.position.y = 0.004; figure.add(foot);
+    foot.position.y = 0.004; if (figTex) figure.add(foot);
     figure.traverse((x) => { x.userData.hit = 'figure'; });
     root.add(figure);
     const bubbleAnchor = new THREE.Vector3();
